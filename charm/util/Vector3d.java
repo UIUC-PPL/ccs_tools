@@ -1,9 +1,4 @@
-/* Java Source File 
-a part of SliceViewer
-  a program written in 2/98 by Orion Lawlor.
-
-Public domain source code.
-*/
+package charm.util;
 
 /*Vector is really quite a simple class-- it's just
 three cartesian coordinates.  These can be interpreted
@@ -25,7 +20,7 @@ this is doubly true.
 */
 import java.io.*;
 
-final class Vector3d {
+public final class Vector3d {
 
 	public double x,y,z;
 

@@ -5,13 +5,14 @@ and allows the user to switch between them.
 by Orion Lawlor,  6/23/2001
 olawlor@acm.org
 */
+package charm.util;
 
 import java.awt.*;
 import java.awt.image.*;
 import java.awt.event.*; 
 import java.net.URL;
 
-class Toolbar extends Panel implements MouseListener, MouseMotionListener
+public class Toolbar extends Panel implements MouseListener, MouseMotionListener
 {
 	private int curTool;//Currently selected tool
 	private int nTools;//Number of tool images
