@@ -2,17 +2,15 @@
 A non-blocking wrapper around CcsServer-- allows
 asynchronous network communication easily.
 
-by Orion Lawlor,  6/14/2001
-olawlor@acm.org
+by Orion Lawlor, olawlor@acm.org, 6/14/2001
 */
+package charm.ccs;
 
-import java.awt.*;
-import java.awt.image.*;
-import java.util.*;
+import java.util.Stack;
 import java.io.*;
 import java.net.UnknownHostException;
 
-class CcsThread implements Runnable {
+public class CcsThread implements Runnable {
 
 	//Thin wrapper around a block of data
 	public static class message {
@@ -49,14 +47,19 @@ class CcsThread implements Runnable {
 	private Stack requests;//Keeps track of CcsRequests
 	private volatile boolean keepGoing;//To signal exit
 	private CcsServer ccs;
-	private Label status;//Place to show status info.
+	
+	/// Place to receive status information during communication
+	public interface progress {
+		public void setText(String s);
+	};
+	private progress status;//Place to show status info.
 	private Thread myThread;
 	
 	//Initialization just stashes info-- 
 	// real work starts when thread begins running.
 	private String hostName;
         private int port;
-	public CcsThread(Label status_,String hostName_,int port_) {
+	public CcsThread(progress status_,String hostName_,int port_) {
 		requests=new Stack();
 		status=status_;
 		hostName=hostName_;
@@ -98,8 +101,6 @@ class CcsThread implements Runnable {
 		
 		if (!keepGoing) return;
 		
-		//Send to the server the config info
-		//TODO 
 		status.setText("Connected to "+hostName+" ("+
 			       ccs.getNumPes()+" processors)");
 		while (keepGoing) {
@@ -112,7 +113,7 @@ class CcsThread implements Runnable {
 			}
 			if (!keepGoing) break;
 			request curReq=(request)requests.pop();
-			System.out.println("Sending request "+curReq.getHandler());
+			// System.out.println("Sending request "+curReq.getHandler());
 			status.setText("Sending request "+curReq.getHandler());
 			try {
 				ccs.sendRequest(curReq.getHandler(),curReq.getPE(),curReq.getData());

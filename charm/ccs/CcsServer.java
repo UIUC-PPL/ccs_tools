@@ -9,6 +9,11 @@ You can read about Charm++ at
 	
 Orion Sky Lawlor, olawlor@acm.org, 10/15/2000
 */
+
+/* Remove this line if you wish to build a stand-alone
+   version of CcsServer that does not live in the charm/ directory */
+package charm.ccs;
+
 import java.net.*;
 import java.io.*;
 import java.util.*;
@@ -243,19 +248,27 @@ public class CcsServer
    public int getNodeSize(int node) {return nodeSize[node];}
 
 
-    static final public int readInt(byte[] dest,int destStart)
+    static final public int readInt(byte[] src,int srcStart)
     {
-	return ((0xff&dest[destStart+0])<<24)+
-	       ((0xff&dest[destStart+1])<<16)+
-	       ((0xff&dest[destStart+2])<< 8)+
-	       ((0xff&dest[destStart+3])<< 0);
+	return ((0xff&src[srcStart+0])<<24)+
+	       ((0xff&src[srcStart+1])<<16)+
+	       ((0xff&src[srcStart+2])<< 8)+
+	       ((0xff&src[srcStart+3])<< 0);
     }
+    static final public float readFloat(byte[] src,int srcStart)
+    {
+    	return Float.intBitsToFloat(readInt(src,srcStart));
+    }
+    
     static final public void writeInt(byte[] dest,int destStart,int val)
     {
 	dest[destStart+0]=(byte)(val>>>24);
 	dest[destStart+1]=(byte)(val>>>16);
 	dest[destStart+2]=(byte)(val>>> 8);
 	dest[destStart+3]=(byte)(val>>> 0);
+    }
+    static final public void writeFloat(byte[] dest,int destStart,float val) {
+    	writeInt(dest,destStart,Float.floatToRawIntBits(val));
     }
     static final public void writeBytes(byte[] dest,int destStart,int len,byte[] src)
     {
