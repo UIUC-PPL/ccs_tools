@@ -344,6 +344,7 @@ public class ParDebug extends JPanel
        //Creating status bar on the top
        statusArea = new JTextField(60);
        statusArea.setBorder(BorderFactory.createTitledBorder("Status"));
+       statusArea.setMaximumSize(new Dimension(1000000,40));
        statusArea.setEditable(false);
        statusArea.setBackground(Color.lightGray); 
 
@@ -368,9 +369,13 @@ public class ParDebug extends JPanel
        entryScrollPane2.setBorder(BorderFactory.createTitledBorder("User Entry Points"));
        entryScrollPane2.setPreferredSize(new Dimension(200,185));
 
-       entryPointsPanel.add(entryScrollPane1);
-       entryPointsPanel.add(Box.createRigidArea(new Dimension(0,10)));
-       entryPointsPanel.add(entryScrollPane2);
+       JSplitPane splitPane1 = new JSplitPane(JSplitPane.VERTICAL_SPLIT, entryScrollPane1, entryScrollPane2);
+       splitPane1.setOneTouchExpandable(true);
+       splitPane1.setResizeWeight(0.5);
+       entryPointsPanel.add(splitPane1);
+       //entryPointsPanel.add(entryScrollPane1);
+       //entryPointsPanel.add(Box.createRigidArea(new Dimension(0,10)));
+       //entryPointsPanel.add(entryScrollPane2);
 
 
        JPanel secondPanelWithOutput = new JPanel();
@@ -467,9 +472,12 @@ public class ParDebug extends JPanel
        secondPanelWithOutput.add(outputAndPePanel);
        secondPanelWithOutput.setPreferredSize(new Dimension(500,380));
 
-       middlePanel.add(entryPointsPanel);
-       middlePanel.add(Box.createRigidArea(new Dimension(15,0)));
-       middlePanel.add(secondPanelWithOutput);
+       JSplitPane middleSplitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, entryPointsPanel, secondPanelWithOutput);
+       middleSplitPane.setResizeWeight(0.5);
+       middlePanel.add(middleSplitPane);
+       //middlePanel.add(entryPointsPanel);
+       //middlePanel.add(Box.createRigidArea(new Dimension(15,0)));
+       //middlePanel.add(secondPanelWithOutput);
        middlePanel.setPreferredSize(new Dimension(600, 380));
 
        add(statusArea);
