@@ -19,12 +19,21 @@ public class ServThread extends Thread {
     runtime = Runtime.getRuntime();
     try {
       BufferedReader prout = new BufferedReader(new InputStreamReader(p.getInputStream()));
-      int foundPort = 0;
+      boolean foundPort = false;
       try {
-           String outline = prout.readLine();
-           while (outline != null)
-           {
-              if(foundPort == 0)
+	while (true) 
+	{ /* Fetch a chunk of output and print it.
+	     Passing the output to the GUI in large chunks is 
+	     much much faster than passing it one line at a time.
+	  */
+           String outline;
+	   StringBuffer outlinechunk=new StringBuffer();
+	   final int maxChunk=50*1024; /* maximum chunk size */
+	   do
+           { /* Fetch a line of output and handle it */
+              outline = prout.readLine();
+	      if (outline == null) break;
+              if(!foundPort)
               {
                  int portStart, portEnd;
                  if(outline.indexOf("ccs: Server IP =", 0) != -1)
@@ -33,9 +42,8 @@ public class ServThread extends Thread {
                     portStart += 14;
                     portEnd = outline.indexOf("$",0);
                     portno = outline.substring(portStart, portEnd-1);
-                    foundPort = 1;
+                    foundPort = true;
                  }
-
               }
 
               if (outline.indexOf("Break point reached", 0) != -1)
@@ -43,20 +51,22 @@ public class ServThread extends Thread {
                 mainThread.setStatusMessage(outline);
               }
               else
-              { 
-                 // Print this out to a display area on the debugger
-                  mainThread.displayProgramOutput(outline);
-                  mainThread.displayProgramOutput(new String("\n"));
+              { // User output: Print this out to a display area on the debugger
+	        outlinechunk.append(outline+"\n");
               }
-              outline = prout.readLine();
            }
+	   while (prout.ready() && (outlinechunk.length()<maxChunk));
+	   // System.out.println("Parallel program printed: "+outlinechunk.toString());
+           mainThread.displayProgramOutput(outlinechunk.toString());
+	   
+	   if (outline==null) break; /* Program is now finished. */
+	}
       }
       catch(Exception e) {
           System.out.println("Failed to print");
-        
       }
       System.out.println("Success running parallel pgm");    
-      mainThread.cleanUpAndStart();
+      mainThread.quitProgram();
     }
    catch (Exception e) {
       System.out.println("error in ServThread. Exception caught");
