@@ -493,6 +493,7 @@ public class ParDebug extends JPanel
         listsbox.setPreferredSize(new Dimension(450,70));
 
         pesbox = new JComboBox();
+	pesbox.setActionCommand("changepe");
         pesbox.addActionListener(this);
         pesbox.setEnabled(false);
         pesbox.setPreferredSize(new Dimension(100,70));
@@ -620,8 +621,10 @@ public class ParDebug extends JPanel
         else if (e.getActionCommand().equals("lists") 
 	      || e.getActionCommand().equals("changepe")) 
 	{ /* Clicked on list or pe drop-down */
-          int forPE=Integer.parseInt((String)pesbox.getSelectedItem());
-          populateNewList(listsbox.getSelectedIndex(),forPE, listModel); 
+	    if (pesbox.getSelectedItem()!=null) {
+		int forPE=Integer.parseInt((String)pesbox.getSelectedItem());
+		populateNewList(listsbox.getSelectedIndex(),forPE, listModel); 
+	    }
         }
 	else if (e.getActionCommand().equals("exitDebugger")) {
 	  quitProgram();
@@ -691,6 +694,7 @@ public class ParDebug extends JPanel
            String[] ccsArgs=new String[2];
            ccsArgs[0]=hostname;
            ccsArgs[1]= portnumber;
+	   System.out.println("Connecting to: "+hostname+":"+portnumber);
            ccs = CcsServer.create(ccsArgs,false);
 	 
 	 /* Create the pe list */
@@ -709,7 +713,6 @@ public class ParDebug extends JPanel
            }
            
            peActualPanel.updateUI();
-           pesbox.setActionCommand("changepe");
           
            startButton.setEnabled(false);
            continueButton.setEnabled(true);
@@ -769,7 +772,6 @@ public class ParDebug extends JPanel
             outputArea.setList(null); 
             listsbox.setEnabled(false);
             pesbox.removeAllItems(); 
-            pesbox.setActionCommand("");
             pesbox.setEnabled(false);
 
             peActualPanel.removeAll();
