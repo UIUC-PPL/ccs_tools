@@ -29,16 +29,26 @@ $(DEST_LV): $(SRC_LV)
 	$(JAVAC) $(SRC_LV)
 	$(JAR) $@ $(CLASS_LV)
 
-############ LiveViz ##############
-SRC_RO=charm/debug/SetReadonly
+############ setReadonly utility ##############
 CLASS_RO=$(CLASS_DEBUG)
 DEST_RO=bin/setReadonly.jar
 
 setReadonly: $(DEST_RO) 
 
-$(DEST_RO): $(SRC_RO).java
-	$(JAVAC) $(SRC_RO).java
+$(DEST_RO): charm/debug/SetReadonly.java
+	$(JAVAC) $<
 	$(JAR) $@ $(CLASS_RO)
+
+############ pokeCCS utility ##############
+CLASS_CCS=charm/ccs/*.class
+DEST_CCS=bin/pokeCCS.jar
+
+pokeCCS: $(DEST_CCS) 
+
+$(DEST_CCS): charm/ccs/PokeCCS.java
+	$(JAVAC) $<
+	$(JAR) $@ $(CLASS_CCS)
+
 
 ############ Sample
 # $(DEST_): $(SRC_)
