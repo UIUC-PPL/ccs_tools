@@ -22,7 +22,7 @@ public class ParDebug extends JPanel
     private DefaultListModel listModel;
     private Stringifiable listItems = null;
     private EpStringifiable epItems = null;
-    private String[] listStrings =  {"lists","readonly", "readonlyMsg", "messages", "chares", "entries", "mains", "arrayelements", "localqueue", "schedqueue"};
+    private String[] listStrings =  {"lists","readonly", "readonlyMsg", "messages", "chares", "entries", "mains", "arrayelements", "localqueue"};
     private int noOfPes;
     private boolean isRunning = false;
     private boolean[] peList = null;
@@ -142,7 +142,7 @@ public class ParDebug extends JPanel
              outputArea.setText("");
              int nItems=getListLength(lName,forPE);
              String itemsString =stringList(lName,forPE,0,nItems);
-             //System.out.println("Cpd list "+lName+" contains "+nItems+" items:\n");
+             System.out.println("Cpd list "+lName+" contains "+nItems+" items: and string is "+ itemsString+"\n");
              //itms=stringList(lName,forPE,0,nItems);
              if (lName.equalsIgnoreCase("charm/arrayelements"))
                {
@@ -421,7 +421,7 @@ public class ParDebug extends JPanel
        panelForComboBoxes.setLayout(new BoxLayout(panelForComboBoxes, BoxLayout.X_AXIS));
        panelForComboBoxes.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createTitledBorder("View Entities on PE"), BorderFactory.createEmptyBorder(5, 5, 5, 5)));
 
-        String [] displayStrings = {"viewable entities", "readonly variables", "readonly messages", "messages", "chare table entities", "entry table entities", "main table entities", "array elements", "messages in local queue", "messages in scheduler queue"};
+        String [] displayStrings = {"viewable entities", "readonly variables", "readonly messages", "messages", "chare table entities", "entry table entities", "main table entities", "array elements", "messages in queue"};
         listsbox = new JComboBox(displayStrings);
         listsbox.setActionCommand("lists");
         listsbox.addActionListener(this);
@@ -653,7 +653,7 @@ public class ParDebug extends JPanel
         else if (e.getActionCommand().equals("lists") || e.getActionCommand().equals("changepe")) {
           int forPE=0; //See what processor 0 is doing
           String lName = listStrings[listsbox.getSelectedIndex()];
-          if ((lName == "lists") || (lName == "localqueue") || (lName == "schedqueue")) lName = "converse/"+lName; 
+          if ((lName == "lists") || (lName == "localqueue")) lName = "converse/"+lName; 
           else lName="charm/"+lName;
           forPE = Integer.parseInt((String)pesbox.getSelectedItem());
           System.out.println("list name is "+lName+" for PROCESSOR " +forPE);
