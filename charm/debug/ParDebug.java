@@ -237,47 +237,39 @@ public class ParDebug extends JPanel
        //Creating the menu
        menuBar = new JMenuBar();
        
-       menuFile = new JMenu("File");
+       menuBar.add(menuFile = new JMenu("File"));
        menuFile.setMnemonic('F');
-       menuFileOpen = new JMenuItem();
-       menuFileOpen.setText("Open");
-       menuFileOpen.setMnemonic('O');
+       
+       menuFile.add(menuFileOpen = new JMenuItem("Open Program",'O'));
        menuFileOpen.setToolTipText("Open a parallel program to debug");
        menuFileOpen.setActionCommand("browse");
        menuFileOpen.addActionListener(this); 
-       menuFileParameters = new JMenuItem();
-       menuFileParameters.setText("Parameters (Command-line etc)");
-       menuFileParameters.setMnemonic('P');
+       
+       menuFile.add(menuFileParameters = new JMenuItem("Program Parameters",'P'));
        menuFileParameters.setToolTipText("Enter command-line parameters for the parallel program");
        menuFileParameters.setActionCommand("params");
        menuFileParameters.addActionListener(this); 
-       menuFile.add(menuFileOpen);
-       menuFile.add(menuFileParameters);
        
-       menuAction = new JMenu("Action");
+       JMenuItem menuFileExit;
+       menuFile.add(menuFileExit = new JMenuItem("Exit Debugger",'X'));
+       menuFileExit.setActionCommand("exitDebugger");
+       menuFileExit.addActionListener(this); 
+       
+       menuBar.add(menuAction = new JMenu("Action"));
        menuAction.setMnemonic('A');
-       menuActionStart = new JMenuItem();
-       menuActionStart.setText("Start");
-       menuActionStart.setMnemonic('S');
+       
+       menuActionStart = new JMenuItem("Start",'S');
        menuActionStart.setToolTipText("Start the parallel program"); 
-       menuActionFreeze = new JMenuItem();
-       menuActionFreeze.setText("Freeze");
-       menuActionFreeze.setMnemonic('F');
+       menuActionFreeze = new JMenuItem("Freeze",'F');
        menuActionFreeze.setToolTipText("Freeze the parallel program"); 
-       menuActionContinue = new JMenuItem();
-       menuActionContinue.setText("Continue");
-       menuActionContinue.setMnemonic('C');
+       menuActionContinue = new JMenuItem("Continue",'C');
        menuActionContinue.setToolTipText("Continue to run the parallel program"); 
-       menuActionQuit = new JMenuItem();
-       menuActionQuit.setText("Quit");
-       menuActionQuit.setMnemonic('Q');
+       menuActionQuit = new JMenuItem("Quit",'Q');
        menuActionQuit.setToolTipText("Quit the parallel program"); 
        menuAction.add(menuActionStart);
        menuAction.add(menuActionFreeze);
        menuAction.add(menuActionContinue);
        menuAction.add(menuActionQuit);
-       menuBar.add(menuFile);
-       menuBar.add(menuAction);
 
        //Creating status bar on the top
        statusArea = new JTextField(60);
@@ -325,7 +317,7 @@ public class ParDebug extends JPanel
        startButton.setMnemonic(KeyEvent.VK_S);
        startButton.setActionCommand("begin");
        startButton.setEnabled(true);
-       startButton.setToolTipText("Click this button to run the parallel program.");
+       startButton.setToolTipText("Run the parallel program from scratch.");
        startButton.addActionListener(this);
        startButton.setPreferredSize(new Dimension(100,80));
 
@@ -335,7 +327,7 @@ public class ParDebug extends JPanel
        continueButton.setMnemonic(KeyEvent.VK_U);
        continueButton.setActionCommand("unfreeze");
        continueButton.setEnabled(false);
-       continueButton.setToolTipText("Click this button to resume action.");
+       continueButton.setToolTipText("Resume execution.");
        continueButton.addActionListener(this);
        continueButton.setPreferredSize(new Dimension(100,80));
 
@@ -344,7 +336,7 @@ public class ParDebug extends JPanel
        freezeButton.setHorizontalTextPosition(AbstractButton.CENTER);
        freezeButton.setActionCommand("freeze");
        freezeButton.setEnabled(false);
-       freezeButton.setToolTipText("Click this button to freeze action.");
+       freezeButton.setToolTipText("Stop execution.");
        freezeButton.addActionListener(this);
        freezeButton.setPreferredSize(new Dimension(100,80));
 
@@ -354,7 +346,7 @@ public class ParDebug extends JPanel
        quitButton.setMnemonic(KeyEvent.VK_Q);
        quitButton.setActionCommand("quit");
        quitButton.setEnabled(false);
-       quitButton.setToolTipText("Click this button to quit the program.");
+       quitButton.setToolTipText("End the program.");
        quitButton.addActionListener(this);
        quitButton.setPreferredSize(new Dimension(100,80));
         
@@ -363,7 +355,7 @@ public class ParDebug extends JPanel
        startGdbButton.setHorizontalTextPosition(AbstractButton.CENTER);
        startGdbButton.setActionCommand("startgdb");
        startGdbButton.setEnabled(false);
-       startGdbButton.setToolTipText("Click this button to start gdb.");
+       startGdbButton.setToolTipText("Start gdb on selected processors.");
        startGdbButton.addActionListener(this);
        startGdbButton.setPreferredSize(new Dimension(100,80));
 
@@ -469,14 +461,19 @@ public class ParDebug extends JPanel
         add(panelForEntities);
 
         setStatusMessage(new String("File: " +filename+ "        number of pes: "+numberPes));
+	
+	if (filename!="" && numberPes!="") startProgram();
     }
 
     
-    //To display program's output 
+    // Called by "ServThread::run" when new terminal output arrives.
     public void displayProgramOutput (String line)
     {
        programOutputArea.append(line);
-       programOutputArea.scrollRectToVisible(new Rectangle(0,programOutputArea.getHeight()-2, 1, 1));
+       programOutputArea.scrollRectToVisible(new Rectangle(
+         0,programOutputArea.getHeight()-2, 
+         1, 1
+       ));
     } 
     
     public void setParametersForProgram(String commandLine, String peNumber, String portno)
@@ -496,7 +493,9 @@ public class ParDebug extends JPanel
         String parameterName;
         int destPE = 0;
         if (e.getActionCommand().equals("browse")) {
-           JFileChooser chooser = new JFileChooser();
+	   String curDir=System.getProperty("user.dir");
+	   // System.out.println("Opening chooser in "+curDir);
+           JFileChooser chooser = new JFileChooser(curDir);
            int returnVal = chooser.showOpenDialog(ParDebug.this);
            if(returnVal == JFileChooser.APPROVE_OPTION) {
                parallelFile = chooser.getSelectedFile();
@@ -514,10 +513,158 @@ public class ParDebug extends JPanel
            
         }
         else if (e.getActionCommand().equals("begin")) {
+	   startProgram();
+        }
+        
+        else if (e.getActionCommand().equals("lists") || e.getActionCommand().equals("changepe")) {
+          int forPE=0; //See what processor 0 is doing
+          String lName = listStrings[listsbox.getSelectedIndex()];
+          if ((lName == "lists") || (lName == "localqueue")) lName = "converse/"+lName; 
+          else lName="charm/"+lName;
+          forPE = Integer.parseInt((String)pesbox.getSelectedItem());
+          System.out.println("list name is "+lName+" for PROCESSOR " +forPE);
+          spitOutListItems(lName, listModel, forPE); 
+        }
+        else if (e.getActionCommand().equals("startgdb")) {
+           parameterName = "";
+           sendAppropriateMessage("ccs_remove_all_break_points", parameterName,0);
+           int noOfPes = 1;
+           try 
+           {
+             noOfPes = Integer.parseInt(numberPes);
+           
+             for (int indexPE=0; indexPE < noOfPes; indexPE++)
+             {
+              if (peList[indexPE] == true) 
+              {
+        	 sendCcsRequest("ccs_debug_startgdb", parameterName,indexPE);
+              }
+  
+             }
+           }  
+           catch(Exception E)
+           {
+             System.out.println("Ccs error: Couldn't parse number of pes");
+             System.exit(1);
+           }   
+           setStatusMessage("Gdb started on selected pes");
+        } 
+        else if (e.getActionCommand().equals("freeze")) {
+            
+           parameterName = "freeze";
+           continueButton.setEnabled(true);
+           quitButton.setEnabled(true);
+           freezeButton.setEnabled(false);
+           sendAppropriateMessage("ccs_debug", parameterName,1);
+           setStatusMessage("Program is frozen on selected pes");
+        }
+        else if (e.getActionCommand().equals("breakpoints")) {
+           // set or remove breakpoints
+           
+           JCheckBox chkbox = (JCheckBox)e.getSource();
+           String entryPointName = chkbox.getText(); 
+           if (chkbox.isSelected())
+           {
+        	parameterName = entryPointName; 
+        	sendAppropriateMessage("ccs_set_break_point", parameterName,0); 
+        	continueButton.setEnabled(true);
+        	freezeButton.setEnabled(false);
+        	setStatusMessage ("Break Point set at entry point " +entryPointName); 
+           }
+           else
+           {
+        	parameterName = entryPointName; 
+        	sendAppropriateMessage("ccs_remove_break_point", parameterName,0); 
+        	continueButton.setEnabled(true);   
+        	quitButton.setEnabled(true);
+        	freezeButton.setEnabled(true);
+        	listsbox.setEnabled(true);
+        	pesbox.setEnabled(true);
+        	setStatusMessage ("Break Point removed at entry point " +entryPointName+" on selected Pes"); 
+           }
+
+        } else if (e.getActionCommand().equals("unfreeze")){ 
+           // start running again......
+           parameterName = ""; 
+           setStatusMessage("Program is running");
+           sendAppropriateMessage("ccs_continue_break_point", parameterName,0); 
+           continueButton.setEnabled(true);   
+           quitButton.setEnabled(true);
+           freezeButton.setEnabled(true);
+           listsbox.setEnabled(true);
+           pesbox.setEnabled(true);
+        } 
+        else if (e.getActionCommand().equals("pecheck")) {
+           JCheckBox chkbox = (JCheckBox)e.getSource();
+           String peText = chkbox.getText();
+           String peno = peText.substring(3);
+           if (chkbox.isSelected()) 
+              peList[Integer.parseInt(peno)] = true;
+           else
+              peList[Integer.parseInt(peno)] = false;
+        } 
+        else if (e.getActionCommand().equals("quit")) {
+          parameterName = "";
+          sendAppropriateMessage("ccs_debug_quit", parameterName,0);
+          quitProgram(); 
+        }
+	else if (e.getActionCommand().equals("exitDebugger")) {
+	  quitProgram();
+          System.exit(1);
+	}
+    } // end of actionPerformed
+     
+    public void valueChanged(ListSelectionEvent e) {
+      
+      if(e.getValueIsAdjusting()) return;
+      
+      JList theList = (JList)e.getSource();
+      if (theList == listItemNames)
+      {
+        if (theList.isSelectionEmpty()) {
+        }
+        else {
+         int index = theList.getSelectedIndex();
+         if ((listStrings[listsbox.getSelectedIndex()]).equals("arrayelements"))
+         {
+              Vector itemNames = listItems.getNames();
+              String tmp = (itemNames.elementAt(index)).toString();
+              int forPE = Integer.parseInt((String)pesbox.getSelectedItem());
+              try {
+                String data = sendCcsRequest("ccs_examine_arrayelement",tmp, forPE);
+                outputArea.setText("");  
+                outputArea.setText(data);
+                outputArea.scrollRectToVisible(new Rectangle(0,outputArea.getHeight()-2, 1, 1));
+              }
+              catch (IOException ee)
+              {
+                ee.printStackTrace();
+              }
+               
+         }
+         else
+         {
+            Vector itemValues = listItems.getValues();
+            String tmp = (itemValues.elementAt(index)).toString();
+            outputArea.setText("");  
+            outputArea.setText(tmp);
+            outputArea.scrollRectToVisible(new Rectangle(0,outputArea.getHeight()-2, 1, 1));
+         } 
+        }
+      }
+  
+    } // end of valueChanged
+
+/*************** Program Control ***********************/
+    /// Start the program from scratch.
+    public void startProgram() 
+    {
            isRunning = true;
            programOutputArea.setText("");
            String executable = filename;
-           String charmrunPath = (new File(executable)).getParent() + "/charmrun";
+	   String charmrunDir = new File(executable).getParent();
+	   if (charmrunDir==null) charmrunDir=".";
+           String charmrunPath = charmrunDir + "/charmrun";
            if (envDisplay.length() == 0) envDisplay = getEnvDisplay();
            if(envDisplay == null)
            {
@@ -544,8 +691,8 @@ public class ParDebug extends JPanel
                 p = runtime.exec(totCommandLine);
            }
            catch (Exception exc) {
-                 System.out.println("error in ParDebug. Exception caught");
-                 cleanUpAndStart();
+                 System.out.println("ParDebug> Error executing "+totCommandLine);
+                 quitProgram();
                  return;
            }
            ServThread servthread = (new ServThread(this, p));
@@ -570,7 +717,7 @@ public class ParDebug extends JPanel
            String[] ccsArgs=new String[2];
            ccsArgs[0]=hostname;
            ccsArgs[1]= portnumber;
-           ccs = CcsServer.create(ccsArgs,true);
+           ccs = CcsServer.create(ccsArgs,false);
            noOfPes = 1;
            try
            {
@@ -647,112 +794,12 @@ public class ParDebug extends JPanel
                    
             }           
            sysEpsActualPanel.updateUI();
-
-        }
-        
-        else if (e.getActionCommand().equals("lists") || e.getActionCommand().equals("changepe")) {
-          int forPE=0; //See what processor 0 is doing
-          String lName = listStrings[listsbox.getSelectedIndex()];
-          if ((lName == "lists") || (lName == "localqueue")) lName = "converse/"+lName; 
-          else lName="charm/"+lName;
-          forPE = Integer.parseInt((String)pesbox.getSelectedItem());
-          System.out.println("list name is "+lName+" for PROCESSOR " +forPE);
-          spitOutListItems(lName, listModel, forPE); 
-        }
-        else {
-          if (e.getActionCommand().equals("startgdb")) {
-             parameterName = "";
-             sendAppropriateMessage("ccs_remove_all_break_points", parameterName,0);
-             int noOfPes = 1;
-             try 
-             {
-               noOfPes = Integer.parseInt(numberPes);
-             
-               for (int indexPE=0; indexPE < noOfPes; indexPE++)
-               {
-                if (peList[indexPE] == true) 
-                {
-                   sendCcsRequest("ccs_debug_startgdb", parameterName,indexPE);
-                }
-  
-               }
-             }  
-             catch(Exception E)
-             {
-               System.out.println("Ccs error: Couldn't parse number of pes");
-               System.exit(1);
-             }   
-             setStatusMessage("Gdb started on selected pes");
-          } 
-          if (e.getActionCommand().equals("freeze")) {
-              
-             parameterName = "freeze";
-             continueButton.setEnabled(true);
-             quitButton.setEnabled(true);
-             freezeButton.setEnabled(false);
-             sendAppropriateMessage("ccs_debug", parameterName,1);
-             setStatusMessage("Program is frozen on selected pes");
-          }
-          else if (e.getActionCommand().equals("breakpoints")) {
-             // set or remove breakpoints
-             
-             JCheckBox chkbox = (JCheckBox)e.getSource();
-             String entryPointName = chkbox.getText(); 
-             if (chkbox.isSelected())
-             {
-                  parameterName = entryPointName; 
-                  sendAppropriateMessage("ccs_set_break_point", parameterName,0); 
-                  continueButton.setEnabled(true);
-                  freezeButton.setEnabled(false);
-                  setStatusMessage ("Break Point set at entry point " +entryPointName); 
-             }
-             else
-             {
-                  parameterName = entryPointName; 
-                  sendAppropriateMessage("ccs_remove_break_point", parameterName,0); 
-                  continueButton.setEnabled(true);   
-                  quitButton.setEnabled(true);
-                  freezeButton.setEnabled(true);
-                  listsbox.setEnabled(true);
-                  pesbox.setEnabled(true);
-                  setStatusMessage ("Break Point removed at entry point " +entryPointName+" on selected Pes"); 
-             }
-
-          } else if (e.getActionCommand().equals("unfreeze")){ 
-             // start running again......
-             parameterName = ""; 
-             setStatusMessage("Program is running");
-             sendAppropriateMessage("ccs_continue_break_point", parameterName,0); 
-             continueButton.setEnabled(true);   
-             quitButton.setEnabled(true);
-             freezeButton.setEnabled(true);
-             listsbox.setEnabled(true);
-             pesbox.setEnabled(true);
-          } 
-          else if (e.getActionCommand().equals("pecheck")) {
-             JCheckBox chkbox = (JCheckBox)e.getSource();
-             String peText = chkbox.getText();
-             String peno = peText.substring(3);
-             if (chkbox.isSelected()) 
-                peList[Integer.parseInt(peno)] = true;
-             else
-                peList[Integer.parseInt(peno)] = false;
-          } 
-          else if (e.getActionCommand().equals("quit")) {
-            parameterName = "";
-            sendAppropriateMessage("ccs_debug_quit", parameterName,0);
-            cleanUpAndStart(); 
-          }
-       }//end of else
     }
 
-
-    public void cleanUpAndStart()
+    /// Exit the program.
+    public void quitProgram()
     {
             portnumber = "";
-            filename = "";
-            clparams = "";
-            numberPes = "1";
             isRunning = false;
             startButton.setEnabled(true);
             continueButton.setEnabled(false); 
@@ -774,49 +821,6 @@ public class ParDebug extends JPanel
             sysEpsActualPanel.updateUI(); 
             setStatusMessage(new String("Ready to start new program"));
     }
-
-
-     
-    public void valueChanged(ListSelectionEvent e) {
-      
-      if(e.getValueIsAdjusting()) return;
-      
-      JList theList = (JList)e.getSource();
-      if (theList == listItemNames)
-      {
-        if (theList.isSelectionEmpty()) {
-        }
-        else {
-         int index = theList.getSelectedIndex();
-         if ((listStrings[listsbox.getSelectedIndex()]).equals("arrayelements"))
-         {
-              Vector itemNames = listItems.getNames();
-              String tmp = (itemNames.elementAt(index)).toString();
-              int forPE = Integer.parseInt((String)pesbox.getSelectedItem());
-              try {
-                String data = sendCcsRequest("ccs_examine_arrayelement",tmp, forPE);
-                outputArea.setText("");  
-                outputArea.setText(data);
-                outputArea.scrollRectToVisible(new Rectangle(0,outputArea.getHeight()-2, 1, 1));
-              }
-              catch (IOException ee)
-              {
-                ee.printStackTrace();
-              }
-               
-         }
-         else
-         {
-            Vector itemValues = listItems.getValues();
-            String tmp = (itemValues.elementAt(index)).toString();
-            outputArea.setText("");  
-            outputArea.setText(tmp);
-            outputArea.scrollRectToVisible(new Rectangle(0,outputArea.getHeight()-2, 1, 1));
-         } 
-        }
-      }
-  
-    }
     
 
     public static void printUsage()
@@ -834,6 +838,7 @@ public class ParDebug extends JPanel
 
         // parsing command-line parameters
         int i = 0;
+	boolean gotFilename=false;
         while (i < args.length)
         {
           if (args[i].equals("-h") || args[i].equals("--help"))
@@ -849,14 +854,28 @@ public class ParDebug extends JPanel
             filename = args[i+1];
           else if (args[i].equals("-param"))
             clparams = args[i+1];
-          else if (args[i].equals("-pes"))
+          else if (args[i].equals("-pes") || args[i].equals("+p"))
             numberPes = args[i+1];
           else if (args[i].equals("-display"))
             envDisplay = args[i+1];
           else
-          {
-             printUsage();
-             System.exit(1);
+          { /* Just a 1-argument */
+	     if (args[i].startsWith("+p"))
+	       numberPes=args[i].substring(2);
+	     else if (!gotFilename) {
+	       if (args[i].startsWith("-") || args[i].startsWith("+")) {
+                 printUsage();
+                 System.exit(1);
+	       }
+	       else {
+	         filename=args[i]; 
+		 gotFilename=true;
+	       }
+	     } 
+	     else /* gotFilename, so these are arguments */ {
+	       clparams=clparams+" "+args[i];
+	     }
+	     i--; /* HACK: turns i+=2 into i++ for these single arguments... */
           }
           i = i+2;
         } 
@@ -885,8 +904,8 @@ public class ParDebug extends JPanel
 
         Rectangle bounds = (appFrame.getGraphicsConfiguration()).getBounds(); 
         appFrame.setLocation(50 +bounds.x, 50 + bounds.y);
+        appFrame.setJMenuBar(debugger.menuBar);
         appFrame.pack();
         appFrame.setVisible(true);
-        appFrame.setJMenuBar(debugger.menuBar);
     }
 }
