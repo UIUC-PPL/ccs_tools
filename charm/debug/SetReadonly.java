@@ -68,7 +68,7 @@ public class SetReadonly {
 	  l=4; CcsServer.writeInt(bval,o,ri.size); o+=l;
 	  l=4; CcsServer.writeInt(bval,o,val); o+=l;
 	  for (int pe=0;pe<nPe;pe++)
-	  	cpd.setListItem(listName,0,ri.idx,bval);
+	  	cpd.setListItem(listName,pe,ri.idx,bval);
 	  System.out.println("New value: "+val);
 	}
 	System.exit(0);
