@@ -1,0 +1,14 @@
+#!/bin/sh
+
+mainclass="charm/ccs/PokeCCS"
+jarpath="$0.jar"
+
+if test -x /usr/bin/cygpath
+then 
+  if test "`uname -o`" = "Cygwin"
+  then
+    jarpath=`/usr/bin/cygpath -w -a $jarpath`
+  fi 
+fi
+
+java -classpath $jarpath $mainclass $*
