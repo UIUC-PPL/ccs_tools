@@ -74,6 +74,7 @@ public class ServThread extends Thread {
       mainThread.quitProgram();
     }
    catch (Exception e) {
+      e.printStackTrace();
       System.out.println("error in ServThread. Exception caught");
    } 
  }
