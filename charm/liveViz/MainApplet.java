@@ -1,6 +1,7 @@
 /*
   Applet that repeatedly displays a memory image - 9/97 O. Lawlor
 */
+package charm.liveViz;
 
 import java.applet.Applet;
 import java.net.URL;

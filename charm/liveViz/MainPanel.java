@@ -2,7 +2,9 @@
   Top-level controller-- creates toolbar,
   status bar, and main panel.
 */
+package charm.liveViz;
 
+import charm.util.Toolbar;
 import java.applet.Applet;
 import java.net.URL;
 import java.awt.*;
@@ -33,13 +35,13 @@ public class MainPanel extends Panel
 	    "Move the slicing plane (drag forward or back)",
 	    "Retrieve detailed information"};
 		
-	//Find the toolbar image
-	URL toolsImg=getClass().getResource("toolbar.jpg");
-	if (toolsImg==null) {
-	    try { toolsImg=new URL("http://cool2.cs.uiuc.edu/2001/demo/astro1/toolbar.jpg"); }
+	//Find the toolbar image (from .jar file)
+	URL toolsImg=ClassLoader.getSystemResource("charm/liveViz/toolbar.jpg");
+	if (toolsImg==null) { // can't find image-- try from web...
+	    try { toolsImg=new URL("http://charm.cs.uiuc.edu/2001/demo/astro1/toolbar.jpg"); }
 	    catch (Exception E) { }
 	}
-		
+	
 	//Diplay the toolbar only if it is a 3D image
 	//if(source.config.is3d)
 	System.out.println("The toolbar created\n");  

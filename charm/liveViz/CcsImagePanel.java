@@ -1,31 +1,39 @@
 /*
-A panel that displays an image aquired via CCS.
+A panel that displays an image aquired via CCS & liveViz.
 
 by Orion Lawlor,  6/14/2001
 olawlor@acm.org
 */
+package charm.liveViz;
 
+import charm.util.*;
 import java.awt.*;
 import java.awt.image.*;
 import java.util.*;
 import java.io.*;
 import java.net.UnknownHostException;
+import charm.ccs.CcsThread;
 
 class CcsImagePanel extends MemImagePanel
 {
     int redrawCount=0;
-    Label status;
     CcsThread ccs;
     Controller3d cntl;
     Toolbar tools;
     Config config;
+    
+    private class progressToLabel implements CcsThread.progress {
+    private Label dest;
+    public progressToLabel(Label dest_) {dest=dest_;}
+    public void setText(String s) {dest.setText(s);}
+    };
 
     public CcsImagePanel( MainPanel caller_,Label status_,Toolbar tools_,String server,int port)
     {
 	cntl=null;
 	config = null;
 	tools=tools_;
-	ccs=new CcsThread(status_,server,port);
+	ccs=new CcsThread(new progressToLabel(status_),server,port);
 	ccs.addRequest(new CcsConfigRequest(this,caller_));
     }
     public void stop() {

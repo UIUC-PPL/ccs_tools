@@ -4,6 +4,7 @@ A panel that displays a memory image.
 by Orion Lawlor,  6/14/2001
 olawlor@acm.org
 */
+package charm.liveViz;
 
 import java.awt.*;
 import java.awt.image.*;

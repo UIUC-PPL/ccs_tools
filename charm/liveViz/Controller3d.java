@@ -4,7 +4,9 @@ A panel that allows you to manipulate a 3d object.
 by Orion Lawlor,  6/22/2001
 olawlor@acm.org
 */
+package charm.liveViz;
 
+import charm.util.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.util.*;

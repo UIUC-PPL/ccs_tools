@@ -2,6 +2,9 @@
 Configuration of the CCS server.  This class should match the 
 "liveVizConfig" class in liveViz0.h.
 */
+package charm.liveViz;
+
+import charm.util.Vector3d;
 import java.io.*;
 
 public class Config {
