@@ -1,3 +1,17 @@
+/**
+  Parallel Debugger for Charm++ over CCS
+  
+  This is the main GUI panel, and is the central controller
+  for everything the debugger does.
+  
+  Copyright University of Illinois at Urbana-Champaign
+  Written by Rashmi Jothi in Fall of 2003
+  Minor improvements by Orion Lawlor in 1/2004
+*/
+package charm.debug;
+
+import charm.ccs.CcsServer;
+import charm.debug.fmt.*;
 import javax.swing.*;
 import java.io.*;
 import java.util.*;
@@ -11,23 +25,47 @@ public class ParDebug extends JPanel
      implements ActionListener,ListSelectionListener{
    
     // ******* VARIABLES ************   
+    //  FIXME: make these not be static, by moving main's command line
+    //   handling into a regular function called by the constructor.
     private static String filename;
     private static String hostname;
     private static String portnumber;
-    private static String numberPes;
+    private static int numberPes;
     private static String clparams;
     private static String envDisplay;
     
     private CcsServer ccs;
     private DefaultListModel listModel;
-    private Stringifiable listItems = null;
-    private EpStringifiable epItems = null;
-    private String[] listStrings =  {"lists","readonly", "readonlyMsg", "messages", "chares", "entries", "mains", "arrayelements", "localqueue"};
-    private int noOfPes;
-    private boolean isRunning = false;
+    private PList listItems = null;
+    private boolean isRunning = false; // True if the debugged program is running
     private boolean[] peList = null;
-    private File parallelFile = null;
-     
+    
+    private class CpdListInfo {
+       public String display; // Client name CpdList should be displayed as.
+       public String name; // Server name basic CpdList is registered under.
+       public String detailedName; // Server name of detailed CpdList.
+       
+       public CpdListInfo(String display_,String name_) {
+          display=display_; name=name_; detailedName=null;
+       }
+       public CpdListInfo(String display_,String name_,String detailed_) {
+          display=display_; name=name_; detailedName=detailed_;
+       }
+    };
+    
+    /// CpdList names
+    private CpdListInfo[] cpdLists =  {
+        new CpdListInfo("-- Display --",null,null),
+        new CpdListInfo("Array Elements","charm/arrayElementNames","charm/arrayElements"),
+	new CpdListInfo("Messages in Queue","converse/localqueue",null),
+	new CpdListInfo("Readonly Variables","charm/readonly",null),
+	new CpdListInfo("Readonly Messages","charm/readonlyMsg",null),
+	new CpdListInfo("Entry Points","charm/entries",null),
+	new CpdListInfo("Chare Types","charm/chares",null),
+	new CpdListInfo("Message Types","charm/messages",null),
+	new CpdListInfo("Mainchares","charm/mains",null),
+	new CpdListInfo("Viewable Lists","converse/lists",null)
+    };
 
     // ********* GUI ITEMS ************
     private static JFrame appFrame = null;
@@ -43,7 +81,7 @@ public class ParDebug extends JPanel
     private JPanel userEpsActualPanel;
     
     private JTextArea programOutputArea;
-    private JTextArea outputArea;
+    private PListOutputArea outputArea;
     private JTextField statusArea;
     private JComboBox listsbox;
     private JComboBox pesbox;
@@ -59,13 +97,14 @@ public class ParDebug extends JPanel
     private JMenuItem menuActionQuit;
     private JMenuItem menuActionFreeze;
     
-    
-    private int getListLength(String listName,int forPE) throws IOException
+/************** CCS (network) interface ************/
+    private int getListLength(String listName,int forPE)
     {
+    try {
       //Build a byte array describing the ccs request:
       int reqStr=listName.length();
       int reqLen=4+reqStr+1;
-      System.out.println("length of reqStr is "+reqStr);
+      // System.out.println("getListLength "+listName+" for PE "+forPE);
       byte[] req=new byte[reqLen];
       CcsServer.writeInt(req,0,reqStr);
       CcsServer.writeString(req,4,reqStr+1,listName);
@@ -75,11 +114,17 @@ public class ParDebug extends JPanel
       byte[] resp=ccs.recvResponse(r);
       if (resp.length<4) return -1;
       return CcsServer.readInt(resp,0);
+    } catch (IOException e) {
+      e.printStackTrace();
+      abort("Network error connecting to PE "+forPE+" to access list "+listName);
+      return 0;
+    }
     }
 
-    //Returns a set of CpdList items as a string
-    private String stringList(String listName,int forPE,int lo,int hiPlusOne) throws IOException
+    //Returns a set of CpdList items as a byte array
+    private byte[] byteList(String listName,String fmt,int forPE,int lo,int hiPlusOne)
     {
+    try {
       //Build a byte array describing the ccs request:
       int reqStr=listName.length();
       int reqLen=4+4+4+0+4+reqStr+1;
@@ -89,16 +134,28 @@ public class ParDebug extends JPanel
       CcsServer.writeInt(req,8,0); /*no additional request data*/
       CcsServer.writeInt(req,12,reqStr);
       CcsServer.writeString(req,16,reqStr+1,listName);
-      CcsServer.Request r=ccs.sendRequest("ccs_list_items.txt",forPE,req);
- 
-      //Get the response and print it:
-      byte[] resp=ccs.recvResponse(r);
-      return new String(resp);
+      CcsServer.Request r=ccs.sendRequest("ccs_list_items."+fmt,forPE,req);
+ 	
+      return ccs.recvResponse(r);
+    } catch (IOException e) {
+      e.printStackTrace();
+      abort("Network error connecting to PE "+forPE+" to access list "+listName);
+      return null;
+    }
+    }
+    
+    //Returns a set of CpdList items as a PList
+    private PList getPList(String listName,int forPE,int lo,int hiPlusOne) {
+    	byte[] buf=byteList(listName,"fmt",forPE,lo,hiPlusOne);
+	PConsumer cons=new PConsumer();
+	cons.decode(buf);
+	return cons.getList();
     }
 
     //Sends a request to the ccs server
-    private String sendCcsRequest(String ccsHandlerName, String parameterName, int destPE) throws IOException
+    private String sendCcsRequest(String ccsHandlerName, String parameterName, int destPE) 
     {
+    try {
       //Build a byte array describing the ccs request:
       int reqStr=parameterName.length();
       int reqLen = reqStr+1;
@@ -113,8 +170,54 @@ public class ParDebug extends JPanel
          byte[] resp=ccs.recvResponse(r);
          return new String(resp);
       }
+    } catch (IOException e) {
+      e.printStackTrace();
+      abort("Network error connecting to PE "+destPE+" to perform "+ccsHandlerName);
+      return null;
+    }
     }
 
+    //if parameter forSelectedPes <= 0, ccs message sent to all pes
+    private void bcastCcsRequest(String ccsHandlerName, String parameterName, int forSelectedPes)
+    {
+          if (forSelectedPes <= 0)
+          { /* Send to all pes */
+                for (int indexPE=0; indexPE < numberPes; indexPE++) {
+                    sendCcsRequest(ccsHandlerName, parameterName, indexPE);
+		}
+          }
+          else
+          { /* Send to selected subset of PEs */
+                for (int indexPE=0; indexPE < numberPes; indexPE++)
+                if (peList[indexPE] == true) {
+                      sendCcsRequest(ccsHandlerName, parameterName, indexPE);
+                }
+          }
+    }
+    
+/************** Tiny GUI Routines ************/
+    
+    private void abort(String problem) {
+      System.out.println(problem);
+      
+      if (false) {
+   	 JDialog d=new JDialog((Frame)null,"ParDebug Fatal Error");
+   	 d.addWindowListener(new WindowAdapter() {
+   	       public void windowClosing(WindowEvent e) {
+   	 	   System.exit(1);
+   	       }
+   	 });
+   	 d.getContentPane().add(new Label(problem), BorderLayout.CENTER);
+   	 d.pack();
+   	 d.setVisible(true);
+   	 while(true) { /* prevent caller from continuing */
+   	 	 try { Thread.sleep(100); }
+   	 	 catch(InterruptedException e1)
+   	 	 { /* don't care about interrupted sleep */ }
+   	 }
+      }
+      System.exit(1);
+    }
     
     private String getEnvDisplay()
     {
@@ -128,108 +231,86 @@ public class ParDebug extends JPanel
       }
       catch (Exception exc)
       {
-        System.out.println("ERROR> in retrieving IP address for DISPLAY variable");
-        System.out.println(exc.getMessage());
-        System.exit(1);
+        abort("Error retrieving IP address for DISPLAY variable: "+exc.getMessage());
       }
       return displayEnv;
     }
 
-    private Vector spitOutListItems(String lName, DefaultListModel lModel, int forPE)
+    // Called by "ServThread::run" when new terminal output arrives.
+    public void displayProgramOutput (String line)
     {
-          Vector items = null;
-          try {
-             outputArea.setText("");
-             int nItems=getListLength(lName,forPE);
-             String itemsString =stringList(lName,forPE,0,nItems);
-             System.out.println("Cpd list "+lName+" contains "+nItems+" items: and string is "+ itemsString+"\n");
-             //itms=stringList(lName,forPE,0,nItems);
-             if (lName.equalsIgnoreCase("charm/arrayelements"))
-               {
-                 listItems = (Stringifiable)(new ArrayStringifiable(itemsString));
-               }
-             else
-               {
-                 listItems = new Stringifiable(itemsString);
-               }
-               listItems.populate();
-               items = listItems.getNames();
-               int l = items.size();
-               String str = listItems.getWholeString();
-               System.out.println("Cpd list "+lName+" contains "+nItems+"vector contains :"+l+"\n");
-               int i=0;
-               if (lModel != null)
-               {
-                  lModel.removeAllElements();
-                  while (i < l) {
-                     String tmp = (items.elementAt(i)).toString();
-                     i++;
-                     //System.out.println(i+":"+tmp+"\n");
-                     lModel.addElement(tmp);
-                   }
-               }
-          }
-          catch (IOException e1) {
-              System.out.println(e1.getMessage());
-              e1.printStackTrace();
-              System.exit(1);
-          }
-          return items;
+       programOutputArea.append(line);
+       programOutputArea.scrollRectToVisible(new Rectangle(
+         0,programOutputArea.getHeight()-2, 
+         1, 1
+       ));
+    } 
+    
+    private static void setNumberPes(String peNumber) {
+       try {
+         numberPes = Integer.parseInt(peNumber);
+       } 
+       catch(Exception e) {
+         System.out.println("Could not convert number of pes "+peNumber+" to an integer.");
+	 System.exit(1); /* FIXME: this is overkill. */
+       }
+    }
+    
+    public void setParametersForProgram(String commandLine, String peNumber, String portno)
+    {
+       setNumberPes(peNumber);
+       clparams = commandLine;
+       portnumber = portno;
+       addedRunParameter();
+    } 
+    private void addedRunParameter() {
+       setStatusMessage("Executable: " +filename+ "        number of pes: "+numberPes);
+    }
+    
+    public void setStatusMessage (String txt)
+    {
+       statusArea.setText(txt);
     }
 
-
-    //if parameter forSelectedPes <= 0, ccs message sent to all pes
-    private void sendAppropriateMessage(String ccsHandlerName, String parameterName, int forSelectedPes)
+    /// The user has just selected the cpdListIndex'th list on forPE.
+    ///  Expand a list of the contents into dest.
+    private void populateNewList(int cpdListIndex,int forPE, DefaultListModel dest)
     {
-          if (forSelectedPes <= 0)
-          {
-            int noOfPes = 1;
-            try
-            {
-              noOfPes = Integer.parseInt(numberPes);
-            }
-            catch(Exception E)
-            {
-              //abort("Couldn't parse number of pes");
-              System.out.println("Ccs error: Couldn't parse number of pes");
-              System.exit(1);
-            }
-            try
-            {
-
-                for (int indexPE=0; indexPE < noOfPes; indexPE++)
-                {
-                    sendCcsRequest(ccsHandlerName, parameterName, indexPE);
-                }
-            }
-            catch (IOException ee) {
-              ee.printStackTrace();
-            }
-          }
-          else
-          {
-              try
-              {
-                for (int indexPE=0; indexPE < noOfPes; indexPE++)
-                {
-                   if (peList[indexPE] == true)
-                   {
-                      sendCcsRequest(ccsHandlerName, parameterName, indexPE);
-                   }
-                }
-              }
-              catch (IOException ee)
-              {
-                ee.printStackTrace();
-              }
-          }
-
+	  dest.removeAllElements();
+          outputArea.setList(null);
+	  listItems = null;
+	  
+          String lName=cpdLists[cpdListIndex].name;
+	  if (lName==null) return; /* the initial empty list */
+          int nItems=getListLength(lName,forPE);
+          listItems = getPList(lName,forPE,0,nItems);
+	  
+	  for (PAbstract cur=listItems.elementAt(0);cur!=null;cur=cur.getNext()) {
+	  	dest.addElement(cur.getDeepName());
+	  }
+    }
+    
+    /// The user has just selected listItem from the cpdListIndex'th list on forPE.
+    ///  Expand this item.
+    private void expandListElement(int cpdListIndex,int forPE,int listItem)
+    {
+    	String detailedName=cpdLists[cpdListIndex].detailedName;
+	if (detailedName==null)
+		outputArea.setList((PList)listItems.elementAt(listItem));
+	else { /* There's a list to consult for further detail */
+		PList detailList=getPList(detailedName,forPE,listItem,listItem+1);
+		outputArea.setList((PList)detailList.elementAt(0));
+	}
     }
 
- 
+    private void listenTo(JMenuItem m,String command,String toolTip) {
+       if (toolTip!=null) m.setToolTipText(toolTip);
+       m.setActionCommand(command);
+       m.addActionListener(this);
+    }
+    
+/************** Giant Horrible GUI Routines ************/
     public ParDebug() {
-
-       noOfPes = 0; 
        isRunning = false;     
 
        setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
@@ -241,35 +322,24 @@ public class ParDebug extends JPanel
        menuFile.setMnemonic('F');
        
        menuFile.add(menuFileOpen = new JMenuItem("Open Program",'O'));
-       menuFileOpen.setToolTipText("Open a parallel program to debug");
-       menuFileOpen.setActionCommand("browse");
-       menuFileOpen.addActionListener(this); 
-       
+       listenTo(menuFileOpen,"browse","Open a parallel program to debug");
        menuFile.add(menuFileParameters = new JMenuItem("Program Parameters",'P'));
-       menuFileParameters.setToolTipText("Enter command-line parameters for the parallel program");
-       menuFileParameters.setActionCommand("params");
-       menuFileParameters.addActionListener(this); 
-       
+       listenTo(menuFileParameters,"params","Enter command-line parameters for the parallel program");
        JMenuItem menuFileExit;
        menuFile.add(menuFileExit = new JMenuItem("Exit Debugger",'X'));
-       menuFileExit.setActionCommand("exitDebugger");
-       menuFileExit.addActionListener(this); 
+       listenTo(menuFileExit,"exitDebugger",null);
        
        menuBar.add(menuAction = new JMenu("Action"));
        menuAction.setMnemonic('A');
        
-       menuActionStart = new JMenuItem("Start",'S');
-       menuActionStart.setToolTipText("Start the parallel program"); 
-       menuActionFreeze = new JMenuItem("Freeze",'F');
-       menuActionFreeze.setToolTipText("Freeze the parallel program"); 
-       menuActionContinue = new JMenuItem("Continue",'C');
-       menuActionContinue.setToolTipText("Continue to run the parallel program"); 
-       menuActionQuit = new JMenuItem("Quit",'Q');
-       menuActionQuit.setToolTipText("Quit the parallel program"); 
-       menuAction.add(menuActionStart);
-       menuAction.add(menuActionFreeze);
-       menuAction.add(menuActionContinue);
-       menuAction.add(menuActionQuit);
+       menuAction.add(menuActionStart = new JMenuItem("Start",'S'));
+       listenTo(menuActionStart,"begin","Start the parallel program"); 
+       menuAction.add(menuActionContinue = new JMenuItem("Continue",'C'));
+       listenTo(menuActionContinue,"unfreeze","Continue to run the parallel program"); 
+       menuAction.add(menuActionFreeze = new JMenuItem("Freeze",'F'));
+       listenTo(menuActionFreeze,"freeze","Freeze the parallel program"); 
+       menuAction.add(menuActionQuit = new JMenuItem("Quit",'Q'));
+       listenTo(menuActionQuit,"quit","Quit the parallel program"); 
 
        //Creating status bar on the top
        statusArea = new JTextField(60);
@@ -413,7 +483,9 @@ public class ParDebug extends JPanel
        panelForComboBoxes.setLayout(new BoxLayout(panelForComboBoxes, BoxLayout.X_AXIS));
        panelForComboBoxes.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createTitledBorder("View Entities on PE"), BorderFactory.createEmptyBorder(5, 5, 5, 5)));
 
-        String [] displayStrings = {"viewable entities", "readonly variables", "readonly messages", "messages", "chare table entities", "entry table entities", "main table entities", "array elements", "messages in queue"};
+	String[] displayStrings=new String[cpdLists.length];
+	for (int i=0;i<cpdLists.length;i++)
+		displayStrings[i]=cpdLists[i].display;
         listsbox = new JComboBox(displayStrings);
         listsbox.setActionCommand("lists");
         listsbox.addActionListener(this);
@@ -446,9 +518,11 @@ public class ParDebug extends JPanel
         listScrollPane.setBorder(BorderFactory.createTitledBorder("Entities"));
 
         //second display pane
-        outputArea = new JTextArea();
-        outputArea.setEditable(false);
+        outputArea = new PListOutputArea();
         JScrollPane secondScrollPane = new JScrollPane(outputArea);
+	secondScrollPane.setHorizontalScrollBarPolicy(
+		 JScrollPane.HORIZONTAL_SCROLLBAR_NEVER
+	);
         secondScrollPane.setBorder(BorderFactory.createTitledBorder("Details"));
 
         listScrollPane.setPreferredSize(new Dimension(200,230));
@@ -460,104 +534,58 @@ public class ParDebug extends JPanel
         panelForEntities.add(splitPane);
         add(panelForEntities);
 
-        setStatusMessage(new String("File: " +filename+ "        number of pes: "+numberPes));
-	
-	if (filename!="" && numberPes!="") startProgram();
-    }
-
-    
-    // Called by "ServThread::run" when new terminal output arrives.
-    public void displayProgramOutput (String line)
-    {
-       programOutputArea.append(line);
-       programOutputArea.scrollRectToVisible(new Rectangle(
-         0,programOutputArea.getHeight()-2, 
-         1, 1
-       ));
-    } 
-    
-    public void setParametersForProgram(String commandLine, String peNumber, String portno)
-    {
-       numberPes = peNumber;
-       clparams = commandLine;
-       portnumber = portno;
-    } 
-    
-    public void setStatusMessage (String txt)
-    {
-       statusArea.setText(txt);
+	addedRunParameter();
+        if (filename!="")
+          startProgram();
     }
 
  
     public void actionPerformed(ActionEvent e) {
-        String parameterName;
         int destPE = 0;
-        if (e.getActionCommand().equals("browse")) {
-	   String curDir=System.getProperty("user.dir");
-	   // System.out.println("Opening chooser in "+curDir);
-           JFileChooser chooser = new JFileChooser(curDir);
+        if (e.getActionCommand().equals("browse")) 
+	{ /* Bring up file dialog box to select a new executable */
+           JFileChooser chooser = new JFileChooser(System.getProperty("user.dir"));
            int returnVal = chooser.showOpenDialog(ParDebug.this);
            if(returnVal == JFileChooser.APPROVE_OPTION) {
-               parallelFile = chooser.getSelectedFile();
-               filename = parallelFile.getAbsolutePath();
+               filename = chooser.getSelectedFile().getAbsolutePath();
+	       addedRunParameter();
            }
-           setStatusMessage(new String("File: " +filename+ "        number of pes: "+numberPes));
         }
-        else if (e.getActionCommand().equals("params")) {
+        else if (e.getActionCommand().equals("params")) 
+	{ /* Bring up parameters dialog box to select run options */
            ParamsDialog dialogbox = new ParamsDialog(appFrame, true, this);
            dialogbox.setLocationRelativeTo(appFrame);
-           dialogbox.setFields(clparams, numberPes, portnumber);  
+           dialogbox.setFields(clparams, ""+numberPes, portnumber);  
            dialogbox.pack();
            dialogbox.setVisible(true);
-           setStatusMessage(new String("File: " +filename+ "        number of pes: "+numberPes));
-           
         }
-        else if (e.getActionCommand().equals("begin")) {
+        else if (e.getActionCommand().equals("begin")) { /* buttons... */
 	   startProgram();
         }
-        
-        else if (e.getActionCommand().equals("lists") || e.getActionCommand().equals("changepe")) {
-          int forPE=0; //See what processor 0 is doing
-          String lName = listStrings[listsbox.getSelectedIndex()];
-          if ((lName == "lists") || (lName == "localqueue")) lName = "converse/"+lName; 
-          else lName="charm/"+lName;
-          forPE = Integer.parseInt((String)pesbox.getSelectedItem());
-          System.out.println("list name is "+lName+" for PROCESSOR " +forPE);
-          spitOutListItems(lName, listModel, forPE); 
-        }
-        else if (e.getActionCommand().equals("startgdb")) {
-           parameterName = "";
-           sendAppropriateMessage("ccs_remove_all_break_points", parameterName,0);
-           int noOfPes = 1;
-           try 
-           {
-             noOfPes = Integer.parseInt(numberPes);
-           
-             for (int indexPE=0; indexPE < noOfPes; indexPE++)
-             {
-              if (peList[indexPE] == true) 
-              {
-        	 sendCcsRequest("ccs_debug_startgdb", parameterName,indexPE);
-              }
-  
-             }
-           }  
-           catch(Exception E)
-           {
-             System.out.println("Ccs error: Couldn't parse number of pes");
-             System.exit(1);
-           }   
-           setStatusMessage("Gdb started on selected pes");
-        } 
         else if (e.getActionCommand().equals("freeze")) {
-            
-           parameterName = "freeze";
+           // stop program
+           bcastCcsRequest("ccs_debug", "freeze",1);
            continueButton.setEnabled(true);
-           quitButton.setEnabled(true);
            freezeButton.setEnabled(false);
-           sendAppropriateMessage("ccs_debug", parameterName,1);
            setStatusMessage("Program is frozen on selected pes");
         }
+	else if (e.getActionCommand().equals("unfreeze")){ 
+           // start running again
+           bcastCcsRequest("ccs_continue_break_point", "",0); 
+           continueButton.setEnabled(true); 
+           freezeButton.setEnabled(true);
+           setStatusMessage("Program is running");
+        } 
+        else if (e.getActionCommand().equals("quit")) {
+          bcastCcsRequest("ccs_debug_quit", "",0);
+          quitProgram(); 
+        }
+        else if (e.getActionCommand().equals("startgdb")) 
+	{ 
+           bcastCcsRequest("ccs_remove_all_break_points", "",0);
+	   bcastCcsRequest("ccs_debug_startgdb","",1);
+           setStatusMessage("Gdb started on selected pes");
+        } 
         else if (e.getActionCommand().equals("breakpoints")) {
            // set or remove breakpoints
            
@@ -565,36 +593,22 @@ public class ParDebug extends JPanel
            String entryPointName = chkbox.getText(); 
            if (chkbox.isSelected())
            {
-        	parameterName = entryPointName; 
-        	sendAppropriateMessage("ccs_set_break_point", parameterName,0); 
+        	bcastCcsRequest("ccs_set_break_point", entryPointName,0); 
         	continueButton.setEnabled(true);
         	freezeButton.setEnabled(false);
         	setStatusMessage ("Break Point set at entry point " +entryPointName); 
            }
            else
            {
-        	parameterName = entryPointName; 
-        	sendAppropriateMessage("ccs_remove_break_point", parameterName,0); 
+        	bcastCcsRequest("ccs_remove_break_point", entryPointName,0); 
         	continueButton.setEnabled(true);   
-        	quitButton.setEnabled(true);
         	freezeButton.setEnabled(true);
-        	listsbox.setEnabled(true);
-        	pesbox.setEnabled(true);
         	setStatusMessage ("Break Point removed at entry point " +entryPointName+" on selected Pes"); 
            }
 
-        } else if (e.getActionCommand().equals("unfreeze")){ 
-           // start running again......
-           parameterName = ""; 
-           setStatusMessage("Program is running");
-           sendAppropriateMessage("ccs_continue_break_point", parameterName,0); 
-           continueButton.setEnabled(true);   
-           quitButton.setEnabled(true);
-           freezeButton.setEnabled(true);
-           listsbox.setEnabled(true);
-           pesbox.setEnabled(true);
         } 
-        else if (e.getActionCommand().equals("pecheck")) {
+        else if (e.getActionCommand().equals("pecheck")) 
+	{ /* Checked or unchecked a PE box */
            JCheckBox chkbox = (JCheckBox)e.getSource();
            String peText = chkbox.getText();
            String peno = peText.substring(3);
@@ -603,14 +617,15 @@ public class ParDebug extends JPanel
            else
               peList[Integer.parseInt(peno)] = false;
         } 
-        else if (e.getActionCommand().equals("quit")) {
-          parameterName = "";
-          sendAppropriateMessage("ccs_debug_quit", parameterName,0);
-          quitProgram(); 
+        else if (e.getActionCommand().equals("lists") 
+	      || e.getActionCommand().equals("changepe")) 
+	{ /* Clicked on list or pe drop-down */
+          int forPE=Integer.parseInt((String)pesbox.getSelectedItem());
+          populateNewList(listsbox.getSelectedIndex(),forPE, listModel); 
         }
 	else if (e.getActionCommand().equals("exitDebugger")) {
 	  quitProgram();
-          System.exit(1);
+          System.exit(0);
 	}
     } // end of actionPerformed
      
@@ -619,38 +634,10 @@ public class ParDebug extends JPanel
       if(e.getValueIsAdjusting()) return;
       
       JList theList = (JList)e.getSource();
-      if (theList == listItemNames)
+      if (theList == listItemNames && !theList.isSelectionEmpty())
       {
-        if (theList.isSelectionEmpty()) {
-        }
-        else {
-         int index = theList.getSelectedIndex();
-         if ((listStrings[listsbox.getSelectedIndex()]).equals("arrayelements"))
-         {
-              Vector itemNames = listItems.getNames();
-              String tmp = (itemNames.elementAt(index)).toString();
-              int forPE = Integer.parseInt((String)pesbox.getSelectedItem());
-              try {
-                String data = sendCcsRequest("ccs_examine_arrayelement",tmp, forPE);
-                outputArea.setText("");  
-                outputArea.setText(data);
-                outputArea.scrollRectToVisible(new Rectangle(0,outputArea.getHeight()-2, 1, 1));
-              }
-              catch (IOException ee)
-              {
-                ee.printStackTrace();
-              }
-               
-         }
-         else
-         {
-            Vector itemValues = listItems.getValues();
-            String tmp = (itemValues.elementAt(index)).toString();
-            outputArea.setText("");  
-            outputArea.setText(tmp);
-            outputArea.scrollRectToVisible(new Rectangle(0,outputArea.getHeight()-2, 1, 1));
-         } 
-        }
+        int forPE=Integer.parseInt((String)pesbox.getSelectedItem());
+        expandListElement(listsbox.getSelectedIndex(),forPE,theList.getSelectedIndex());
       }
   
     } // end of valueChanged
@@ -666,23 +653,12 @@ public class ParDebug extends JPanel
 	   if (charmrunDir==null) charmrunDir=".";
            String charmrunPath = charmrunDir + "/charmrun";
            if (envDisplay.length() == 0) envDisplay = getEnvDisplay();
-           if(envDisplay == null)
-           {
-               System.out.println("Error> In retrieving IP address for DISPLAY variable");
-               System.exit(1);
-           }
-           System.out.println(envDisplay);
+           // System.out.println(envDisplay);
           
-           String totCommandLine = null;
-           if (portnumber.length() == 0)
-           {
-              totCommandLine = charmrunPath + " " + "+p"+ numberPes + " " +executable + " " + clparams+"  +cpd +DebugDisplay " +envDisplay+" ++server";
-           }
-           else
-           {
-               totCommandLine = charmrunPath + " " + "+p"+ numberPes + " " +executable + " " + clparams+"  +cpd +DebugDisplay " +envDisplay+" ++server" + " ++server-port " + portnumber;
-           }
-           System.out.println(totCommandLine);
+           String totCommandLine = charmrunPath + " " + "+p"+ numberPes + " " +executable + " " + clparams+"  +cpd +DebugDisplay " +envDisplay+" ++server";
+           if (portnumber.length() != 0)
+               totCommandLine += " ++server-port " + portnumber;
+           System.out.println("ParDebug> "+totCommandLine);
            programOutputArea.setText(totCommandLine);
            Process p = null;
            Runtime runtime = null;
@@ -697,39 +673,29 @@ public class ParDebug extends JPanel
            }
            ServThread servthread = (new ServThread(this, p));
            servthread.start();
+	  
+	 /* Wait until the "ccs:" line comes out of the program's stdout */
            long iter = 0;
-           try
-           {
-             Thread.sleep(2000);
-           }
-           catch(Exception e1)
-           {
-             System.out.println("Could not sleep");
-             System.exit(1);
-           }
            while (servthread.portno == null)
            {
-              if(iter++ > 100000) System.exit(1);
+              try { Thread.sleep(100); }
+              catch(InterruptedException e1)
+              { /* don't care about interrupted sleep */ }
+              if(iter++ > 60*10) abort("Timeout waiting for program to start up (and print its CCS port number)");
            }
            if (portnumber.length() == 0)
                portnumber = servthread.portno;
-           System.out.println("*******Port number is " +portnumber);
+	   System.out.println("ParDebug> Charmrun started (CCS port "+portnumber+")");
+	 
+	 /* Connect to the new program */
            String[] ccsArgs=new String[2];
            ccsArgs[0]=hostname;
            ccsArgs[1]= portnumber;
            ccs = CcsServer.create(ccsArgs,false);
-           noOfPes = 1;
-           try
-           {
-             noOfPes = Integer.parseInt(numberPes);
-           }
-           catch(Exception E)
-           {
-             System.out.println("Ccs error: Couldn't parse number of pes");
-             System.exit(1);
-           }
-           peList = new boolean[noOfPes]; 
-           for (int i = 0; i < noOfPes; i++)
+	 
+	 /* Create the pe list */
+           peList = new boolean[numberPes]; 
+           for (int i = 0; i < numberPes; i++)
            {
              String peNumber = (new Integer(i)).toString();
              pesbox.addItem( peNumber );
@@ -751,19 +717,9 @@ public class ParDebug extends JPanel
            freezeButton.setEnabled(false);
            startGdbButton.setEnabled(true); 
           
-    
-           String itemsString=null; 
-           try {
-             int nItems=getListLength("charm/entries",0);
-             itemsString =stringList("charm/entries",0,0,nItems);
-           }
-           catch (IOException e1) {
-              System.out.println(e1.getMessage());
-              e1.printStackTrace();
-              System.exit(1);
-           }
-           epItems = new EpStringifiable(itemsString);
-           epItems.populate();
+         /* Create the entities lists */
+           int nItems=getListLength("charm/entries",0);
+	   EpPList epItems = new EpPList(getPList("charm/entries",0,0,nItems));
            
            Vector items;
            items = epItems.getUserEps();
@@ -794,9 +750,12 @@ public class ParDebug extends JPanel
                    
             }           
            sysEpsActualPanel.updateUI();
+           listsbox.setEnabled(true);
+           pesbox.setEnabled(true);  
+           quitButton.setEnabled(true);
     }
 
-    /// Exit the program.
+    /// Exit the debugged program.
     public void quitProgram()
     {
             portnumber = "";
@@ -807,7 +766,7 @@ public class ParDebug extends JPanel
             freezeButton.setEnabled(false);
             startGdbButton.setEnabled(false);
             listModel.removeAllElements();
-            outputArea.setText(""); 
+            outputArea.setList(null); 
             listsbox.setEnabled(false);
             pesbox.removeAllItems(); 
             pesbox.setActionCommand("");
@@ -832,7 +791,8 @@ public class ParDebug extends JPanel
         hostname = "localhost";
         filename = "";
         portnumber = "";
-        numberPes = "1";
+        numberPes = 1;
+	String numberPesString="1";
         clparams = "";
         envDisplay = "";
 
@@ -841,11 +801,6 @@ public class ParDebug extends JPanel
 	boolean gotFilename=false;
         while (i < args.length)
         {
-          if (args[i].equals("-h") || args[i].equals("--help"))
-          {
-             printUsage();
-             System.exit(1);
-          }
           if (args[i].equals("-host"))
              hostname = args[i+1];
           else if (args[i].equals("-port"))
@@ -855,13 +810,13 @@ public class ParDebug extends JPanel
           else if (args[i].equals("-param"))
             clparams = args[i+1];
           else if (args[i].equals("-pes") || args[i].equals("+p"))
-            numberPes = args[i+1];
+            numberPesString = args[i+1];
           else if (args[i].equals("-display"))
             envDisplay = args[i+1];
           else
           { /* Just a 1-argument */
 	     if (args[i].startsWith("+p"))
-	       numberPes=args[i].substring(2);
+	       numberPesString=args[i].substring(2);
 	     else if (!gotFilename) {
 	       if (args[i].startsWith("-") || args[i].startsWith("+")) {
                  printUsage();
@@ -878,13 +833,13 @@ public class ParDebug extends JPanel
 	     i--; /* HACK: turns i+=2 into i++ for these single arguments... */
           }
           i = i+2;
-        } 
+        }
         if (i>args.length)
         {
              printUsage();
              System.exit(1);
         }
-           
+        setNumberPes(numberPesString);
            
         appFrame = new JFrame("Charm Parallel Debugger");
         appFrame.setSize(1000, 1000);
@@ -894,9 +849,9 @@ public class ParDebug extends JPanel
             public void windowClosing(WindowEvent e) {
                 if (debugger.isRunning)
                    {
-                        debugger.sendAppropriateMessage("ccs_debug_quit", "",-1);
+                        debugger.bcastCcsRequest("ccs_debug_quit", "",-1);
                    } 
-                System.exit(0);
+                System.exit(0); /* main window closed */
             }
         });
 

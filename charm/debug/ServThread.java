@@ -1,3 +1,5 @@
+package charm.debug;
+
 import java.net.*;
 import java.io.*;
 import java.util.*;
@@ -18,6 +20,7 @@ public class ServThread extends Thread {
   public void run() {
     runtime = Runtime.getRuntime();
     try {
+      BufferedReader prerr = new BufferedReader(new InputStreamReader(p.getErrorStream()));
       BufferedReader prout = new BufferedReader(new InputStreamReader(p.getInputStream()));
       boolean foundPort = false;
       try {
@@ -52,7 +55,9 @@ public class ServThread extends Thread {
               }
               else
               { // User output: Print this out to a display area on the debugger
-	        outlinechunk.append(outline+"\n");
+	        // Flush out stderr too:
+		while (prerr.ready()) outline+=prerr.readLine()+"\n";
+		outlinechunk.append(outline+"\n");
               }
            }
 	   while (prout.ready() && (outlinechunk.length()<maxChunk));
@@ -65,7 +70,7 @@ public class ServThread extends Thread {
       catch(Exception e) {
           System.out.println("Failed to print");
       }
-      System.out.println("Success running parallel pgm");    
+      System.out.println("Finished running parallel program");    
       mainThread.quitProgram();
     }
    catch (Exception e) {
