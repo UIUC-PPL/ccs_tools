@@ -12,16 +12,12 @@ public class ServThread extends Thread {
   ParDebug mainThread = null;
   public ServThread(ParDebug d, Process par){
     mainThread = d;
-    //System.out.println("constructor of ServThread");
     p = par;
   }
 
   public void run() {
     runtime = Runtime.getRuntime();
     try {
-      //p = runtime.exec("../server/charmrun +p2 ../server/cfdAMR 2 ++server ++server-port 1236");
-      //int sleepMs = 100;
-      //sleep(sleepMs);
       BufferedReader prout = new BufferedReader(new InputStreamReader(p.getInputStream()));
       int foundPort = 0;
       try {
@@ -37,7 +33,6 @@ public class ServThread extends Thread {
                     portStart += 14;
                     portEnd = outline.indexOf("$",0);
                     portno = outline.substring(portStart, portEnd-1);
-                    //System.out.println("Port Number got " +portno);
                     foundPort = 1;
                  }
 
