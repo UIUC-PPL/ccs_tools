@@ -1,3 +1,4 @@
+package charm.debug.fmt;
 /**
   A PUP'd list of other PUP'd objects.
   This includes things like arrays and other collections,
@@ -6,8 +7,6 @@
   Copyright University of Illinois at Urbana-Champaign
   Written by Orion Sky Lawlor, olawlor@acm.org, 2004/1/21
 */
-package charm.debug.fmt;
-
 public class PList extends PAbstract {
 	/// PAbstract.getNext() forms linked list: head and tail fields.
 	private PAbstract head,tail;
@@ -56,7 +55,7 @@ public class PList extends PAbstract {
 		return null;		
 	}
 	
-/// Return the element with this name
+/// Return this list as a string
 	public String toString() {
 		StringBuffer ret=new StringBuffer(super.toString()+"{");
 		for (PAbstract cur=head;cur!=null;cur=cur.getNext()) {

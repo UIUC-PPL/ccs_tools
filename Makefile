@@ -5,7 +5,7 @@
 JAVAC=javac -deprecation 
 JAR=jar cf 
 
-all: debugger liveViz
+all: debugger liveViz setReadonly
 
 ############# Debugger ################
 SRC_DEBUG=charm/debug/*.java charm/debug/fmt/*.java charm/ccs/*.java 
@@ -28,6 +28,17 @@ liveViz: $(DEST_LV)
 $(DEST_LV): $(SRC_LV)
 	$(JAVAC) $(SRC_LV)
 	$(JAR) $@ $(CLASS_LV)
+
+############ LiveViz ##############
+SRC_RO=charm/debug/SetReadonly
+CLASS_RO=$(CLASS_DEBUG)
+DEST_RO=bin/setReadonly.jar
+
+setReadonly: $(DEST_RO) 
+
+$(DEST_RO): $(SRC_RO).java
+	$(JAVAC) $(SRC_RO).java
+	$(JAR) $@ $(CLASS_RO)
 
 ############ Sample
 # $(DEST_): $(SRC_)
