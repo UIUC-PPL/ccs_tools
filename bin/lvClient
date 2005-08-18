@@ -1,0 +1,16 @@
+#!/bin/sh
+
+mainclass="charm/lvClient/MainApplet"
+jarpath="$0.jar"
+
+if test -x /usr/bin/cygpath
+then 
+  if test "`uname -o`" = "Cygwin"
+  then
+    jarpath=`/usr/bin/cygpath -w -a $jarpath`
+  fi 
+fi
+
+java -ms100000000 -mx512000000 \
+  -classpath $jarpath \
+  $mainclass $*
