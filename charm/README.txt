@@ -7,4 +7,5 @@ Packages include:
   util: a few commonly used utility classes
   debug: Charm++ GUI debugger
   liveViz: liveViz module GUI client
-
+  lvClient: liveViz and python client
+	

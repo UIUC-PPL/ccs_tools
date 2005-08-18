@@ -9,6 +9,7 @@ package charm.ccs;
 import java.util.Stack;
 import java.io.*;
 import java.net.UnknownHostException;
+//import java.awt.Label;
 
 public class CcsThread implements Runnable {
 
@@ -49,17 +50,16 @@ public class CcsThread implements Runnable {
 	private CcsServer ccs;
 	
 	/// Place to receive status information during communication
-	public interface progress {
-		public void setText(String s);
-	};
-	private progress status;//Place to show status info.
+
+	private CcsProgress status;//Place to show status info.
 	private Thread myThread;
 	
 	//Initialization just stashes info-- 
 	// real work starts when thread begins running.
 	private String hostName;
         private int port;
-	public CcsThread(progress status_,String hostName_,int port_) {
+
+	public CcsThread(CcsProgress status_,String hostName_,int port_) {
 		requests=new Stack();
 		status=status_;
 		hostName=hostName_;
@@ -70,7 +70,7 @@ public class CcsThread implements Runnable {
 		myThread=new Thread(this);
 		myThread.start();
 	}
-		
+
 	public void addRequest(request req) {addRequest(req,false);}
 	public void addRequest(request req,boolean flushOld) {
 		if (flushOld) //Clean out all previous requests

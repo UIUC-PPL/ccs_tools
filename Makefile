@@ -5,7 +5,7 @@
 JAVAC=javac -deprecation 
 JAR=jar cf 
 
-all: debugger liveViz setReadonly
+all: debugger liveViz setReadonly lvClient
 
 ############# Debugger ################
 SRC_DEBUG=charm/debug/*.java charm/debug/fmt/*.java charm/ccs/*.java 
@@ -18,9 +18,20 @@ $(DEST_DEBUG): $(SRC_DEBUG)
 	$(JAVAC) $(SRC_DEBUG)
 	$(JAR) $@ $(CLASS_DEBUG)
 
+############ lvClient ##############
+SRC_LVCLIENT=charm/lvClient/*.java charm/util/*.java charm/ccs/*.java
+CLASS_LVCLIENT=charm/lvClient/*.class charm/util/*.class charm/ccs/*.class
+DEST_LVCLIENT=bin/lvClient.jar
+
+lvClient: $(DEST_LVCLIENT)
+
+$(DEST_LVCLIENT): $(SRC_LVCLIENT)
+	$(JAVAC) $(SRC_LVCLIENT)
+	$(JAR) $@ $(CLASS_LVCLIENT)
+
 ############ LiveViz ##############
 SRC_LV=charm/liveViz/*.java charm/util/*.java charm/ccs/*.java 
-CLASS_LV=charm/liveViz/*.class charm/liveViz/*.jpg charm/util/*.class charm/ccs/*.class 
+CLASS_LV=charm/liveViz/*.class charm/util/*.class charm/ccs/*.class 
 DEST_LV=bin/liveViz.jar
 
 liveViz: $(DEST_LV) 

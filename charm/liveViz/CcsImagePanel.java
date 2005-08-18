@@ -6,13 +6,14 @@ olawlor@acm.org
 */
 package charm.liveViz;
 
-import charm.util.*;
 import java.awt.*;
 import java.awt.image.*;
 import java.util.*;
 import java.io.*;
 import java.net.UnknownHostException;
-import charm.ccs.CcsThread;
+import charm.ccs.*;
+import charm.util.*;
+import charm.*;
 
 class CcsImagePanel extends MemImagePanel
 {
@@ -22,7 +23,7 @@ class CcsImagePanel extends MemImagePanel
     Toolbar tools;
     Config config;
     
-    private class progressToLabel implements CcsThread.progress {
+    private class progressToLabel implements charm.ccs.CcsProgress {
     private Label dest;
     public progressToLabel(Label dest_) {dest=dest_;}
     public void setText(String s) {dest.setText(s);}
