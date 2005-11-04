@@ -34,6 +34,8 @@ public class ScrollableMemory extends JLabel
     private MemoryPList.Hole holes[];
     private Slot[] crossReference;
 
+    public int viewX, viewY;
+
     public ScrollableMemory(MemoryPanel parent, int forPE, int scan, int lines, int horiz) {
         super();
 	int m=1;

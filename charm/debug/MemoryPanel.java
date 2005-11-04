@@ -340,8 +340,10 @@ public class MemoryPanel extends JPanel
     }
 
     public void mouseClicked(MouseEvent e) {
-	traceWrite = !traceWrite;
-	updatePosition(e);
+	if (e.getSource() == memoryData) {
+	    traceWrite = !traceWrite;
+	    updatePosition(e);
+	}
     }
 
     public void mouseEntered(MouseEvent e) {
@@ -353,15 +355,32 @@ public class MemoryPanel extends JPanel
     }
 
     public void mousePressed(MouseEvent e) {
-
+	if (e.getSource() == memoryData) {
+	    memoryData.viewX = e.getX();
+	    memoryData.viewY = e.getY();
+	    setCursor(Cursor.getPredefinedCursor(Cursor.MOVE_CURSOR));
+	}
     }
 
     public void mouseReleased(MouseEvent e) {
-
+	setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
+	updatePosition(e);
     }
 
     public void mouseDragged(MouseEvent e) {
-
+	if (e.getSource() == memoryData) {
+	    JViewport jv = (JViewport)memoryData.getParent();
+	    Point p = jv.getViewPosition();
+	    int newX = p.x - (e.getX()-memoryData.viewX);
+	    int newY = p.y - (e.getY()-memoryData.viewY);
+	    int maxX = memoryData.getWidth() - jv.getWidth();
+	    int maxY = memoryData.getHeight() - jv.getHeight();
+	    if (newX < 0) newX = 0;
+	    if (newY < 0) newY = 0;
+	    if (newX > maxX) newX = maxX;
+	    if (newY > maxY) newY = maxY;
+	    jv.setViewPosition(new Point(newX, newY));
+	}
     }
 
     public void mouseMoved(MouseEvent e) {
