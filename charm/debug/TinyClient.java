@@ -16,6 +16,11 @@ public class TinyClient
       charm.debug.fmt.Verbose dest=new charm.debug.fmt.Verbose();
       dest.decode(buf);
     }
+
+    private void decodeMemory(byte[] buf) {
+	charm.debug.fmt.Memory dest = new charm.debug.fmt.Memory();
+	dest.decode(buf);
+    }
     
     public TinyClient(CcsServer ccs_,String listName,int forPE) {
     	cpd=new CpdUtil(ccs_);
@@ -29,7 +34,9 @@ public class TinyClient
 	byte[] bitems=cpd.byteList(listName,"fmt",forPE,0,nItems);
 	System.out.println("\n------ Binary version ("+
 	      bitems.length+" bytes)");
-	decodeList(bitems);
+	if (listName.equals("converse/memory")) decodeMemory(bitems);
+	else decodeList(bitems);
+	System.out.println("string={"+listName+"}"+listName.equals("converse/memory"));
     }
     
     public static void main(String args[]) {

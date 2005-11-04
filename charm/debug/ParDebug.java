@@ -33,7 +33,8 @@ public class ParDebug extends JPanel
     private static int numberPes;
     private static String clparams;
     private static String envDisplay;
-    
+    public static CpdUtil server;
+
     private CcsServer ccs;
     private DefaultListModel listModel;
     private PList listItems = null;
@@ -96,6 +97,7 @@ public class ParDebug extends JPanel
     private JMenuItem menuActionContinue;
     private JMenuItem menuActionQuit;
     private JMenuItem menuActionFreeze;
+    private JMenuItem menuActionMemory;
     
 /************** CCS (network) interface ************/
     private int getListLength(String listName,int forPE)
@@ -299,7 +301,7 @@ public class ParDebug extends JPanel
 		outputArea.setList((PList)listItems.elementAt(listItem));
 	else { /* There's a list to consult for further detail */
 		PList detailList=getPList(detailedName,forPE,listItem,listItem+1);
-		outputArea.setList((PList)detailList.elementAt(0));
+		outputArea.setList((PList)detailList);//.elementAt(0));
 	}
     }
 
@@ -340,6 +342,9 @@ public class ParDebug extends JPanel
        listenTo(menuActionFreeze,"freeze","Freeze the parallel program"); 
        menuAction.add(menuActionQuit = new JMenuItem("Quit",'Q'));
        listenTo(menuActionQuit,"quit","Quit the parallel program"); 
+       menuAction.addSeparator();
+       menuAction.add(menuActionMemory = new JMenuItem("Memory",'M'));
+       listenTo(menuActionMemory,"memory","Inspect the application memory"); 
 
        //Creating status bar on the top
        statusArea = new JTextField(60);
@@ -564,7 +569,7 @@ public class ParDebug extends JPanel
 	{ /* Bring up parameters dialog box to select run options */
            ParamsDialog dialogbox = new ParamsDialog(appFrame, true, this);
            dialogbox.setLocationRelativeTo(appFrame);
-           dialogbox.setFields(clparams, ""+numberPes, portnumber);  
+           dialogbox.setFields(clparams, ""+numberPes, portnumber);
            dialogbox.pack();
            dialogbox.setVisible(true);
         }
@@ -615,7 +620,25 @@ public class ParDebug extends JPanel
         	setStatusMessage ("Break Point removed at entry point " +entryPointName+" on selected Pes"); 
            }
 
-        } 
+        }
+	else if (e.getActionCommand().equals("memory")) {
+	    // ask the user for input
+	    MemoryDialog input = new MemoryDialog(appFrame, true, numberPes);
+	    if (input.confirmed()) {
+		JFrame frame = new JFrame("Memory visualization");
+		frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+		MemoryPanel memory = new MemoryPanel();
+		JComponent newContentPane = memory;
+		newContentPane.setOpaque(true);
+		frame.setContentPane(newContentPane);
+
+		memory.loadData(input);
+
+		frame.setTitle("Memory Processor "+input.getPe());
+		frame.pack();
+		frame.setVisible(true);
+	    }
+	}
         else if (e.getActionCommand().equals("pecheck")) 
 	{ /* Checked or unchecked a PE box */
            JCheckBox chkbox = (JCheckBox)e.getSource();
@@ -665,10 +688,13 @@ public class ParDebug extends JPanel
            String charmrunPath = charmrunDir + "/charmrun";
            if (envDisplay.length() == 0) envDisplay = getEnvDisplay();
            // System.out.println(envDisplay);
-          
-           String totCommandLine = charmrunPath + " " + "+p"+ numberPes + " " +executable + " " + clparams+"  +cpd +DebugDisplay " +envDisplay+" ++server";
+	   
+           String totCommandLine = charmrunPath + " " + "+p"+ numberPes + " " +executable + " " + clparams+"  +cpd +DebugDisplay " +envDisplay+" ++server ++charmdebug";
            if (portnumber.length() != 0)
                totCommandLine += " ++server-port " + portnumber;
+	   if (!hostname.equals("localhost")) {
+	       totCommandLine = "ssh " + hostname + " " + totCommandLine;
+	   }
            System.out.println("ParDebug> "+totCommandLine);
            programOutputArea.setText(totCommandLine);
            Process p = null;
@@ -684,7 +710,10 @@ public class ParDebug extends JPanel
            }
            ServThread servthread = (new ServThread(this, p));
            servthread.start();
-	  
+	   ServThread.charmrunIn = new BufferedWriter(new OutputStreamWriter(p.getOutputStream()));
+	   ServThread.charmrunOut = new BufferedReader(new InputStreamReader(p.getErrorStream()));
+	   ServThread.infoCommand(" ");
+
 	 /* Wait until the "ccs:" line comes out of the program's stdout */
            long iter = 0;
            while (servthread.portno == null)
@@ -704,7 +733,8 @@ public class ParDebug extends JPanel
            ccsArgs[1]= portnumber;
 	   System.out.println("Connecting to: "+hostname+":"+portnumber);
            ccs = CcsServer.create(ccsArgs,false);
-	 
+	   server = new CpdUtil(ccs);
+
 	 /* Create the pe list */
            peList = new boolean[numberPes]; 
            for (int i = 0; i < numberPes; i++)

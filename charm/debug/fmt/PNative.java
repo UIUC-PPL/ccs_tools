@@ -27,8 +27,10 @@ public class PNative extends PAbstract {
 		return ret.toString();		
 	}
 	
+    public int length() {return len;}
 /// Assuming this is an int, return the i'th value
-	public int getIntValue(int i) {return v_int[i];}
+    public int getIntValue(int i) {return v_int[i];}
+    public float getFloatValue(int i) {return v_float[i];}
 	
 /// Draw this object to this screen.
 	public boolean draw(PDisplayStyle p,int drawStyle) {

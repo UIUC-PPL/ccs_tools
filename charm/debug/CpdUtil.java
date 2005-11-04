@@ -54,7 +54,9 @@ public class CpdUtil {
       CcsServer.writeString(req,16,reqStr+1,listName);
       CcsServer.Request r=ccs.sendRequest("ccs_list_items."+fmt,forPE,req);
       
-      return ccs.recvResponse(r);
+      byte[] answer = ccs.recvResponse(r);
+      //System.out.println("Size of received data: "+answer.length);
+      return answer;
     } catch (IOException e) {
       e.printStackTrace();
       abort("Network error connecting to PE "+forPE+" to access list "+listName);
