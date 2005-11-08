@@ -261,7 +261,10 @@ public class MemoryPanel extends JPanel
 
     public void actionPerformed(ActionEvent e) {
 	if (e.getActionCommand().equals("update")) {
-	    System.out.println("updating");
+	    memoryData.loadImage();
+	    traceWrite = false;
+	    displayBytes();
+	    repaint();
 	} else {
 	    int lines, scan, horiz;
 	    // check that all parameters are valid
@@ -286,44 +289,35 @@ public class MemoryPanel extends JPanel
 
 		// apply any kind of specific behaviour
 		if (e.getSource() == minusLines) {
-		    System.out.println("minusLines");
 		    lines -= lines*0.1;
 		    verticalLines.setText(""+lines);
 		}
 		if (e.getSource() == plusLines) {
-		    System.out.println("plusLines");
 		    lines += lines*0.1;
 		    verticalLines.setText(""+lines);
 		}
 		if (e.getSource() == verticalLines) {
-		    System.out.println("verticalLines");
 		}
 		if (e.getSource() == minusVert) {
-		    System.out.println("minusVert");
 		    scan -= scan*0.1;
 		    if (scan < 4) scan = 4;
 		    lineSize.setText(""+scan);
 		}
 		if (e.getSource() == plusVert) {
-		    System.out.println("plusVert");
 		    scan += scan*0.1;
 		    lineSize.setText(""+scan);
 		}
 		if (e.getSource() == lineSize) {
-		    System.out.println("lineSize");
 		}
 		if (e.getSource() == minusHPixels) {
-		    System.out.println("minusHPixels");
 		    horiz -= horiz*0.1;
 		    horizontalPixels.setText(""+horiz);
 		}
 		if (e.getSource() == plusHPixels) {
-		    System.out.println("plusHPixels");
 		    horiz += horiz*0.1;
 		    horizontalPixels.setText(""+horiz);
 		}
 		if (e.getSource() == horizontalPixels) {
-		    System.out.println("horizontalPixels");
 		}
 
 		// complete the resizing with the generation of a new image
@@ -375,10 +369,10 @@ public class MemoryPanel extends JPanel
 	    int newY = p.y - (e.getY()-memoryData.viewY);
 	    int maxX = memoryData.getWidth() - jv.getWidth();
 	    int maxY = memoryData.getHeight() - jv.getHeight();
-	    if (newX < 0) newX = 0;
-	    if (newY < 0) newY = 0;
 	    if (newX > maxX) newX = maxX;
 	    if (newY > maxY) newY = maxY;
+	    if (newX < 0) newX = 0;
+	    if (newY < 0) newY = 0;
 	    jv.setViewPosition(new Point(newX, newY));
 	}
     }
@@ -390,14 +384,16 @@ public class MemoryPanel extends JPanel
     }
 
     private void updatePosition(MouseEvent e) {
-	Slot sl = memoryData.getMemorySlot(e.getX(), e.getY());
 	if (traceWrite) {
+	    Slot sl = memoryData.getMemorySlot(e.getX(), e.getY());
 	    if (sl != null) {
 		info.setText(sl.toString());
 		info.setCaretPosition(0);
+		memoryData.selectSlot(sl);
 	    } else {
 		//info.setText("mouse at: "+e.getX()+" "+e.getY());
 		info.setText("");
+		memoryData.selectSlot(null);
 	    }
 	}
     }

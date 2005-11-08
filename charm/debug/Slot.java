@@ -30,7 +30,7 @@ public class Slot implements Comparable {
     public Object getTrace(int i) {return backtrace.elementAt(i);}
 
     public String toString() {
-	StringBuffer tmp = new StringBuffer("Slot at position 0x" + Integer.toHexString(location) + " of size " + size + "bytes. Backtrace:\n");
+	StringBuffer tmp = new StringBuffer("Slot at position 0x" + Integer.toHexString(location) + " of size " + size + " bytes. Backtrace:\n");
 	for (int i=0; i<backtrace.size(); ++i) {
 	    tmp.append("\tfunction ").append((Symbol)backtrace.elementAt(i)+"\n");
 	}

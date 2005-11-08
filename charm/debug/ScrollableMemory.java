@@ -7,6 +7,7 @@ import javax.swing.*;
 
 import charm.debug.fmt.*;
 import java.util.Collections;
+import java.util.Date;
 
 /* ScrollableMemory.java is used by MemoryWindow.java to display the content of
  * the memory. */
@@ -33,6 +34,10 @@ public class ScrollableMemory extends JLabel
     private int lastByte;
     private MemoryPList.Hole holes[];
     private Slot[] crossReference;
+    private int rgbnormal[];
+    private int rgbselected[];
+    private int rgbhole[];
+    private Slot selectedSlot;
 
     public int viewX, viewY;
 
@@ -40,27 +45,12 @@ public class ScrollableMemory extends JLabel
         super();
 	int m=1;
 
+	lineScan = scan;
+	numLines = lines;
+	horizontalPixels = horiz;
 	pe = forPE;
-	PList list=ParDebug.server.getPList("converse/memory",forPE);
-	data = new MemoryPList(list);
-	data.sort();
 
-	firstByte = Integer.MAX_VALUE;
-	lastByte = Integer.MIN_VALUE;
-	for (int i=0; i<data.size(); ++i) {
-	    if (data.size(i) == 0) continue;
-	    if (data.elementAt(i, 0).getLocation() < firstByte)
-		firstByte = data.elementAt(i, 0).getLocation();
-	    if (data.elementAt(i, data.size(i)-1).getLocation() > lastByte)
-		lastByte = data.elementAt(i, data.size(i)-1).getLocation() + data.elementAt(i, data.size(i)-1).getSize();
-	}
-
-	holes = data.findHoles();
-
-	memorySize = lastByte - firstByte + 1 - holes[0].size;
-
-	//System.out.println("data size = "+memorySize);
-	resizeImage(scan, lines, horiz);
+	loadImage();
 
 	setHorizontalAlignment(CENTER);
 	setOpaque(true);
@@ -70,13 +60,47 @@ public class ScrollableMemory extends JLabel
 	setAutoscrolls(true); //enable synthetic drag events
     }
 
+    public void loadImage() {
+	//System.out.println("started request for data "+(new Date()).toString());
+	PList list=ParDebug.server.getPList("converse/memory",pe);
+	//System.out.println("received data from server ("+list.size()+") "+(new Date()).toString());
+	data = new MemoryPList(list);
+	//System.out.println("memory list construced "+(new Date()).toString());
+	data.sort();
+	//System.out.println("list sorted "+(new Date()).toString());
+
+	firstByte = Integer.MAX_VALUE;
+	lastByte = Integer.MIN_VALUE;
+	for (int i=0; i<data.size(); ++i) {
+	    System.out.println("list "+i+" contains "+data.size(i)+" elements");
+	    if (data.size(i) == 0) continue;
+	    if (data.elementAt(i, 0).getLocation() < firstByte)
+		firstByte = data.elementAt(i, 0).getLocation();
+	    if (data.elementAt(i, data.size(i)-1).getLocation() > lastByte)
+		lastByte = data.elementAt(i, data.size(i)-1).getLocation() + data.elementAt(i, data.size(i)-1).getSize();
+	}
+
+	holes = data.findHoles();
+	//System.out.println("holes detected "+(new Date()).toString());
+
+	memorySize = lastByte - firstByte + 1 - holes[0].size;
+
+	//System.out.println("data size = "+memorySize);
+	selectedSlot = null;
+	resizeImage();
+    }
+
     public void resizeImage(int scan, int lines, int horiz) {
 	lineScan = scan;
-	lineWidth = (int)(scan*3/4);
-	lineStart = (lineScan - lineWidth) / 2;
 	numLines = lines;
-	verticalPixels = numLines*lineScan;
 	horizontalPixels = horiz;
+	resizeImage();
+    }
+
+    private void resizeImage() {
+	lineWidth = (int)(lineScan*3/4);
+	lineStart = (lineScan - lineWidth) / 2;
+	verticalPixels = numLines*lineScan;
 
 	pixelsAvailable = verticalPixels / lineScan * horizontalPixels;
 	crossReference = new Slot[pixelsAvailable];
@@ -84,11 +108,14 @@ public class ScrollableMemory extends JLabel
 
 	BufferedImage tmp = new BufferedImage(horizontalPixels,verticalPixels,BufferedImage.TYPE_INT_ARGB);
 
-	int color = (255<<24) + (255<<16) + (0<<8) + 100;
-	int rgbarray[] = new int[lineWidth];
-	for (int i=0; i<lineWidth; ++i) rgbarray[i] = color;
+	int color = (255<<24) + (255<<16) + (77<<8) + 77;
+	rgbnormal = new int[lineWidth];
+	for (int i=0; i<lineWidth; ++i) rgbnormal[i] = color;
+	color = (255<<24) + (255<<16) + (255<<8) + 155;
+	rgbselected = new int[lineWidth];
+	for (int i=0; i<lineWidth; ++i) rgbselected[i] = color;
 	color = (255<<24) + (0<<16) + (255<<8) + 0;
-	int rgbhole[] = new int[lineWidth];
+	rgbhole = new int[lineWidth];
 	for (int i=0; i<lineWidth; ++i) rgbhole[i] = color;
 
 	for (int i=0; i<data.size(); ++i) {
@@ -152,14 +179,61 @@ public class ScrollableMemory extends JLabel
 		    }
 		    // print the pixels
 		    //System.out.println("position: "+pos+" "+ln*lineScan+1);
-		    tmp.setRGB(pos, ln*lineScan+lineStart, 1, lineWidth, rgbarray, 0, 1);
+		    tmp.setRGB(pos, ln*lineScan+lineStart, 1, lineWidth, rgbnormal, 0, 1);
 		    crossReference[ln * horizontalPixels + pos] = sl;
 		}
 	    }
 	}
 
 	setIcon(new ImageIcon(tmp));
+	selectSlot(selectedSlot);
 	maxUnitIncrement = lineScan;
+    }
+
+    private void drawSlot(Slot sl, int[] color) {
+	int lostMemory = 0;
+	int additionalPixels = 0;
+	for (int index = 1; index <= holes[0].position && holes[index].position < sl.getLocation(); index++) {
+	    lostMemory += holes[index].size;
+	    additionalPixels += HOLE_PIXELS;
+	}
+
+	int offset = sl.getLocation() - firstByte - lostMemory;
+	offset = (int)(((long)offset) * pixelsAvailable / memorySize); // compute the pixel offset
+	offset += additionalPixels; // correct for the memory holes
+	//System.out.print("offset: "+offset);
+	int line = offset / horizontalPixels;
+	//System.out.print(" "+line);
+	offset -= line * horizontalPixels;
+	//System.out.println(" "+offset);
+
+	int end = sl.getLocation() + sl.getSize() - firstByte - lostMemory;
+	end = (int)(((long)end) * pixelsAvailable / memorySize); // compute the pixel offset
+	end += additionalPixels; // correct for the memory holes
+	int lineEnd = end / horizontalPixels;
+	end -= lineEnd * horizontalPixels;
+
+	// print the slot
+	for (int ln=line, pos=offset; ln<lineEnd || pos<=end; pos++) {
+	    if (pos==horizontalPixels) {
+		pos = 0;
+		ln++;
+	    }
+	    // print the pixels
+	    //System.out.println("position: "+pos+" "+ln*lineScan+1);
+	    ((BufferedImage)((ImageIcon)getIcon()).getImage()).setRGB(pos, ln*lineScan+lineStart, 1, lineWidth, color, 0, 1);
+	}
+	repaint();
+    }
+
+    public void selectSlot(Slot sl) {
+	if (selectedSlot != null) {
+	    drawSlot(selectedSlot, rgbnormal);
+	}
+	selectedSlot = sl;
+	if (sl != null) {
+	    drawSlot(sl, rgbselected);
+	}
     }
 
     public Dimension getPreferredSize() {
@@ -229,7 +303,16 @@ public class ScrollableMemory extends JLabel
     public Slot getMemorySlot(int x, int y) {
 	int line = y/lineScan;
 	int offset = y - line*lineScan;
-	// check if we are outside the printed band
+	// Check if we are outside the printed band. this in general returns
+	// null. Nevertheless, if we are in a non printed band, but between two
+	// bands containing the same Slot, just assume we are still inside. This
+	// prevent the flickering effect while moving the mouse.
+	if ((offset <= lineStart && line > 0 &&
+	     crossReference[line*horizontalPixels+x] == crossReference[(line-1)*horizontalPixels+x]) ||
+	    (offset > lineStart+lineWidth && line < verticalPixels/lineScan &&
+	     crossReference[line*horizontalPixels+x] == crossReference[(line+1)*horizontalPixels+x])) {
+	    return crossReference[line*horizontalPixels+x];
+	}
 	if (offset <= lineStart || offset > lineStart+lineWidth) return null;
 	return crossReference[line*horizontalPixels+x];
     }
