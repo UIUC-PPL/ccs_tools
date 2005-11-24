@@ -69,11 +69,11 @@ public class ServThread extends Thread {
 		  // way).
 
 		  //while (prerr.ready()) outline+=prerr.readLine()+"\n";
-		  //outlinechunk.append(outline+"\n");
+		  outlinechunk.append(outline+"\n");
               }
            }
 	   while (prout.ready() && (outlinechunk.length()<maxChunk));
-	   // System.out.println("Parallel program printed: "+outlinechunk.toString());
+	   System.out.println("Parallel program printed: "+outlinechunk.toString());
            mainThread.displayProgramOutput(outlinechunk.toString());
 	   
 	   if (outline==null) break; /* Program is now finished. */

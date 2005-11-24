@@ -88,7 +88,7 @@ public class MemoryPList {
 	private void add(Holder h) {
 	    int j;
 	    for (j=0; j<heads.size(); ++j) {
-		if (h.slot.getLocation() < ((Slot)heads.elementAt(j)).getLocation()) break;
+		if (h.slot.getLocation() < ((Holder)heads.elementAt(j)).slot.getLocation()) break;
 	    }
 	    heads.add(j, h);
 	}
@@ -159,6 +159,8 @@ public class MemoryPList {
 		    PList llcur=(PList)lstcur;
 		    Slot sl = new Slot(((PNative)llcur.elementNamed("loc")).getIntValue(0));
 		    sl.setSize(((PNative)llcur.elementNamed("size")).getIntValue(0));
+		    int flags = ((PNative)llcur.elementNamed("flags")).getIntValue(0);
+		    if ((flags & Slot.LEAK_FLAG) != 0) sl.setLeak(true);
 		    PNative st = (PNative)llcur.elementNamed("stack");
 		    for (int i=0; i<st.length(); ++i) {
 			Symbol s = Symbol.get(st.getIntValue(i));
@@ -188,6 +190,9 @@ public class MemoryPList {
 			}
 			sl.addTrace(s);
 		    }
+		    if (((Symbol)sl.getTrace(0)).getFunction().indexOf("CkArray::allocate(") != -1) sl.setType(Slot.CHARE_TYPE);
+		    if (((Symbol)sl.getTrace(0)).getFunction().equals("CkCreateLocalGroup")) sl.setType(Slot.MESSAGE_TYPE);
+		    if (((Symbol)sl.getTrace(0)).getFunction().equals("CkCreateLocalNodeGroup")) sl.setType(Slot.MESSAGE_TYPE);
 		    int el = addElement(type, sl);
 		}
 		//System.out.println("name: "+lcur.getName());

@@ -19,6 +19,8 @@ public class Symbol {
 	file = f;
     }
 
+    public String getFunction() {return function;}
+
     public static Symbol get(int location) {
 	return (Symbol)symbolTable.get(new Integer(location));
     }

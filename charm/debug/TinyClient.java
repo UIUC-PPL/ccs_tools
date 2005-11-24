@@ -26,7 +26,7 @@ public class TinyClient
 	String items=cpd.stringList(listName,forPE,0,nItems);
 	System.out.println("\n------ Text version: \n"+items);
 	
-	byte[] bitems=cpd.byteList(listName,"fmt",forPE,0,nItems);
+	byte[] bitems=cpd.byteList(listName,"fmt",forPE,0,nItems,null);
 	System.out.println("\n------ Binary version ("+
 	      bitems.length+" bytes)");
 	decodeList(bitems);

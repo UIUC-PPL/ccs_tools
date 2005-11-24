@@ -7,6 +7,9 @@ import javax.swing.*;
 public class MemoryPanel extends JPanel
     implements ActionListener, MouseListener, MouseMotionListener {
 
+    private JMenuBar menuBar;
+    private JMenu menuAction;
+    private JMenuItem menuLeak;
     private JSlider verticalZoom;
     private JSlider horizontalZoom;
     private JScrollPane displayPane;
@@ -28,6 +31,13 @@ public class MemoryPanel extends JPanel
 
     public MemoryPanel() {
 	setLayout(new BoxLayout(this,BoxLayout.X_AXIS));
+
+	// Create the menu
+	menuBar = new JMenuBar();
+	menuBar.add(menuAction = new JMenu("Action"));
+	menuAction.setMnemonic('A');
+	menuAction.add(menuLeak = new JMenuItem("Search Leaks",'L'));
+	menuLeak.addActionListener(this);
 
 	topPane = new JPanel();
 	topPane.setLayout(new BorderLayout());
@@ -231,6 +241,8 @@ public class MemoryPanel extends JPanel
 
     }
 
+    public JMenuBar getMenu() {return menuBar;}
+
     public void loadData(MemoryDialog input) {
 	int pe = input.getPe();
 	int scan = input.getScan();
@@ -260,9 +272,15 @@ public class MemoryPanel extends JPanel
     }
 
     public void actionPerformed(ActionEvent e) {
-	if (e.getActionCommand().equals("update")) {
-	    memoryData.loadImage();
-	    traceWrite = false;
+	if (e.getSource() == menuLeak) {
+	    System.out.println("Leak search");
+	    memoryData.loadImage(true);
+	    traceWrite = true;
+	    displayBytes();
+	    repaint();
+	} else if (e.getActionCommand().equals("update")) {
+	    memoryData.loadImage(false);
+	    traceWrite = true;
 	    displayBytes();
 	    repaint();
 	} else {
@@ -345,7 +363,7 @@ public class MemoryPanel extends JPanel
     }
 
     public void mouseExited(MouseEvent e) {
-
+	deletePosition();
     }
 
     public void mousePressed(MouseEvent e) {
@@ -380,6 +398,8 @@ public class MemoryPanel extends JPanel
     public void mouseMoved(MouseEvent e) {
 	if (e.getSource() == memoryData) {
 	    updatePosition(e);
+	} else {
+	    deletePosition();
 	}
     }
 
@@ -395,6 +415,13 @@ public class MemoryPanel extends JPanel
 		info.setText("");
 		memoryData.selectSlot(null);
 	    }
+	}
+    }
+
+    private void deletePosition() {
+	if (traceWrite) {
+	    info.setText("");
+	    memoryData.selectSlot(null);
 	}
     }
 }

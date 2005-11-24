@@ -34,8 +34,9 @@ public class ParDebug extends JPanel
     private static String clparams;
     private static String envDisplay;
     public static CpdUtil server;
+    public static byte[] globals;
 
-    private CcsServer ccs;
+    //private CcsServer ccs; DEPRACATED: it goes into the variable "server"
     private DefaultListModel listModel;
     private PList listItems = null;
     private boolean isRunning = false; // True if the debugged program is running
@@ -99,7 +100,9 @@ public class ParDebug extends JPanel
     private JMenuItem menuActionFreeze;
     private JMenuItem menuActionMemory;
     
-/************** CCS (network) interface ************/
+
+/************** CCS (network) interface ************ /
+DEPRECATED!! The correct implementation is in CpdList.java
     private int getListLength(String listName,int forPE)
     {
     try {
@@ -133,7 +136,7 @@ public class ParDebug extends JPanel
       byte[] req=new byte[reqLen];
       CcsServer.writeInt(req,0,lo);
       CcsServer.writeInt(req,4,hiPlusOne);
-      CcsServer.writeInt(req,8,0); /*no additional request data*/
+      CcsServer.writeInt(req,8,0); / *no additional request data* /
       CcsServer.writeInt(req,12,reqStr);
       CcsServer.writeString(req,16,reqStr+1,listName);
       CcsServer.Request r=ccs.sendRequest("ccs_list_items."+fmt,forPE,req);
@@ -183,20 +186,21 @@ public class ParDebug extends JPanel
     private void bcastCcsRequest(String ccsHandlerName, String parameterName, int forSelectedPes)
     {
           if (forSelectedPes <= 0)
-          { /* Send to all pes */
+          { / * Send to all pes * /
                 for (int indexPE=0; indexPE < numberPes; indexPE++) {
                     sendCcsRequest(ccsHandlerName, parameterName, indexPE);
 		}
           }
           else
-          { /* Send to selected subset of PEs */
+          { / * Send to selected subset of PEs * /
                 for (int indexPE=0; indexPE < numberPes; indexPE++)
                 if (peList[indexPE] == true) {
                       sendCcsRequest(ccsHandlerName, parameterName, indexPE);
                 }
           }
     }
-    
+    */
+
 /************** Tiny GUI Routines ************/
     
     private void abort(String problem) {
@@ -284,8 +288,8 @@ public class ParDebug extends JPanel
 	  
           String lName=cpdLists[cpdListIndex].name;
 	  if (lName==null) return; /* the initial empty list */
-          int nItems=getListLength(lName,forPE);
-          listItems = getPList(lName,forPE,0,nItems);
+          int nItems=server.getListLength(lName,forPE);
+          listItems = server.getPList(lName,forPE,0,nItems);
 	  
 	  for (PAbstract cur=listItems.elementAt(0);cur!=null;cur=cur.getNext()) {
 	  	dest.addElement(cur.getDeepName());
@@ -300,7 +304,7 @@ public class ParDebug extends JPanel
 	if (detailedName==null)
 		outputArea.setList((PList)listItems.elementAt(listItem));
 	else { /* There's a list to consult for further detail */
-		PList detailList=getPList(detailedName,forPE,listItem,listItem+1);
+		PList detailList=server.getPList(detailedName,forPE,listItem,listItem+1);
 		outputArea.setList((PList)detailList);//.elementAt(0));
 	}
     }
@@ -578,26 +582,26 @@ public class ParDebug extends JPanel
         }
         else if (e.getActionCommand().equals("freeze")) {
            // stop program
-           bcastCcsRequest("ccs_debug", "freeze",1);
+           server.bcastCcsRequest("ccs_debug", "freeze",1, numberPes, peList);
            continueButton.setEnabled(true);
            freezeButton.setEnabled(false);
            setStatusMessage("Program is frozen on selected pes");
         }
 	else if (e.getActionCommand().equals("unfreeze")){ 
            // start running again
-           bcastCcsRequest("ccs_continue_break_point", "",0); 
+           server.bcastCcsRequest("ccs_continue_break_point", "",0,numberPes,peList);
            continueButton.setEnabled(true); 
            freezeButton.setEnabled(true);
            setStatusMessage("Program is running");
         } 
         else if (e.getActionCommand().equals("quit")) {
-          bcastCcsRequest("ccs_debug_quit", "",0);
-          quitProgram(); 
+	   server.bcastCcsRequest("ccs_debug_quit", "",0,numberPes,peList);
+	   quitProgram(); 
         }
         else if (e.getActionCommand().equals("startgdb")) 
 	{ 
-           bcastCcsRequest("ccs_remove_all_break_points", "",0);
-	   bcastCcsRequest("ccs_debug_startgdb","",1);
+           server.bcastCcsRequest("ccs_remove_all_break_points", "",0,numberPes,peList);
+	   server.bcastCcsRequest("ccs_debug_startgdb","",1,numberPes,peList);
            setStatusMessage("Gdb started on selected pes");
         } 
         else if (e.getActionCommand().equals("breakpoints")) {
@@ -607,14 +611,14 @@ public class ParDebug extends JPanel
            String entryPointName = chkbox.getText(); 
            if (chkbox.isSelected())
            {
-        	bcastCcsRequest("ccs_set_break_point", entryPointName,0); 
+        	server.bcastCcsRequest("ccs_set_break_point", entryPointName,0,numberPes,peList);
         	continueButton.setEnabled(true);
         	freezeButton.setEnabled(false);
         	setStatusMessage ("Break Point set at entry point " +entryPointName); 
            }
            else
            {
-        	bcastCcsRequest("ccs_remove_break_point", entryPointName,0); 
+        	server.bcastCcsRequest("ccs_remove_break_point", entryPointName,0,numberPes,peList);
         	continueButton.setEnabled(true);   
         	freezeButton.setEnabled(true);
         	setStatusMessage ("Break Point removed at entry point " +entryPointName+" on selected Pes"); 
@@ -635,6 +639,7 @@ public class ParDebug extends JPanel
 		memory.loadData(input);
 
 		frame.setTitle("Memory Processor "+input.getPe());
+		frame.setJMenuBar(memory.getMenu());
 		frame.pack();
 		frame.setVisible(true);
 	    }
@@ -712,6 +717,33 @@ public class ParDebug extends JPanel
            servthread.start();
 	   ServThread.charmrunIn = new BufferedWriter(new OutputStreamWriter(p.getOutputStream()));
 	   ServThread.charmrunOut = new BufferedReader(new InputStreamReader(p.getErrorStream()));
+	   // Retrieve the initial info from charmrun regarding the program segments
+	   String initialInfo = ServThread.infoCommand(" ");
+	   System.out.println("|"+initialInfo+"|");
+	   int dataInitial = initialInfo.indexOf("\n.data");
+	   int dataFinal = initialInfo.indexOf("\n",dataInitial+1);
+	   String dataValues = initialInfo.substring(dataInitial+6,dataFinal).trim();
+	   int endSize = dataValues.indexOf(' ');
+	   int startPos = dataValues.lastIndexOf(' ');
+	   int dataSize = Integer.parseInt(dataValues.substring(0,endSize));
+	   int dataPos = Integer.parseInt(dataValues.substring(startPos+1));
+	   //System.out.println("string1: |"+initialInfo.substring(dataInitial+6,dataFinal).trim()+"| "+dataSize+" "+dataPos);
+	   int bssInitial = initialInfo.indexOf("\n.bss");
+	   int bssFinal = initialInfo.indexOf("\n",bssInitial+1);
+	   String bssValues = initialInfo.substring(bssInitial+6,bssFinal).trim();
+	   endSize = bssValues.indexOf(' ');
+	   startPos = bssValues.lastIndexOf(' ');
+	   int bssSize = Integer.parseInt(bssValues.substring(0,endSize));
+	   int bssPos = Integer.parseInt(bssValues.substring(startPos+1));
+	   //System.out.println("string1: |"+initialInfo.substring(bssInitial+5,bssFinal).trim()+"| "+bssSize+" "+bssPos);
+	   // FIXME: here we assume the program is 32 bit!!!
+	   globals = new byte[16]; // 4 integers of 4 bytes each
+	   CcsServer.writeInt(globals, 0, dataPos);
+	   CcsServer.writeInt(globals, 4, dataPos+dataSize);
+	   CcsServer.writeInt(globals, 8, bssPos);
+	   CcsServer.writeInt(globals, 12, bssPos+bssSize);
+
+	   // Delete the first print made by gdb at startup
 	   ServThread.infoCommand(" ");
 
 	 /* Wait until the "ccs:" line comes out of the program's stdout */
@@ -732,7 +764,7 @@ public class ParDebug extends JPanel
            ccsArgs[0]=hostname;
            ccsArgs[1]= portnumber;
 	   System.out.println("Connecting to: "+hostname+":"+portnumber);
-           ccs = CcsServer.create(ccsArgs,false);
+           CcsServer ccs = CcsServer.create(ccsArgs,false);
 	   server = new CpdUtil(ccs);
 
 	 /* Create the pe list */
@@ -759,8 +791,8 @@ public class ParDebug extends JPanel
            startGdbButton.setEnabled(true); 
           
          /* Create the entities lists */
-           int nItems=getListLength("charm/entries",0);
-	   EpPList epItems = new EpPList(getPList("charm/entries",0,0,nItems));
+           int nItems=server.getListLength("charm/entries",0);
+	   EpPList epItems = new EpPList(server.getPList("charm/entries",0,0,nItems));
            
            Vector items;
            items = epItems.getUserEps();
@@ -889,7 +921,7 @@ public class ParDebug extends JPanel
             public void windowClosing(WindowEvent e) {
                 if (debugger.isRunning)
                    {
-                        debugger.bcastCcsRequest("ccs_debug_quit", "",-1);
+                        debugger.server.bcastCcsRequest("ccs_debug_quit", "",-1,numberPes,null);
                    } 
                 System.exit(0); /* main window closed */
             }
