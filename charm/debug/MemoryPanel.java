@@ -4,12 +4,16 @@ import java.awt.*;
 import java.awt.event.*;
 import javax.swing.*;
 
+import java.text.NumberFormat;
+
 public class MemoryPanel extends JPanel
     implements ActionListener, MouseListener, MouseMotionListener {
 
     private JMenuBar menuBar;
     private JMenu menuAction;
     private JMenuItem menuLeak;
+    private JMenu menuInfo;
+    private JMenuItem menuStat;
     private JSlider verticalZoom;
     private JSlider horizontalZoom;
     private JScrollPane displayPane;
@@ -38,6 +42,10 @@ public class MemoryPanel extends JPanel
 	menuAction.setMnemonic('A');
 	menuAction.add(menuLeak = new JMenuItem("Search Leaks",'L'));
 	menuLeak.addActionListener(this);
+	menuBar.add(menuInfo = new JMenu("Info"));
+	menuInfo.setMnemonic('I');
+	menuInfo.add(menuStat = new JMenuItem("Show Statistics",'L'));
+	menuStat.addActionListener(this);
 
 	topPane = new JPanel();
 	topPane.setLayout(new BorderLayout());
@@ -278,6 +286,8 @@ public class MemoryPanel extends JPanel
 	    traceWrite = true;
 	    displayBytes();
 	    repaint();
+	} else if (e.getSource() == menuStat) {
+	    JOptionPane.showMessageDialog(this, "Memory Usage: "+NumberFormat.getInstance().format(memoryData.getAllocatedMemory())+" bytes\nAllocated blocks: "+NumberFormat.getInstance().format(memoryData.getNumAllocations()), "Memory Statistics", JOptionPane.INFORMATION_MESSAGE);
 	} else if (e.getActionCommand().equals("update")) {
 	    memoryData.loadImage(false);
 	    traceWrite = true;

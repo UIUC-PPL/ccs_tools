@@ -14,6 +14,7 @@ public class Slot implements Comparable {
     private Vector backtrace;
 
     public static final int LEAK_FLAG = 0x8;
+    public static final int TYPE_MASK = 0x7;
     public static final int UNKNOWN_TYPE = 0x0;
     public static final int SYSTEM_TYPE = 0x1;
     public static final int USER_TYPE = 0x2;
@@ -53,7 +54,24 @@ public class Slot implements Comparable {
     public String toString() {
 	StringBuffer tmp = new StringBuffer();
 	if (isLeak()) tmp.append("*** LEAKING ***\n");
-	tmp.append("Slot at position 0x" + Integer.toHexString(location) + " of size " + size + " bytes. Backtrace:\n");
+	tmp.append("Memory type: ");
+	switch (type) {
+	case 1:
+	    tmp.append("system");
+	    break;
+	case 2:
+	    tmp.append("user");
+	    break;
+	case 3:
+	    tmp.append("chare object");
+	    break;
+	case 4:
+	    tmp.append("message");
+	    break;
+	default:
+	    tmp.append("unknown");
+	}
+	tmp.append("\nSlot at position 0x" + Integer.toHexString(location) + " of size " + size + " bytes. Backtrace:\n");
 	for (int i=0; i<backtrace.size(); ++i) {
 	    tmp.append("\tfunction ").append((Symbol)backtrace.elementAt(i)+"\n");
 	}

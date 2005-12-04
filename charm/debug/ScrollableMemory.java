@@ -30,12 +30,13 @@ public class ScrollableMemory extends JLabel
     private int numLines;
     private int pixelsAvailable;
     private int memorySize;
+    private int allocatedMemory;
     private int firstByte;
     private int lastByte;
     private MemoryPList.Hole holes[];
     private Slot[] crossReference;
     private int rgbnormal[][];
-    private int rgbleak[];
+    private int rgbleak[][];
     private int rgbselected[];
     private int rgbhole[];
     private Slot selectedSlot;
@@ -89,6 +90,7 @@ public class ScrollableMemory extends JLabel
 	//System.out.println("holes detected "+(new Date()).toString());
 
 	memorySize = lastByte - firstByte + 1 - holes[0].size;
+	allocatedMemory = 0;
 
 	//System.out.println("data size = "+memorySize);
 	selectedSlot = null;
@@ -113,22 +115,37 @@ public class ScrollableMemory extends JLabel
 
 	BufferedImage tmp = new BufferedImage(horizontalPixels,verticalPixels,BufferedImage.TYPE_INT_ARGB);
 
-	int color = (255<<24) + (255<<16) + (77<<8) + 77;
+	int color;
 	rgbnormal = new int[5][lineWidth];
+	// unknown
+	color = (255<<24) + (255<<16) + (77<<8) + 77;
 	for (int i=0; i<lineWidth; ++i) rgbnormal[0][i] = color;
+	// system
+	color = (255<<24) + (220<<16) + (69<<8) + 69;
+	for (int i=0; i<lineWidth; ++i) rgbnormal[1][i] = color;
+	// user
+	color = (255<<24) + (90<<16) + (150<<8) + 255;
+	for (int i=0; i<lineWidth; ++i) rgbnormal[2][i] = color;
+	// chares
 	color = (255<<24) + (255<<16) + (178<<8) + 77;
 	for (int i=0; i<lineWidth; ++i) rgbnormal[3][i] = color;
-	color = (255<<24) + (77<<16) + (77<<8) + 255;
+	// messages
+	color = (255<<24) + (255<<16) + (150<<8) + 255;
 	for (int i=0; i<lineWidth; ++i) rgbnormal[4][i] = color;
 
+	rgbleak = new int[5][lineWidth];
 	color = (255<<24) + (0<<16) + (255<<8) + 0;
-	rgbleak = new int[lineWidth];
-	for (int i=0; i<lineWidth; ++i) rgbleak[i] = color;
-	color = (255<<24) + (255<<16) + (255<<8) + 155;
+	for (int j=0; j<5; ++j) {
+	    for (int i=0; i<(int)(0.75*lineWidth); ++i) rgbleak[j][i] = color;
+	    for (int i=(int)(0.75*lineWidth); i<lineWidth; ++i) rgbleak[j][i] = rgbnormal[j][i];
+	}
+
 	rgbselected = new int[lineWidth];
+	color = (255<<24) + (255<<16) + (255<<8) + 155;
 	for (int i=0; i<lineWidth; ++i) rgbselected[i] = color;
-	color = (255<<24) + (180<<16) + (180<<8) + 180;
+
 	rgbhole = new int[lineWidth];
+	color = (255<<24) + (180<<16) + (180<<8) + 180;
 	for (int i=0; i<lineWidth; ++i) rgbhole[i] = color;
 
 	for (int i=0; i<data.size(); ++i) {
@@ -192,7 +209,7 @@ public class ScrollableMemory extends JLabel
 		    }
 		    // print the pixels
 		    //System.out.println("position: "+pos+" "+ln*lineScan+1);
-		    if (sl.isLeak()) tmp.setRGB(pos, ln*lineScan+lineStart, 1, lineWidth, rgbleak, 0, 1);
+		    if (sl.isLeak()) tmp.setRGB(pos, ln*lineScan+lineStart, 1, lineWidth, rgbleak[sl.getType()], 0, 1);
 		    else tmp.setRGB(pos, ln*lineScan+lineStart, 1, lineWidth, rgbnormal[sl.getType()], 0, 1);
 		    crossReference[ln * horizontalPixels + pos] = sl;
 		}
@@ -242,7 +259,7 @@ public class ScrollableMemory extends JLabel
 
     public void selectSlot(Slot sl) {
 	if (selectedSlot != null) {
-	    if (selectedSlot.isLeak()) drawSlot(selectedSlot, rgbleak);
+	    if (selectedSlot.isLeak()) drawSlot(selectedSlot, rgbleak[selectedSlot.getType()]);
 	    else drawSlot(selectedSlot, rgbnormal[selectedSlot.getType()]);
 	}
 	selectedSlot = sl;
@@ -330,5 +347,14 @@ public class ScrollableMemory extends JLabel
 	}
 	if (offset <= lineStart || offset > lineStart+lineWidth) return null;
 	return crossReference[line*horizontalPixels+x];
+    }
+    public int getAllocatedMemory() {
+	if (allocatedMemory == 0) {
+	    for (int i=0; i<data.size(0); ++i) allocatedMemory += data.elementAt(0, i).getSize();
+	}
+	return allocatedMemory;
+    }
+    public int getNumAllocations() {
+	return data.size(0);
     }
 }
