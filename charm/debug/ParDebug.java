@@ -718,7 +718,8 @@ DEPRECATED!! The correct implementation is in CpdList.java
 	   ServThread.charmrunIn = new BufferedWriter(new OutputStreamWriter(p.getOutputStream()));
 	   ServThread.charmrunOut = new BufferedReader(new InputStreamReader(p.getErrorStream()));
 	   // Retrieve the initial info from charmrun regarding the program segments
-	   String initialInfo = ServThread.infoCommand(" ");
+	   String initialInfo;
+	   while ((initialInfo = ServThread.infoCommand(" ")).indexOf("\n.data") == -1) System.out.println("++|"+initialInfo+"|");
 	   System.out.println("|"+initialInfo+"|");
 	   int dataInitial = initialInfo.indexOf("\n.data");
 	   int dataFinal = initialInfo.indexOf("\n",dataInitial+1);
