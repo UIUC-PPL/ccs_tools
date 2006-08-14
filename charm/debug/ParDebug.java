@@ -29,6 +29,7 @@ public class ParDebug extends JPanel
     //   handling into a regular function called by the constructor.
     private static String filename;
     private static String hostname;
+    private static String username;
     private static String portnumber;
     private static int numberPes;
     private static String clparams;
@@ -690,7 +691,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
     {
            isRunning = true;
            programOutputArea.setText("");
-           String executable = filename;
+           String executable = new File(filename).getAbsolutePath();
 	   String charmrunDir = new File(executable).getParent();
 	   if (charmrunDir==null) charmrunDir=".";
            String charmrunPath = charmrunDir + "/charmrun";
@@ -701,6 +702,9 @@ DEPRECATED!! The correct implementation is in CpdList.java
            if (portnumber.length() != 0)
                totCommandLine += " ++server-port " + portnumber;
 	   if (!hostname.equals("localhost")) {
+               if (username.length()>0) {
+                   totCommandLine = "-l " + username + " " + totCommandLine;
+               }
 	       totCommandLine = "ssh " + hostname + " " + totCommandLine;
 	   }
            System.out.println("ParDebug> "+totCommandLine);
@@ -770,7 +774,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
            String[] ccsArgs=new String[2];
            ccsArgs[0]=hostname;
            ccsArgs[1]= portnumber;
-	   System.out.println("Connecting to: "+hostname+":"+portnumber);
+	   System.out.println("Connecting to: "+username+(username.length()>0?"@":"")+hostname+":"+portnumber);
            CcsServer ccs = CcsServer.create(ccsArgs,false);
 	   server = new CpdUtil(ccs);
 
@@ -864,11 +868,12 @@ DEPRECATED!! The correct implementation is in CpdList.java
 
     public static void printUsage()
     {
-        System.out.println("Usage: java ParDebug [[-file <charm program name>] [[-param \"<charm program parameters>\"][-pes <number of pes>]] [-host <hostname>] [-port <port>] [-display <display>]]");
+        System.out.println("Usage: java ParDebug [[-file <charm program name>] [[-param \"<charm program parameters>\"][-pes <number of pes>]] [-host <hostname>] [-user <username>] [-port <port>] [-display <display>]]");
     }
   
     public static void main(String[] args) {
         hostname = "localhost";
+        username = "";
         filename = "";
         portnumber = "";
         numberPes = 1;
@@ -882,17 +887,19 @@ DEPRECATED!! The correct implementation is in CpdList.java
         while (i < args.length)
         {
           if (args[i].equals("-host"))
-             hostname = args[i+1];
+              hostname = args[i+1];
+          else if (args[i].equals("-user"))
+              username = args[i+1];
           else if (args[i].equals("-port"))
-            portnumber = args[i+1];
+              portnumber = args[i+1];
           else if (args[i].equals("-file"))
-            filename = args[i+1];
+              filename = args[i+1];
           else if (args[i].equals("-param"))
-            clparams = args[i+1];
+              clparams = args[i+1];
           else if (args[i].equals("-pes") || args[i].equals("+p"))
-            numberPesString = args[i+1];
+              numberPesString = args[i+1];
           else if (args[i].equals("-display"))
-            envDisplay = args[i+1];
+              envDisplay = args[i+1];
           else
           { /* Just a 1-argument */
 	     if (args[i].startsWith("+p"))
