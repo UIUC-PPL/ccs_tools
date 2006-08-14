@@ -33,8 +33,12 @@ public class ParDebug extends JPanel
     private static int numberPes;
     private static String clparams;
     private static String envDisplay;
-    public static CpdUtil server;
     public static byte[] globals;
+    static ServThread servthread;
+
+    /// This variable is responsible for handling all the CCS communication with
+    /// the running application
+    public static CpdUtil server;
 
     //private CcsServer ccs; DEPRACATED: it goes into the variable "server"
     private DefaultListModel listModel;
@@ -595,7 +599,6 @@ DEPRECATED!! The correct implementation is in CpdList.java
            setStatusMessage("Program is running");
         } 
         else if (e.getActionCommand().equals("quit")) {
-	   server.bcastCcsRequest("ccs_debug_quit", "",0,numberPes,peList);
 	   quitProgram(); 
         }
         else if (e.getActionCommand().equals("startgdb")) 
@@ -706,20 +709,23 @@ DEPRECATED!! The correct implementation is in CpdList.java
            Runtime runtime = null;
            runtime = Runtime.getRuntime();
            try {
-                p = runtime.exec(totCommandLine);
+               // start new process for charmrun
+               p = runtime.exec(totCommandLine);
            }
            catch (Exception exc) {
                  System.out.println("ParDebug> Error executing "+totCommandLine);
                  quitProgram();
                  return;
            }
-           ServThread servthread = (new ServThread(this, p));
+
+           // start the thread that will handle the communication with charmrun
+           // (and the program output as a consequence)
+           servthread = (new ServThread(this, p));
            servthread.start();
-	   ServThread.charmrunIn = new BufferedWriter(new OutputStreamWriter(p.getOutputStream()));
-	   ServThread.charmrunOut = new BufferedReader(new InputStreamReader(p.getErrorStream()));
+
 	   // Retrieve the initial info from charmrun regarding the program segments
 	   String initialInfo;
-	   while ((initialInfo = ServThread.infoCommand(" ")).indexOf("\n.data") == -1) System.out.println("++|"+initialInfo+"|");
+	   while ((initialInfo = servthread.infoCommand(" ")).indexOf("\n.data") == -1) System.out.println("++|"+initialInfo+"|");
 	   System.out.println("|"+initialInfo+"|");
 	   int dataInitial = initialInfo.indexOf("\n.data");
 	   int dataFinal = initialInfo.indexOf("\n",dataInitial+1);
@@ -745,7 +751,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
 	   CcsServer.writeInt(globals, 12, bssPos+bssSize);
 
 	   // Delete the first print made by gdb at startup
-	   ServThread.infoCommand(" ");
+	   servthread.infoCommand(" ");
 
 	 /* Wait until the "ccs:" line comes out of the program's stdout */
            long iter = 0;
@@ -832,6 +838,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
     /// Exit the debugged program.
     public void quitProgram()
     {
+        if (isRunning) server.bcastCcsRequest("ccs_debug_quit", "",0,numberPes,peList);
             portnumber = "";
             isRunning = false;
             startButton.setEnabled(true);
@@ -923,6 +930,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
                 if (debugger.isRunning)
                    {
                         debugger.server.bcastCcsRequest("ccs_debug_quit", "",-1,numberPes,null);
+                        debugger.isRunning = false;
                    } 
                 System.exit(0); /* main window closed */
             }

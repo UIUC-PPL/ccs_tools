@@ -6,6 +6,14 @@ import java.util.*;
 import java.security.*;
 import java.lang.*;
 
+
+/**
+ * This class implements a thread whose job is to handle the I/O communication
+ * with the currently debugged program. The communication here refers to the
+ * stdin, stdout, stderr streams.
+
+ * Stdin and stderr are 
+ */
 public class ServThread extends Thread {
   String portno = null;
   Runtime runtime = null; 
@@ -14,19 +22,25 @@ public class ServThread extends Thread {
   public ServThread(ParDebug d, Process par){
     mainThread = d;
     p = par;
+    try {
+        charmrunIn = new BufferedWriter(new OutputStreamWriter(p.getOutputStream()));
+        charmrunOut = new BufferedReader(new InputStreamReader(p.getErrorStream()));
+    } catch (Exception e) {
+        e.printStackTrace();
+        System.out.println("Error in ServThread while opening the streams");
+    }
   }
 
     // string used to pass the output back from the info gdb
     public static String infoStr;
     // streams to communicate with the charmrun process
-    public static BufferedWriter charmrunIn;
-    public static BufferedReader charmrunOut;
+    public BufferedWriter charmrunIn;
+    public BufferedReader charmrunOut;
 
 
   public void run() {
     runtime = Runtime.getRuntime();
     try {
-	//BufferedReader prerr = new BufferedReader(new InputStreamReader(p.getErrorStream()));
       BufferedReader prout = new BufferedReader(new InputStreamReader(p.getInputStream()));
       boolean foundPort = false;
       try {
@@ -76,7 +90,10 @@ public class ServThread extends Thread {
 	   System.out.println("Parallel program printed: "+outlinechunk.toString());
            mainThread.displayProgramOutput(outlinechunk.toString());
 	   
-	   if (outline==null) break; /* Program is now finished. */
+	   if (outline==null) {
+               System.out.println("ServThread terminated");
+               break; /* Program is now finished. */
+           }
 	}
       }
       catch(Exception e) {
@@ -91,7 +108,7 @@ public class ServThread extends Thread {
    } 
  }
 
-    public static String infoCommand(String command) {
+    public String infoCommand(String command) {
 	try {
 	    charmrunIn.write(command);
 	    charmrunIn.flush();

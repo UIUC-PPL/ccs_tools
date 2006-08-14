@@ -166,11 +166,11 @@ public class MemoryPList {
 			Symbol s = Symbol.get(st.getIntValue(i));
 			if (s == null) {
 			    // resolve the symbol in the info gdb
-			    String res1 = ServThread.infoCommand("info:info symbol "+st.getIntValue(i)+"\n");
+			    String res1 = ParDebug.servthread.infoCommand("info:info symbol "+st.getIntValue(i)+"\n");
 			    //System.out.println(res1);
 			    int index = res1.indexOf('+');
 			    String funcName = index>=0 ? res1.substring(0, index).trim() : "??";
-			    String res2 = ServThread.infoCommand("info:info line *"+st.getIntValue(i)+"\n");
+			    String res2 = ParDebug.servthread.infoCommand("info:info line *"+st.getIntValue(i)+"\n");
 			    index = res2.indexOf("Line");
 			    String fileName;
 			    int line;
