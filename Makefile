@@ -8,8 +8,8 @@ JAR=jar cf
 all: debugger liveViz setReadonly lvClient
 
 ############# Debugger ################
-SRC_DEBUG=charm/debug/*.java charm/debug/fmt/*.java charm/ccs/*.java 
-CLASS_DEBUG=charm/debug/*.class charm/debug/fmt/*.class charm/ccs/*.class 
+SRC_DEBUG=charm/debug/*.java charm/debug/fmt/*.java charm/debug/pdata/*.java charm/debug/inspect/*.java charm/ccs/*.java 
+CLASS_DEBUG=charm/debug/*.class charm/debug/fmt/*.class charm/debug/pdata/*.class charm/debug/inspect/*.class charm/ccs/*.class 
 DEST_DEBUG=bin/charmdebug.jar
 
 debugger: $(DEST_DEBUG)
