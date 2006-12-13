@@ -6,6 +6,9 @@ import java.awt.event.*;
 import javax.swing.*;
 
 import charm.debug.fmt.*;
+import charm.debug.pdata.MemoryPList;
+import charm.debug.pdata.Slot;
+
 import java.util.Collections;
 import java.util.Date;
 
@@ -70,7 +73,8 @@ public class ScrollableMemory extends JLabel
 	}
 	else list=ParDebug.server.getPList("converse/memory",pe);
 	//System.out.println("received data from server ("+list.size()+") "+(new Date()).toString());
-	data = new MemoryPList(list);
+	data = new MemoryPList();
+        data.load(list);
 	//System.out.println("memory list construced "+(new Date()).toString());
 	data.sort();
 	//System.out.println("list sorted "+(new Date()).toString());
@@ -89,7 +93,7 @@ public class ScrollableMemory extends JLabel
 	holes = data.findHoles();
 	//System.out.println("holes detected "+(new Date()).toString());
 
-	memorySize = lastByte - firstByte + 1 - holes[0].size;
+	memorySize = lastByte - firstByte + 1 - holes[0].getSize();
 	allocatedMemory = 0;
 
 	//System.out.println("data size = "+memorySize);
@@ -111,7 +115,7 @@ public class ScrollableMemory extends JLabel
 
 	pixelsAvailable = verticalPixels / lineScan * horizontalPixels;
 	crossReference = new Slot[pixelsAvailable];
-	pixelsAvailable -= HOLE_PIXELS * holes[0].position;
+	pixelsAvailable -= HOLE_PIXELS * holes[0].getPosition();
 
 	BufferedImage tmp = new BufferedImage(horizontalPixels,verticalPixels,BufferedImage.TYPE_INT_ARGB);
 
@@ -149,22 +153,22 @@ public class ScrollableMemory extends JLabel
 	for (int i=0; i<lineWidth; ++i) rgbhole[i] = color;
 
 	for (int i=0; i<data.size(); ++i) {
-	    int nextHole = holes[0].position>0 ? 1 : 0;
+	    int nextHole = holes[0].getPosition()>0 ? 1 : 0;
 	    int lostMemory = 0; // count how much memory holes we already encountered
 	    int additionalPixels = 0; // count how many pixels to add for past memory holes
 	    for (int j=0; j<data.size(i); ++j) {
 		Slot sl = data.elementAt(i, j);
 		//System.out.println("slot "+sl.getLocation());
 
-		if (nextHole > 0 && holes[nextHole].position < sl.getLocation()) {
+		if (nextHole > 0 && holes[nextHole].getPosition() < sl.getLocation()) {
 		    // we have just passed a hole, take care of it
-		    int offset = holes[nextHole].position - firstByte - lostMemory;
+		    int offset = holes[nextHole].getPosition() - firstByte - lostMemory;
 		    offset = (int)(((long)offset) * pixelsAvailable / memorySize); // compute the pixel offset
 		    offset += additionalPixels; // correct for the memory holes
 		    int line = offset / horizontalPixels;
 		    offset -= line * horizontalPixels;
 
-		    int end = holes[nextHole].position - firstByte - lostMemory;
+		    int end = holes[nextHole].getPosition() - firstByte - lostMemory;
 		    end = (int)(((long)end) * pixelsAvailable / memorySize); // compute the pixel offset
 		    end += additionalPixels + HOLE_PIXELS; // correct for the memory holes
 		    int lineEnd = end / horizontalPixels;
@@ -181,9 +185,9 @@ public class ScrollableMemory extends JLabel
 			tmp.setRGB(pos, ln*lineScan+lineStart, 1, lineWidth, rgbhole, 0, 1);
 		    }
 		    // add the hole to the scanner
-		    lostMemory += holes[nextHole].size;
+		    lostMemory += holes[nextHole].getSize();
 		    additionalPixels += HOLE_PIXELS;
-		    nextHole = holes[0].position>nextHole ? nextHole+1 : 0;
+		    nextHole = holes[0].getPosition()>nextHole ? nextHole+1 : 0;
 		}
 
 		int offset = sl.getLocation() - firstByte - lostMemory;
@@ -224,8 +228,8 @@ public class ScrollableMemory extends JLabel
     private void drawSlot(Slot sl, int[] color) {
 	int lostMemory = 0;
 	int additionalPixels = 0;
-	for (int index = 1; index <= holes[0].position && holes[index].position < sl.getLocation(); index++) {
-	    lostMemory += holes[index].size;
+	for (int index = 1; index <= holes[0].getPosition() && holes[index].getPosition() < sl.getLocation(); index++) {
+	    lostMemory += holes[index].getSize();
 	    additionalPixels += HOLE_PIXELS;
 	}
 
@@ -268,6 +272,8 @@ public class ScrollableMemory extends JLabel
 	}
     }
 
+    public Slot getSelectedSlot() { return selectedSlot; }
+    
     public Dimension getPreferredSize() {
         if (missingPicture) {
             return new Dimension(320, 320);
@@ -327,6 +333,7 @@ public class ScrollableMemory extends JLabel
         maxUnitIncrement = pixels;
     }
 
+    public int getPe() { return pe; }
     public int getBytes() { return memorySize; }
     public int getPixels() { return pixelsAvailable; }
     public int getNumLines() { return numLines; }

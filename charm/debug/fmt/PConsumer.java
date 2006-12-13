@@ -101,12 +101,18 @@ public void listSync(int syncCode) {
 }
 
 public void listByte(byte[] data) {
-	add(new PString(new String(data)));
+	add(new PString(data));
 }
 public void listInt(int[] data) {
 	add(new PNative(data));
 }
 public void listFloat(float[] data) {
+	add(new PNative(data));
+}
+public void listLong(long[] data) {
+	add(new PNative(data));
+}
+public void listDouble(double[] data) {
 	add(new PNative(data));
 }
 

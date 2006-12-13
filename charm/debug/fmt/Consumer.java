@@ -27,7 +27,9 @@ public static final int
 public static final int  
 		typeCode_byte=0, // unknown data type: nItems bytes
 		typeCode_int=2, // 32-bit integer array: nItems ints
+		typeCode_long=3, // 64-bit integer array: nItems ints
 		typeCode_float=5, // 32-bit floating-point array: nItems floats
+		typeCode_double=6, // 64-bit floating-point array: nItems floats
 		typeCode_comment=10, // comment/label: nItems byte characters
 		typeCode_sync=11 // synchronization code
 ;
@@ -57,6 +59,8 @@ public static final int
 public void listByte(byte[] data) {}
 public void listInt(int[] data) {}
 public void listFloat(float[] data) {}
+public void listLong(long[] data) {}
+public void listDouble(double[] data) {}
 public void listComment(String cmt) {}
 public void listSync(int syncCode) {}
 
@@ -86,6 +90,7 @@ public void decode(byte[] buf,int off,int buf_length)
 	// System.out.println("                 l="+lengthLen+" t="+typeCode+" o="+off);
 	int i,length=0;
 	final int intLen=4;
+        final int longLen=8;
 	switch(lengthLen) {
 	case lengthLen_single: length=1; break;
 	case lengthLen_byte: length=0xff & (int)buf[off++]; break;
@@ -113,6 +118,22 @@ public void decode(byte[] buf,int off,int buf_length)
 			off+=intLen;
 		}
 		listFloat(data);
+		} break;
+	case typeCode_long: {
+		long[] data=new long[length];
+		for (i=0;i<length;i++) {
+			data[i]=CcsServer.readLong(buf,off);
+			off+=longLen;
+		}
+		listLong(data);
+		} break;
+	case typeCode_double: {
+		double[] data=new double[length];
+		for (i=0;i<length;i++) {
+			data[i]=CcsServer.readDouble(buf,off);
+			off+=longLen;
+		}
+		listDouble(data);
 		} break;
 	case typeCode_comment:
 		listComment(new String(buf,off,length));

@@ -3,8 +3,10 @@ package charm.debug;
 import java.awt.*;
 import java.awt.event.*;
 import javax.swing.*;
-
 import java.text.NumberFormat;
+
+import charm.debug.pdata.Slot;
+import charm.debug.inspect.InspectPanel;
 
 public class MemoryPanel extends JPanel
     implements ActionListener, MouseListener, MouseMotionListener {
@@ -14,6 +16,7 @@ public class MemoryPanel extends JPanel
     private JMenuItem menuLeak;
     private JMenu menuInfo;
     private JMenuItem menuStat;
+    private JMenuItem menuInspect;
     private JSlider verticalZoom;
     private JSlider horizontalZoom;
     private JScrollPane displayPane;
@@ -46,6 +49,8 @@ public class MemoryPanel extends JPanel
 	menuInfo.setMnemonic('I');
 	menuInfo.add(menuStat = new JMenuItem("Show Statistics",'L'));
 	menuStat.addActionListener(this);
+	menuInfo.add(menuInspect = new JMenuItem("Inspect",'I'));
+	menuInspect.addActionListener(this);
 
 	topPane = new JPanel();
 	topPane.setLayout(new BorderLayout());
@@ -288,6 +293,19 @@ public class MemoryPanel extends JPanel
 	    repaint();
 	} else if (e.getSource() == menuStat) {
 	    JOptionPane.showMessageDialog(this, "Memory Usage: "+NumberFormat.getInstance().format(memoryData.getAllocatedMemory())+" bytes\nAllocated blocks: "+NumberFormat.getInstance().format(memoryData.getNumAllocations()), "Memory Statistics", JOptionPane.INFORMATION_MESSAGE);
+	} else if (e.getSource() == menuInspect) {
+		Slot sl = memoryData.getSelectedSlot();
+		if (sl!=null) {
+            JFrame frame = new JFrame("Memory inspector");
+            frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+            InspectPanel inspect = new InspectPanel();
+            JComponent newContentPane = inspect;
+            newContentPane.setOpaque(true);
+            inspect.load(memoryData.getPe(), sl.getLocation(), null);
+            frame.setContentPane(newContentPane);
+            frame.pack();
+            frame.setVisible(true);
+		}
 	} else if (e.getActionCommand().equals("update")) {
 	    memoryData.loadImage(false);
 	    traceWrite = true;

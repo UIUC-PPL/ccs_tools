@@ -12,6 +12,9 @@ package charm.debug;
 
 import charm.ccs.CcsServer;
 import charm.debug.fmt.*;
+import charm.debug.pdata.*;
+import charm.debug.inspect.Inspector;
+
 import javax.swing.*;
 import java.io.*;
 import java.util.*;
@@ -19,7 +22,7 @@ import java.awt.*;
 import java.awt.event.*;
 import javax.swing.event.*;
 import java.net.*;
-import java.lang.*;
+import java.nio.ByteOrder;
 
 public class ParDebug extends JPanel
      implements ActionListener,ListSelectionListener{
@@ -31,10 +34,14 @@ public class ParDebug extends JPanel
     private static String hostname;
     private static String username;
     private static String portnumber;
+    private static String hostnumber;
     private static int numberPes;
     private static String clparams;
     private static String envDisplay;
+    private static boolean tunnelNeeded;
+    private static Process sshTunnel;
     public static byte[] globals;
+    public static int dataPos;
     static ServThread servthread;
 
     /// This variable is responsible for handling all the CCS communication with
@@ -46,32 +53,41 @@ public class ParDebug extends JPanel
     private PList listItems = null;
     private boolean isRunning = false; // True if the debugged program is running
     private boolean[] peList = null;
+    public static int currentListedPE;
+
+    private MsgPList messageQueue;
+    private EpPList epItems;
+    private MsgTypePList msgItems;
+    private ChareTypePList chareItems;
     
     private class CpdListInfo {
        public String display; // Client name CpdList should be displayed as.
        public String name; // Server name basic CpdList is registered under.
        public String detailedName; // Server name of detailed CpdList.
-       
+        public GenericPList list; // Class that will be created consequently of the server reply
+
        public CpdListInfo(String display_,String name_) {
-          display=display_; name=name_; detailedName=null;
+           display=display_; name=name_; detailedName=null; list=null;
        }
-       public CpdListInfo(String display_,String name_,String detailed_) {
-          display=display_; name=name_; detailedName=detailed_;
+       public CpdListInfo(String display_,String name_,String detailed_,GenericPList list_) {
+           display=display_; name=name_; detailedName=detailed_; list=list_;
        }
     };
     
     /// CpdList names
     private CpdListInfo[] cpdLists =  {
-        new CpdListInfo("-- Display --",null,null),
-        new CpdListInfo("Array Elements","charm/arrayElementNames","charm/arrayElements"),
-	new CpdListInfo("Messages in Queue","converse/localqueue",null),
-	new CpdListInfo("Readonly Variables","charm/readonly",null),
-	new CpdListInfo("Readonly Messages","charm/readonlyMsg",null),
-	new CpdListInfo("Entry Points","charm/entries",null),
-	new CpdListInfo("Chare Types","charm/chares",null),
-	new CpdListInfo("Message Types","charm/messages",null),
-	new CpdListInfo("Mainchares","charm/mains",null),
-	new CpdListInfo("Viewable Lists","converse/lists",null)
+        new CpdListInfo("-- Display --",null,null,null),
+        //new CpdListInfo("Array Elements","charm/arrayElementNames","charm/arrayElements",new CharePList()),
+        new CpdListInfo("Charm Objects","charm/objectNames",null,new CharePList()),
+        new CpdListInfo("Array Elements","charm/arrayElements",null,new CharePList()),
+	new CpdListInfo("Messages in Queue","converse/localqueue",null,messageQueue=new MsgPList()),
+	new CpdListInfo("Readonly Variables","charm/readonly",null,new ReadonlyPList()),
+	new CpdListInfo("Readonly Messages","charm/readonlyMsg",null,null),
+	new CpdListInfo("Entry Points","charm/entries",null,epItems=new EpPList()),
+	new CpdListInfo("Chare Types","charm/chares",null,chareItems=new ChareTypePList()),
+	new CpdListInfo("Message Types","charm/messages",null,msgItems=new MsgTypePList()),
+	new CpdListInfo("Mainchares","charm/mains",null,null),
+	new CpdListInfo("Viewable Lists","converse/lists",null,null)
     };
 
     // ********* GUI ITEMS ************
@@ -88,7 +104,9 @@ public class ParDebug extends JPanel
     private JPanel userEpsActualPanel;
     
     private JTextArea programOutputArea;
+    private JScrollPane outputAreaScrollPane;
     private PListOutputArea outputArea;
+    private JTextArea newOutputArea;
     private JTextField statusArea;
     private JComboBox listsbox;
     private JComboBox pesbox;
@@ -206,6 +224,10 @@ DEPRECATED!! The correct implementation is in CpdList.java
     }
     */
 
+    public static String infoCommand(String s) {
+        return servthread.infoCommand(s);
+    }
+
 /************** Tiny GUI Routines ************/
     
     private void abort(String problem) {
@@ -289,26 +311,52 @@ DEPRECATED!! The correct implementation is in CpdList.java
     {
 	  dest.removeAllElements();
           outputArea.setList(null);
+          newOutputArea.setText("");
 	  listItems = null;
 	  
           String lName=cpdLists[cpdListIndex].name;
 	  if (lName==null) return; /* the initial empty list */
-          int nItems=server.getListLength(lName,forPE);
-          listItems = server.getPList(lName,forPE,0,nItems);
-	  
-	  for (PAbstract cur=listItems.elementAt(0);cur!=null;cur=cur.getNext()) {
-	  	dest.addElement(cur.getDeepName());
-	  }
+          GenericPList list = cpdLists[cpdListIndex].list;
+
+          if (list == null || list.needRefresh()) {
+              int nItems=server.getListLength(lName,forPE);
+              listItems = server.getPList(lName,forPE,0,nItems);
+          }
+
+          if (list != null) {
+              if (list.needRefresh()) list.load(listItems);
+              list.populate(dest);
+          } else {
+              for (PAbstract cur=listItems.elementAt(0);cur!=null;cur=cur.getNext()) {
+                  dest.addElement(cur.getDeepName());
+              }
+          }
     }
     
     /// The user has just selected listItem from the cpdListIndex'th list on forPE.
     ///  Expand this item.
     private void expandListElement(int cpdListIndex,int forPE,int listItem)
     {
+        currentListedPE = forPE;
     	String detailedName=cpdLists[cpdListIndex].detailedName;
-	if (detailedName==null)
-		outputArea.setList((PList)listItems.elementAt(listItem));
-	else { /* There's a list to consult for further detail */
+	if (detailedName==null) {
+                if (cpdLists[cpdListIndex].list != null) {
+                    outputAreaScrollPane.setViewportView(newOutputArea);
+                    Object selected = listItemNames.getSelectedValue();
+                    if (selected instanceof GenericInfo) {
+                        //newOutputArea.setText(((GenericInfo)selected).getDetails());
+                        //System.out.println(((GenericInfo)selected).getDetails());
+                        //newOutputArea.setCaretPosition(0);
+                    	outputAreaScrollPane.setViewportView(((GenericInfo)selected).getDetails());
+                    } else {
+                        System.out.println("Error: element not of type GenericInfo");
+                    }
+                } else {
+                    outputAreaScrollPane.setViewportView(outputArea);
+                    outputArea.setList((PList)listItems.elementAt(listItem));
+                }
+	} else { /* There's a list to consult for further detail */
+                outputAreaScrollPane.setViewportView(outputArea);            
 		PList detailList=server.getPList(detailedName,forPE,listItem,listItem+1);
 		outputArea.setList((PList)detailList);//.elementAt(0));
 	}
@@ -542,16 +590,21 @@ DEPRECATED!! The correct implementation is in CpdList.java
 
         //second display pane
         outputArea = new PListOutputArea();
-        JScrollPane secondScrollPane = new JScrollPane(outputArea);
-	secondScrollPane.setHorizontalScrollBarPolicy(
+        newOutputArea = new JTextArea();
+        newOutputArea.setEditable(false);
+        newOutputArea.setBackground(outputArea.getBackground());
+        newOutputArea.setLineWrap(true);
+        newOutputArea.setWrapStyleWord(true);
+        outputAreaScrollPane = new JScrollPane(outputArea);
+	outputAreaScrollPane.setHorizontalScrollBarPolicy(
 		 JScrollPane.HORIZONTAL_SCROLLBAR_NEVER
 	);
-        secondScrollPane.setBorder(BorderFactory.createTitledBorder("Details"));
+        outputAreaScrollPane.setBorder(BorderFactory.createTitledBorder("Details"));
 
         listScrollPane.setPreferredSize(new Dimension(200,230));
-        secondScrollPane.setPreferredSize(new Dimension(400,230));
+        outputAreaScrollPane.setPreferredSize(new Dimension(400,230));
 
-        JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, listScrollPane, secondScrollPane);
+        JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, listScrollPane, outputAreaScrollPane);
         splitPane.setOneTouchExpandable(true);
         
         panelForEntities.add(splitPane);
@@ -600,12 +653,18 @@ DEPRECATED!! The correct implementation is in CpdList.java
            setStatusMessage("Program is running");
         } 
         else if (e.getActionCommand().equals("quit")) {
+            server.bcastCcsRequest("ccs_debug_quit", "",0,numberPes,peList);
 	   quitProgram(); 
         }
         else if (e.getActionCommand().equals("startgdb")) 
 	{ 
            server.bcastCcsRequest("ccs_remove_all_break_points", "",0,numberPes,peList);
 	   server.bcastCcsRequest("ccs_debug_startgdb","",1,numberPes,peList);
+        	/*int pid = 0;
+        	Process gdb;
+        	try{
+        		gdb = Runtime.getRuntime().exec("ssh -2 -c blowfish "+hostname+"gdb "+new File(filename).getAbsolutePath()+" "+pid);
+        	} catch (Exception e1) {}*/
            setStatusMessage("Gdb started on selected pes");
         } 
         else if (e.getActionCommand().equals("breakpoints")) {
@@ -667,8 +726,11 @@ DEPRECATED!! The correct implementation is in CpdList.java
 	    }
         }
 	else if (e.getActionCommand().equals("exitDebugger")) {
-	  quitProgram();
-          System.exit(0);
+            if (isRunning) {
+                server.bcastCcsRequest("ccs_debug_quit", "",0,numberPes,peList);
+                quitProgram();
+            }
+            System.exit(0);
 	}
     } // end of actionPerformed
      
@@ -728,16 +790,23 @@ DEPRECATED!! The correct implementation is in CpdList.java
            servthread.start();
 
 	   // Retrieve the initial info from charmrun regarding the program segments
-	   String initialInfo;
-	   while ((initialInfo = servthread.infoCommand(" ")).indexOf("\n.data") == -1) System.out.println("++|"+initialInfo+"|");
-	   System.out.println("|"+initialInfo+"|");
+	   //StringBuffer initialInfoBuf = new StringBuffer();
+           String initialInfo = servthread.infoCommand(" ");
+	   //while ((initialInfo = servthread.infoCommand(" ")).indexOf("\n(gdb)") == -1) {
+           //    initialInfoBuf.append(initialInfo);
+           //    System.out.println("++|"+initialInfo+"|");
+           //}
+	   //System.out.println("|"+initialInfo+"|");
+           //initialInfoBuf.append(initialInfo);
+           //initialInfo = initialInfoBuf.toString();
+	   //System.out.println("|"+initialInfo+"|");
 	   int dataInitial = initialInfo.indexOf("\n.data");
 	   int dataFinal = initialInfo.indexOf("\n",dataInitial+1);
 	   String dataValues = initialInfo.substring(dataInitial+6,dataFinal).trim();
 	   int endSize = dataValues.indexOf(' ');
 	   int startPos = dataValues.lastIndexOf(' ');
 	   int dataSize = Integer.parseInt(dataValues.substring(0,endSize));
-	   int dataPos = Integer.parseInt(dataValues.substring(startPos+1));
+	   dataPos = Integer.parseInt(dataValues.substring(startPos+1));
 	   //System.out.println("string1: |"+initialInfo.substring(dataInitial+6,dataFinal).trim()+"| "+dataSize+" "+dataPos);
 	   int bssInitial = initialInfo.indexOf("\n.bss");
 	   int bssFinal = initialInfo.indexOf("\n",bssInitial+1);
@@ -755,7 +824,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
 	   CcsServer.writeInt(globals, 12, bssPos+bssSize);
 
 	   // Delete the first print made by gdb at startup
-	   servthread.infoCommand(" ");
+	   //System.out.println(servthread.infoCommand(" "));
 
 	 /* Wait until the "ccs:" line comes out of the program's stdout */
            long iter = 0;
@@ -768,13 +837,25 @@ DEPRECATED!! The correct implementation is in CpdList.java
            }
            if (portnumber.length() == 0)
                portnumber = servthread.portno;
-	   System.out.println("ParDebug> Charmrun started (CCS port "+portnumber+")");
+           if (hostname.equals("localhost")) hostnumber = servthread.hostName;
+	   System.out.println("ParDebug> Charmrun started (CCS IP "+(hostname.equals("localhost")?hostnumber:hostname)+", port "+portnumber+")");
 	 
 	 /* Connect to the new program */
            String[] ccsArgs=new String[2];
-           ccsArgs[0]=hostname;
+           ccsArgs[0]= hostname.equals("localhost")?hostnumber:hostname;
            ccsArgs[1]= portnumber;
-	   System.out.println("Connecting to: "+username+(username.length()>0?"@":"")+hostname+":"+portnumber);
+           if (tunnelNeeded) {
+               System.out.println("ParDebug> Tunneling connection through ssh");
+               try {
+                   sshTunnel = runtime.exec("ssh -2 -c blowfish -L "+portnumber+":localhost:"+portnumber+" "+hostname);
+               } catch (Exception exc) {
+                   System.out.println("ParDebug> Could not create ssh tunnel");
+               }
+               try { Thread.sleep(5000); }
+               catch(InterruptedException e1) {}
+               ccsArgs[0] = "localhost";
+           }
+	   System.out.println("Connecting to: "+username+(username.length()>0?"@":"")+(hostname.equals("localhost")?hostnumber:hostname)+":"+portnumber);
            CcsServer ccs = CcsServer.create(ccsArgs,false);
 	   server = new CpdUtil(ccs);
 
@@ -800,10 +881,22 @@ DEPRECATED!! The correct implementation is in CpdList.java
            quitButton.setEnabled(false);
            freezeButton.setEnabled(false);
            startGdbButton.setEnabled(true); 
-          
-         /* Create the entities lists */
-           int nItems=server.getListLength("charm/entries",0);
-	   EpPList epItems = new EpPList(server.getPList("charm/entries",0,0,nItems));
+
+           int nItems;
+
+           /* Reset the type information stored */
+           Inspector.initialize();
+
+           /* Load the information regarding all chares */
+           nItems = server.getListLength("charm/chares",0);
+           chareItems.load(server.getPList("charm/chares",0,0,nItems));
+
+           /* Set up the lookup information for the Entry Methods */
+           epItems.setLookups(chareItems);
+
+           /* Create the entities lists */
+           nItems=server.getListLength("charm/entries",0);
+	   epItems.load(server.getPList("charm/entries",0,0,nItems));
            
            Vector items;
            items = epItems.getUserEps();
@@ -832,7 +925,15 @@ DEPRECATED!! The correct implementation is in CpdList.java
                    chkbox.setActionCommand("breakpoints"); 
                    sysEpsActualPanel.add(chkbox);
                    
-            }           
+           }
+
+           /* Load the information regarding all messages */
+           nItems = server.getListLength("charm/messages",0);
+           msgItems.load(server.getPList("charm/messages",0,0,nItems));
+
+           /* Set the lookup lists for the message queue inspector */
+           messageQueue.setLookups(epItems, msgItems, chareItems);
+
            sysEpsActualPanel.updateUI();
            listsbox.setEnabled(true);
            pesbox.setEnabled(true);  
@@ -842,9 +943,14 @@ DEPRECATED!! The correct implementation is in CpdList.java
     /// Exit the debugged program.
     public void quitProgram()
     {
-        if (isRunning) server.bcastCcsRequest("ccs_debug_quit", "",0,numberPes,peList);
             portnumber = "";
             isRunning = false;
+            if (sshTunnel != null) {
+		try { Thread.sleep(2);
+		} catch (InterruptedException e) {}
+                sshTunnel.destroy();
+                sshTunnel = null;
+            }
             startButton.setEnabled(true);
             continueButton.setEnabled(false); 
             quitButton.setEnabled(false);
@@ -868,7 +974,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
 
     public static void printUsage()
     {
-        System.out.println("Usage: java ParDebug [[-file <charm program name>] [[-param \"<charm program parameters>\"][-pes <number of pes>]] [-host <hostname>] [-user <username>] [-port <port>] [-display <display>]]");
+        System.out.println("Usage: java ParDebug [[-file <charm program name>] [[-param \"<charm program parameters>\"][-pes <number of pes>]] [-host <hostname>] [-user <username>] [-port <port>] [-sshtunnel] [-display <display>]]");
     }
   
     public static void main(String[] args) {
@@ -880,6 +986,8 @@ DEPRECATED!! The correct implementation is in CpdList.java
 	String numberPesString="1";
         clparams = "";
         envDisplay = "";
+        tunnelNeeded = false;
+        sshTunnel = null;
 
         // parsing command-line parameters
         int i = 0;
@@ -900,6 +1008,10 @@ DEPRECATED!! The correct implementation is in CpdList.java
               numberPesString = args[i+1];
           else if (args[i].equals("-display"))
               envDisplay = args[i+1];
+          else if (args[i].equals("-sshtunnel")) {
+              tunnelNeeded = true;
+              i--;
+          }
           else
           { /* Just a 1-argument */
 	     if (args[i].startsWith("+p"))
@@ -937,7 +1049,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
                 if (debugger.isRunning)
                    {
                         debugger.server.bcastCcsRequest("ccs_debug_quit", "",-1,numberPes,null);
-                        debugger.isRunning = false;
+                        debugger.quitProgram();
                    } 
                 System.exit(0); /* main window closed */
             }

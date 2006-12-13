@@ -1,6 +1,9 @@
-package charm.debug;
+package charm.debug.pdata;
 
 import charm.debug.fmt.*;
+import charm.debug.Symbol;
+import charm.debug.ParDebug;
+
 import java.util.Vector;
 import java.util.Collections;
 
@@ -58,6 +61,12 @@ public class MemoryPList {
 	    position=p;
 	    size=s;
 	}
+        public int getPosition() {
+            return position;
+        }
+        public int getSize() {
+            return size;
+        }
     }
 
     public class MemoryIterator {
@@ -144,9 +153,18 @@ public class MemoryPList {
 	*/
     }
  
-    public MemoryPList (PList list) {
+    public boolean needRefresh() {
+        return true;
+    }
+
+    public MemoryPList() {
 	slots = new Vector();
 	names = new Vector();
+    }
+
+    public void load(PList list) {
+        slots.clear();
+        names.clear();
 	int type;
 	if (list==null) System.out.println("list is null!");
 	for (PAbstract cur=list.elementAt(0);cur!=null;cur=cur.getNext()) 
@@ -166,11 +184,11 @@ public class MemoryPList {
 			Symbol s = Symbol.get(st.getIntValue(i));
 			if (s == null) {
 			    // resolve the symbol in the info gdb
-			    String res1 = ParDebug.servthread.infoCommand("info:info symbol "+st.getIntValue(i)+"\n");
+			    String res1 = ParDebug.infoCommand("info:info symbol "+st.getIntValue(i)+"\n");
 			    //System.out.println(res1);
 			    int index = res1.indexOf('+');
 			    String funcName = index>=0 ? res1.substring(0, index).trim() : "??";
-			    String res2 = ParDebug.servthread.infoCommand("info:info line *"+st.getIntValue(i)+"\n");
+			    String res2 = ParDebug.infoCommand("info:info line *"+st.getIntValue(i)+"\n");
 			    index = res2.indexOf("Line");
 			    String fileName;
 			    int line;

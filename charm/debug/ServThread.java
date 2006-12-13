@@ -11,10 +11,9 @@ import java.lang.*;
  * This class implements a thread whose job is to handle the I/O communication
  * with the currently debugged program. The communication here refers to the
  * stdin, stdout, stderr streams.
-
- * Stdin and stderr are 
  */
 public class ServThread extends Thread {
+  String hostName = null;
   String portno = null;
   Runtime runtime = null; 
   Process p = null; 
@@ -25,11 +24,15 @@ public class ServThread extends Thread {
     try {
         charmrunIn = new BufferedWriter(new OutputStreamWriter(p.getOutputStream()));
         charmrunOut = new BufferedReader(new InputStreamReader(p.getErrorStream()));
+        debugOutput = new FileWriter("servthread_debug.out");
     } catch (Exception e) {
         e.printStackTrace();
         System.out.println("Error in ServThread while opening the streams");
     }
   }
+
+    // debub output file
+    public FileWriter debugOutput;
 
     // string used to pass the output back from the info gdb
     public static String infoStr;
@@ -59,8 +62,13 @@ public class ServThread extends Thread {
               if(!foundPort)
               {
                  int portStart, portEnd;
+                 int nameStart, nameEnd;
                  if(outline.indexOf("ccs: Server IP =", 0) != -1)
                  {
+                    nameStart = outline.indexOf("Server IP = ",0);
+                    nameStart += 12;
+                    nameEnd = outline.indexOf(",",nameStart);
+                    hostName = outline.substring(nameStart, nameEnd);
                     portStart = outline.indexOf("Server port = ",0);
                     portStart += 14;
                     portEnd = outline.indexOf("$",0);
@@ -99,8 +107,9 @@ public class ServThread extends Thread {
       catch(Exception e) {
           System.out.println("Failed to print");
       }
-      System.out.println("Finished running parallel program");    
+      System.out.println("Finished running parallel program");
       mainThread.quitProgram();
+      debugOutput.close();
     }
    catch (Exception e) {
       e.printStackTrace();
@@ -112,9 +121,14 @@ public class ServThread extends Thread {
 	try {
 	    charmrunIn.write(command);
 	    charmrunIn.flush();
+            debugOutput.write("question: {"+command+"}\n");
 	    StringBuffer reply = new StringBuffer();
-	    while (!charmrunOut.ready());
-	    while (charmrunOut.ready()) reply.append((char)charmrunOut.read());
+            while (!reply.toString().endsWith("(gdb) ")) {
+                Thread.yield();
+                while (charmrunOut.ready()) reply.append((char)charmrunOut.read());
+            }
+            debugOutput.write("|"+reply+"|\n");
+            reply.setLength(reply.length()-6);
 	    return reply.toString();
 	} catch (IOException e) {
 	    return "error";

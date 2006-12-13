@@ -61,6 +61,18 @@ public void listFloat(float[] data) {
 		System.out.print(indent+data[i]+", ");
 	endArray("float",data.length);
 }
+public void listILong(long[] data) {
+	String indent=beginArray("long",data.length);
+	for (int i=0;i<data.length;i++)
+		System.out.print(indent+data[i]+", ");
+	endArray("long",data.length);
+}
+public void listDouble(double[] data) {
+	String indent=beginArray("double",data.length);
+	for (int i=0;i<data.length;i++) 
+		System.out.print(indent+data[i]+", ");
+	endArray("double",data.length);
+}
 public void listComment(String cmt) {
 	System.out.println(startLine()+"//"+cmt+"");
 }

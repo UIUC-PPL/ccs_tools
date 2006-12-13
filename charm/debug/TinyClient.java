@@ -17,16 +17,18 @@ public class TinyClient
       dest.decode(buf);
     }
 
-    public TinyClient(CcsServer ccs_,String listName,int forPE) {
+    public TinyClient(CcsServer ccs_,String listName,int forPE, int lo, int hi) {
     	cpd=new CpdUtil(ccs_);
 	if (listName==null) listName="converse/lists";
 	int nItems=cpd.getListLength(listName,forPE);
 	System.out.println("Cpd list "+listName+" contains "+nItems+" items");
 	
-	String items=cpd.stringList(listName,forPE,0,nItems);
+	if (lo==-1) lo=0;
+	if (hi==-1) hi=nItems;
+	String items=cpd.stringList(listName,forPE,lo,hi);
 	System.out.println("\n------ Text version: \n"+items);
 	
-	byte[] bitems=cpd.byteList(listName,"fmt",forPE,0,nItems,null);
+	byte[] bitems=cpd.byteList(listName,"fmt",forPE,lo,hi,null);
 	System.out.println("\n------ Binary version ("+
 	      bitems.length+" bytes)");
 	decodeList(bitems);
@@ -36,7 +38,7 @@ public class TinyClient
     public static void main(String args[]) {
     	if (args.length<2) {
 		System.out.println("Usage: java client <host> <port> "+
-			"[ <list> [ <pe> ] ]");
+			"[ <list> [ <pe> ] [ <lo> [ <hi> ] ] ]");
 		System.exit(1);
 	}
     	String[] ccsArgs=new String[2];
@@ -47,6 +49,11 @@ public class TinyClient
         int forPE=0;
 	if (args.length>2) listName=args[2];
         if (args.length>3) forPE=Integer.parseInt(args[3]);
-	new TinyClient(ccs,listName,forPE);
+    int lo = -1;
+    int hi = -1;
+    if (args.length>4) lo=Integer.parseInt(args[4]);
+    if (args.length>5) hi=Integer.parseInt(args[5]);
+    System.out.println("args "+args.length+": "+lo+" "+hi);
+	new TinyClient(ccs,listName,forPE,lo,hi);
     }
 };

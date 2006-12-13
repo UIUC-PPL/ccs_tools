@@ -2,8 +2,9 @@
    Filippo Gioachin, gioachin@ieee.org, 10/04/2005
 */
 
-package charm.debug;
+package charm.debug.pdata;
 
+import charm.debug.Symbol;
 import java.util.Vector;
 
 public class Slot implements Comparable {

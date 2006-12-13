@@ -111,7 +111,7 @@ public class CpdUtil {
 
     /// Return a set of CpdList items as a PList withou any additional extra data required
     public PList getPList(String listName,int forPE,int lo,int hiPlusOne) {
-	return getPList(listName,forPE,0,getListLength(listName,forPE),null);
+	return getPList(listName,forPE,lo,hiPlusOne,null);
     }
   
     /// Return everything in a CpdList as a PList
