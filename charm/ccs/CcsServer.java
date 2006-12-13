@@ -260,6 +260,22 @@ public class CcsServer
     	return Float.intBitsToFloat(readInt(src,srcStart));
     }
     
+    static final public long readLong(byte[] src,int srcStart)
+    {
+	return (((long)0xff&src[srcStart+0])<<56)+
+	       (((long)0xff&src[srcStart+1])<<48)+
+	       (((long)0xff&src[srcStart+2])<<40)+
+	       (((long)0xff&src[srcStart+3])<<32)+
+               (((long)0xff&src[srcStart+4])<<24)+
+	       (((long)0xff&src[srcStart+5])<<16)+
+	       (((long)0xff&src[srcStart+6])<< 8)+
+	       (((long)0xff&src[srcStart+7])<< 0);
+    }
+    static final public double readDouble(byte[] src,int srcStart)
+    {
+    	return Double.longBitsToDouble(readLong(src,srcStart));
+    }
+    
     static final public void writeInt(byte[] dest,int destStart,int val)
     {
 	dest[destStart+0]=(byte)(val>>>24);
@@ -269,6 +285,20 @@ public class CcsServer
     }
     static final public void writeFloat(byte[] dest,int destStart,float val) {
     	writeInt(dest,destStart,Float.floatToRawIntBits(val));
+    }
+    static final public void writeLong(byte[] dest,int destStart,long val)
+    {
+	dest[destStart+0]=(byte)(val>>>56);
+	dest[destStart+1]=(byte)(val>>>48);
+	dest[destStart+2]=(byte)(val>>>40);
+	dest[destStart+3]=(byte)(val>>>32);
+	dest[destStart+4]=(byte)(val>>>24);
+	dest[destStart+5]=(byte)(val>>>16);
+	dest[destStart+6]=(byte)(val>>> 8);
+	dest[destStart+7]=(byte)(val>>> 0);
+    }
+    static final public void writeDouble(byte[] dest,int destStart,double val) {
+    	writeLong(dest,destStart,Double.doubleToRawLongBits(val));
     }
     static final public void writeBytes(byte[] dest,int destStart,int len,byte[] src)
     {
