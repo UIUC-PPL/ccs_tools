@@ -2,6 +2,7 @@ package charm.debug.pdata;
 
 import charm.debug.fmt.*;
 import charm.debug.ParDebug;
+import charm.debug.inspect.Inspector;
 import java.util.Vector;
 
 // Extract messages information from the charm/messages PList
@@ -24,7 +25,9 @@ public class MsgTypePList extends GenericPList {
             PList lcur=(PList)cur; // because cur is itself an object
             
             String name = ((PString)lcur.elementNamed("name")).getString();
-            int size = ((PNative)lcur.elementNamed("size")).getIntValue(0);
+            int size;
+            if (Inspector.is64bit()) size = (int)((PNative)lcur.elementNamed("size")).getLongValue(0);
+            else size = ((PNative)lcur.elementNamed("size")).getIntValue(0);
             System.out.println("msg info:ptype "+name+"\n");
             String desc = ParDebug.infoCommand("info:ptype "+name+"\n");
             //if (desc.startsWith("no symbol")) desc = null;

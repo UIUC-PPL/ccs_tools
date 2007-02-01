@@ -789,6 +789,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
            servthread = (new ServThread(this, p));
            servthread.start();
 
+           try {
 	   // Retrieve the initial info from charmrun regarding the program segments
 	   //StringBuffer initialInfoBuf = new StringBuffer();
            String initialInfo = servthread.infoCommand(" ");
@@ -800,7 +801,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
            //initialInfoBuf.append(initialInfo);
            //initialInfo = initialInfoBuf.toString();
 	   //System.out.println("|"+initialInfo+"|");
-	   int dataInitial = initialInfo.indexOf("\n.data");
+	   int dataInitial = initialInfo.indexOf("\n.data ");
 	   int dataFinal = initialInfo.indexOf("\n",dataInitial+1);
 	   String dataValues = initialInfo.substring(dataInitial+6,dataFinal).trim();
 	   int endSize = dataValues.indexOf(' ');
@@ -933,6 +934,10 @@ DEPRECATED!! The correct implementation is in CpdList.java
 
            /* Set the lookup lists for the message queue inspector */
            messageQueue.setLookups(epItems, msgItems, chareItems);
+           } catch (Exception e) {
+        	   System.out.println("Error while starting the application. Aborting...");
+        	   p.destroy();
+           }
 
            sysEpsActualPanel.updateUI();
            listsbox.setEnabled(true);
