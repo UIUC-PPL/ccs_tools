@@ -9,6 +9,15 @@ import charm.debug.fmt.*;
 import charm.debug.inspect.JTreeVisitor;
 import java.nio.ByteBuffer;
 
+
+/**
+ * Panel for displaying a JTree-like structure of all the variables and
+ * superclasses of a given type. A memory buffer is associated with the type
+ * and the variable's values are taken from this buffer,
+ * 
+ * @author Filippo Gioachin
+ *
+ */
 public class InspectPanel extends JPanel implements ActionListener {
 	private JScrollPane scroll;
 	private JTree tree;
