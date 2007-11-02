@@ -14,6 +14,7 @@ public class MemoryPanel extends JPanel
     private JMenuBar menuBar;
     private JMenu menuAction;
     private JMenuItem menuLeak;
+    private JMenuItem menuLeakFast;
     private JMenu menuInfo;
     private JMenuItem menuStat;
     private JMenuItem menuInspect;
@@ -45,6 +46,8 @@ public class MemoryPanel extends JPanel
 	menuAction.setMnemonic('A');
 	menuAction.add(menuLeak = new JMenuItem("Search Leaks",'L'));
 	menuLeak.addActionListener(this);
+	menuAction.add(menuLeakFast = new JMenuItem("Quick Search Leaks",'Q'));
+	menuLeakFast.addActionListener(this);
 	menuBar.add(menuInfo = new JMenu("Info"));
 	menuInfo.setMnemonic('I');
 	menuInfo.add(menuStat = new JMenuItem("Show Statistics",'L'));
@@ -285,9 +288,9 @@ public class MemoryPanel extends JPanel
     }
 
     public void actionPerformed(ActionEvent e) {
-	if (e.getSource() == menuLeak) {
+	if (e.getSource() == menuLeak || e.getSource() == menuLeakFast) {
 	    System.out.println("Leak search");
-	    memoryData.loadImage(true);
+	    memoryData.loadImage(true, (e.getSource()==menuLeakFast) ? 1 : 0);
 	    traceWrite = true;
 	    displayBytes();
 	    repaint();
@@ -307,7 +310,7 @@ public class MemoryPanel extends JPanel
             frame.setVisible(true);
 		}
 	} else if (e.getActionCommand().equals("update")) {
-	    memoryData.loadImage(false);
+	    memoryData.loadImage(false, 0);
 	    traceWrite = true;
 	    displayBytes();
 	    repaint();
