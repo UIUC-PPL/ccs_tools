@@ -15,12 +15,13 @@
 package charm.debug.fmt;
 
 import charm.ccs.CcsServer; // for unpacking utility routines
+import charm.debug.inspect.Inspector; // for machine architecture info
 
 public class Consumer {
 // These MUST match the PUP_fmt declarations in ccs-builtins.C
 public static final int 
 		lengthLen_single=0, // field is a single item
-    		lengthLen_byte=1, // following 8 bits gives length of array
+		lengthLen_byte=1, // following 8 bits gives length of array
 		lengthLen_int=2, // following 32 bits gives length of array
 		lengthLen_long=3 // following 64 bits gives length of array (unimpl)
 ;
@@ -31,7 +32,8 @@ public static final int
 		typeCode_float=5, // 32-bit floating-point array: nItems floats
 		typeCode_double=6, // 64-bit floating-point array: nItems floats
 		typeCode_comment=10, // comment/label: nItems byte characters
-		typeCode_sync=11 // synchronization code
+		typeCode_sync=11, // synchronization code
+		typeCode_pointer=12
 ;
 
 // These MUST match the sync declarations in pup.h
@@ -143,9 +145,28 @@ public void decode(byte[] buf,int off,int buf_length)
 		listSync(CcsServer.readInt(buf,off)); 
 		off+=intLen;
 		break;
+	case typeCode_pointer:
+		if (Inspector.is64bit()) {
+			//System.out.println("Consumer.java: 64 bit machine");
+			long[] data=new long[length];
+			for (i=0; i<length; ++i) {
+				data[i]=CcsServer.readLong(buf, off);
+				off+=longLen;
+			}
+			listLong(data);
+		} else {
+			//System.out.println("Consumer.java: 32 bit machine");
+			int[] data=new int[length];
+			for (i=0; i<length; ++i) {
+				data[i]=CcsServer.readInt(buf, off);
+				off+=intLen;
+			}
+			listInt(data);
+		}
+		break;
 	default:
 		bad("Unrecognized typeCode "+typeCode);
 	};
-      }
+  }
 }
 };

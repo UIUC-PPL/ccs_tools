@@ -8,7 +8,7 @@ import charm.debug.Symbol;
 import java.util.Vector;
 
 public class Slot implements Comparable {
-    private int location;
+    private long location;
     private int size;
     private boolean isLeak;
     private int type;
@@ -22,7 +22,7 @@ public class Slot implements Comparable {
     public static final int CHARE_TYPE = 0x3;
     public static final int MESSAGE_TYPE = 0x4;
 
-    public Slot(int loc) {
+    public Slot(long loc) {
 	location = loc;
 	isLeak = false;
 	type = 0;
@@ -45,7 +45,7 @@ public class Slot implements Comparable {
 	backtrace.add(elem);
     }
 
-    public int getLocation () {return location;}
+    public long getLocation () {return location;}
     public int getSize () {return size;}
     public boolean isLeak() {return isLeak;}
     public int getType() {return type;}
@@ -72,7 +72,7 @@ public class Slot implements Comparable {
 	default:
 	    tmp.append("unknown");
 	}
-	tmp.append("\nSlot at position 0x" + Integer.toHexString(location) + " of size " + size + " bytes. Backtrace:\n");
+	tmp.append("\nSlot at position 0x" + Long.toHexString(location) + " of size " + size + " bytes. Backtrace:\n");
 	for (int i=0; i<backtrace.size(); ++i) {
 	    tmp.append("\tfunction ").append((Symbol)backtrace.elementAt(i)+"\n");
 	}

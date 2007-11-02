@@ -1,6 +1,7 @@
 package charm.debug.pdata;
 
 import charm.debug.fmt.*;
+import charm.debug.inspect.Inspector;
 import charm.debug.Symbol;
 import charm.debug.ParDebug;
 
@@ -50,21 +51,21 @@ public class MemoryPList {
     }
 
     public class Hole {
-	int position;
-	int size;
+	long position;
+	long size;
 
 	public Hole() {
 	    position=0;
 	    size=0;
 	}
-	public Hole(int p, int s) {
+	public Hole(long p, long s) {
 	    position=p;
 	    size=s;
 	}
-        public int getPosition() {
+        public long getPosition() {
             return position;
         }
-        public int getSize() {
+        public long getSize() {
             return size;
         }
     }
@@ -127,7 +128,7 @@ public class MemoryPList {
 	Slot cur = iter.getNext();
 	Slot next = iter.getNext();
 	while (next != null) {
-	    int diff = next.getLocation() - (cur.getLocation()+cur.getSize());
+	    long diff = next.getLocation() - (cur.getLocation()+cur.getSize());
 	    if (diff > HOLE_SIZE) {
 		// found a hole, record it
 		list.add(new Hole(cur.getLocation()+cur.getSize(), diff));
@@ -137,7 +138,7 @@ public class MemoryPList {
 	    cur = next;
 	    next = iter.getNext();
 	}
-	Object result[] = new Hole[bookkeeper.position+1];
+	Object result[] = new Hole[(int)bookkeeper.position+1];
 	result = list.toArray(result);
 	return (Hole[])result;
 
@@ -175,38 +176,45 @@ public class MemoryPList {
 		PList lst = (PList)lcur.elementNamed("slots");
 		for (PAbstract lstcur=lst.elementAt(0);lstcur!=null;lstcur=lstcur.getNext()) {
 		    PList llcur=(PList)lstcur;
-		    Slot sl = new Slot(((PNative)llcur.elementNamed("loc")).getIntValue(0));
+		    Slot sl;
+		    if (Inspector.is64bit()) sl = new Slot(((PNative)llcur.elementNamed("loc")).getLongValue(0));
+		    else sl = new Slot(((PNative)llcur.elementNamed("loc")).getIntValue(0));
 		    sl.setSize(((PNative)llcur.elementNamed("size")).getIntValue(0));
 		    int flags = ((PNative)llcur.elementNamed("flags")).getIntValue(0);
+		    System.out.println("Found "+sl);
 		    if ((flags & Slot.LEAK_FLAG) != 0) sl.setLeak(true);
 		    PNative st = (PNative)llcur.elementNamed("stack");
 		    for (int i=0; i<st.length(); ++i) {
-			Symbol s = Symbol.get(st.getIntValue(i));
-			if (s == null) {
-			    // resolve the symbol in the info gdb
-			    String res1 = ParDebug.infoCommand("info:info symbol "+st.getIntValue(i)+"\n");
-			    //System.out.println(res1);
-			    int index = res1.indexOf('+');
-			    String funcName = index>=0 ? res1.substring(0, index).trim() : "??";
-			    String res2 = ParDebug.infoCommand("info:info line *"+st.getIntValue(i)+"\n");
-			    index = res2.indexOf("Line");
-			    String fileName;
-			    int line;
-			    if (index == -1) {
-				line = 0;
-				fileName = "??";
-			    } else {
-				int index2 = res2.indexOf(' ', index+5);
-				//System.out.println(res2+" "+index+" "+index2);
-				line = Integer.parseInt(res2.substring(index+5,index2));
-				index = res2.indexOf('"');
-				index2 = res2.indexOf('"', index+1);
-				fileName = res2.substring(index+1,index2).trim();
-			    }
-			    s = new Symbol(funcName, line, fileName);
-			    Symbol.put(st.getIntValue(i), s);
-			}
-			sl.addTrace(s);
+		    	long location;
+		    	if (Inspector.is64bit()) location = st.getLongValue(i); 
+		    	else location = st.getIntValue(i);
+		    	Symbol s = Symbol.get(location);
+		    	/*
+		    	if (s == null) {
+		    		// resolve the symbol in the info gdb
+		    		String res1 = ParDebug.infoCommand("info:info symbol "+location+"\n");
+		    		//System.out.println(res1);
+		    		int index = res1.indexOf('+');
+		    		String funcName = index>=0 ? res1.substring(0, index).trim() : "??";
+		    		String res2 = ParDebug.infoCommand("info:info line *"+location+"\n");
+		    		index = res2.indexOf("Line");
+		    		String fileName;
+		    		int line;
+		    		if (index == -1) {
+		    			line = 0;
+		    			fileName = "??";
+		    		} else {
+		    			int index2 = res2.indexOf(' ', index+5);
+		    			//System.out.println(res2+" "+index+" "+index2);
+		    			line = Integer.parseInt(res2.substring(index+5,index2));
+		    			index = res2.indexOf('"');
+		    			index2 = res2.indexOf('"', index+1);
+		    			fileName = res2.substring(index+1,index2).trim();
+		    		}
+		    		s = new Symbol(funcName, line, fileName);
+		    		Symbol.put(location, s);
+		    	} MOVED TO Symbol.get        */
+		    	sl.addTrace(s);
 		    }
 		    //if (((Symbol)sl.getTrace(0)).getFunction().indexOf("CkArray::allocate(") != -1) sl.setType(Slot.CHARE_TYPE);
 		    sl.setType(((PNative)llcur.elementNamed("flags")).getIntValue(0) & Slot.TYPE_MASK);
@@ -232,7 +240,7 @@ public class MemoryPList {
 	for (int i=0; i<names.size(); ++i) {
 	    ret.append(getName(i)+" {\n");
 	    for (int j=0; j<size(i); ++j) {
-		ret.append("\tloc=0x"+Integer.toHexString(elementAt(i,j).getLocation())+", size="+elementAt(i,j).getSize()+", trace: {\n\t\t");
+		ret.append("\tloc=0x"+Long.toHexString(elementAt(i,j).getLocation())+", size="+elementAt(i,j).getSize()+", trace: {\n\t\t");
 		for (int k=0; k<elementAt(i,j).getTraceSize(); ++k) {
 		    if (k>0) ret.append(",\n\t\t");
 		    ret.append((Symbol)elementAt(i,j).getTrace(k));

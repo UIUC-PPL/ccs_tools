@@ -1,5 +1,6 @@
 package charm.debug.inspect;
 
+import charm.debug.CpdUtil;
 import charm.debug.ParDebug;
 import java.util.Hashtable;
 import java.nio.ByteOrder;
@@ -16,7 +17,7 @@ public class Inspector {
     private static int sizeLongLong;
     private static int sizeBool;
 
-    public static void initialize() {
+    public static void initialize(CpdUtil server) {
         allTypes = new Hashtable();
         allTypes.put("int", new PrimitiveType("int"));
         allTypes.put("unsigned int", new PrimitiveType("unsigned int"));
@@ -34,7 +35,7 @@ public class Inspector {
         allTypes.put("bool", new PrimitiveType("bool"));
 
         /* Gather the information about the machine from the running application */
-        byte[] machineType = ParDebug.server.sendCcsRequest("ccs_machine_architecture", "", 0).getBytes();
+        byte[] machineType = server.sendCcsRequest("ccs_machine_architecture", "", 0).getBytes();
         System.out.print("Machine is ");
         if (machineType[0] == 1) {
             System.out.print("32 bit, ");

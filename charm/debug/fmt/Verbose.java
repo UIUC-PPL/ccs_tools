@@ -61,7 +61,7 @@ public void listFloat(float[] data) {
 		System.out.print(indent+data[i]+", ");
 	endArray("float",data.length);
 }
-public void listILong(long[] data) {
+public void listLong(long[] data) {
 	String indent=beginArray("long",data.length);
 	for (int i=0;i<data.length;i++)
 		System.out.print(indent+data[i]+", ");

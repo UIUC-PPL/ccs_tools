@@ -30,17 +30,18 @@ public class InspectPanel extends JPanel implements ActionListener {
 		add(scroll);
 	}
 	
-	public void load(int pe, int location, GenericType type) {
+	public void load(int pe, long location, GenericType type) {
 		this.pe = pe;
-		PList list = ParDebug.server.getPList("converse/memory/data",pe,location,0);
+		System.out.println("location = "+(int)location+", "+(int)(location>>>32));
+		PList list = ParDebug.server.getPList("converse/memory/data",pe,(int)location,(int)(location>>>32));
 		if (list==null) System.out.println("list is null!");
 		PList cur = (PList)list.elementAt(0);
 		int size = ((PNative)cur.elementNamed("size")).getIntValue(0);
 		System.out.println("Got memory data size = "+size);
 		if (size > 0) {
 			ByteBuffer buf = null;
-            PAbstract info = cur.elementNamed("value");
-            if (info != null) buf = ByteBuffer.wrap(((PString)info).getBytes()).order(Inspector.getByteOrder());
+			PAbstract info = cur.elementNamed("value");
+			if (info != null) buf = ByteBuffer.wrap(((PString)info).getBytes()).order(Inspector.getByteOrder());
 			String request = "info:info symbol 0x";
 			if (Inspector.is64bit()) request += Long.toHexString(buf.getLong());
 			else request += Integer.toHexString(buf.getInt());
@@ -48,22 +49,22 @@ public class InspectPanel extends JPanel implements ActionListener {
 			String result = ParDebug.infoCommand(request);
 			if (result.startsWith("vtable for")) {
 				String strtype = result.substring(10, result.indexOf('+')).trim();
-                GenericType gt = Inspector.getTypeCreate(strtype);
-                JTreeVisitor jtv = new JTreeVisitor(buf, gt.getName());
-                jtv.visit(gt);
-                tree = (JTree)jtv.getResult();
-                tree.getSelectionModel().setSelectionMode(TreeSelectionModel.SINGLE_TREE_SELECTION);
-                scroll.setViewportView(tree);
-                //InspectTree it = new InspectTree(new SuperClassElement(gt, 0));
-                //scroll.setViewportView(it);
-                JPopupMenu popup = new JPopupMenu();
-                JMenuItem menuItem;
-                menuItem = new JMenuItem("Follow pointer");
-                menuItem.setActionCommand("dereference");
-                menuItem.addActionListener(this);
-                popup.add(menuItem);
-                MouseListener popupListener = new PopupListener(popup);
-                tree.addMouseListener(popupListener);
+				GenericType gt = Inspector.getTypeCreate(strtype);
+				JTreeVisitor jtv = new JTreeVisitor(buf, gt.getName());
+				jtv.visit(gt);
+				tree = (JTree)jtv.getResult();
+				tree.getSelectionModel().setSelectionMode(TreeSelectionModel.SINGLE_TREE_SELECTION);
+				scroll.setViewportView(tree);
+				//InspectTree it = new InspectTree(new SuperClassElement(gt, 0));
+				//scroll.setViewportView(it);
+				JPopupMenu popup = new JPopupMenu();
+				JMenuItem menuItem;
+				menuItem = new JMenuItem("Follow pointer");
+				menuItem.setActionCommand("dereference");
+				menuItem.addActionListener(this);
+				popup.add(menuItem);
+				MouseListener popupListener = new PopupListener(popup);
+				tree.addMouseListener(popupListener);
 			}
 		}
 	}
@@ -73,9 +74,9 @@ public class InspectPanel extends JPanel implements ActionListener {
 			DefaultMutableTreeNode obj = (DefaultMutableTreeNode)tree.getSelectionPath().getLastPathComponent();
 			InspectedElement el = (InspectedElement)obj.getUserObject();
 			if (el.value == null) return;
-			int location = Integer.parseInt(el.value.substring(el.value.indexOf("0x")+2), 16);
+			long location = Long.parseLong(el.value.substring(el.value.indexOf("0x")+2), 16);
 			if (location > 0) {
-				PList list = ParDebug.server.getPList("converse/memory/data",pe,location,0);
+				PList list = ParDebug.server.getPList("converse/memory/data",pe,(int)location,(int)(location>>>32));
 				if (list==null) System.out.println("list is null!");
 				PList cur = (PList)list.elementAt(0);
 				int size = ((PNative)cur.elementNamed("size")).getIntValue(0);
