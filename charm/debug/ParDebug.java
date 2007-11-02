@@ -122,6 +122,8 @@ public class ParDebug extends JPanel
     private JMenuItem menuActionQuit;
     private JMenuItem menuActionFreeze;
     private JMenuItem menuActionMemory;
+    private JMenuItem menuActionAllocationTree;
+    private JMenuItem menuActionAllocationGraph;
     
 
 /************** CCS (network) interface ************ /
@@ -402,6 +404,10 @@ DEPRECATED!! The correct implementation is in CpdList.java
        menuAction.addSeparator();
        menuAction.add(menuActionMemory = new JMenuItem("Memory",'M'));
        listenTo(menuActionMemory,"memory","Inspect the application memory"); 
+       menuAction.add(menuActionAllocationTree = new JMenuItem("Memory Allocation Tree",'T'));
+       listenTo(menuActionAllocationTree,"allocationTree","Print the memory allocation tree");
+       menuAction.add(menuActionAllocationGraph = new JMenuItem("Memory Allocation Graph",'G'));
+       listenTo(menuActionAllocationGraph,"allocationGraph","Print the memory allocation graph");
 
        //Creating status bar on the top
        statusArea = new JTextField(60);
@@ -617,121 +623,210 @@ DEPRECATED!! The correct implementation is in CpdList.java
 
  
     public void actionPerformed(ActionEvent e) {
-        int destPE = 0;
-        if (e.getActionCommand().equals("browse")) 
-	{ /* Bring up file dialog box to select a new executable */
-           JFileChooser chooser = new JFileChooser(System.getProperty("user.dir"));
-           int returnVal = chooser.showOpenDialog(ParDebug.this);
-           if(returnVal == JFileChooser.APPROVE_OPTION) {
-               filename = chooser.getSelectedFile().getAbsolutePath();
-	       addedRunParameter();
-           }
-        }
-        else if (e.getActionCommand().equals("params")) 
-	{ /* Bring up parameters dialog box to select run options */
-           ParamsDialog dialogbox = new ParamsDialog(appFrame, true, this);
-           dialogbox.setLocationRelativeTo(appFrame);
-           dialogbox.setFields(clparams, ""+numberPes, portnumber);
-           dialogbox.pack();
-           dialogbox.setVisible(true);
-        }
-        else if (e.getActionCommand().equals("begin")) { /* buttons... */
-	   startProgram();
-        }
-        else if (e.getActionCommand().equals("freeze")) {
-           // stop program
-           server.bcastCcsRequest("ccs_debug", "freeze",1, numberPes, peList);
-           continueButton.setEnabled(true);
-           freezeButton.setEnabled(false);
-           setStatusMessage("Program is frozen on selected pes");
-        }
-	else if (e.getActionCommand().equals("unfreeze")){ 
-           // start running again
-           server.bcastCcsRequest("ccs_continue_break_point", "",0,numberPes,peList);
-           continueButton.setEnabled(true); 
-           freezeButton.setEnabled(true);
-           setStatusMessage("Program is running");
-        } 
-        else if (e.getActionCommand().equals("quit")) {
-            server.bcastCcsRequest("ccs_debug_quit", "",0,numberPes,peList);
-	   quitProgram(); 
-        }
-        else if (e.getActionCommand().equals("startgdb")) 
-	{ 
-           server.bcastCcsRequest("ccs_remove_all_break_points", "",0,numberPes,peList);
-	   server.bcastCcsRequest("ccs_debug_startgdb","",1,numberPes,peList);
-        	/*int pid = 0;
+    	int destPE = 0;
+    	if (e.getActionCommand().equals("browse")) 
+    	{ /* Bring up file dialog box to select a new executable */
+    		JFileChooser chooser = new JFileChooser(System.getProperty("user.dir"));
+    		int returnVal = chooser.showOpenDialog(ParDebug.this);
+    		if(returnVal == JFileChooser.APPROVE_OPTION) {
+    			filename = chooser.getSelectedFile().getAbsolutePath();
+    			addedRunParameter();
+    		}
+    	}
+    	else if (e.getActionCommand().equals("params")) 
+    	{ /* Bring up parameters dialog box to select run options */
+    		ParamsDialog dialogbox = new ParamsDialog(appFrame, true, this);
+    		dialogbox.setLocationRelativeTo(appFrame);
+    		dialogbox.setFields(clparams, ""+numberPes, portnumber);
+    		dialogbox.pack();
+    		dialogbox.setVisible(true);
+    	}
+    	else if (e.getActionCommand().equals("begin")) { /* buttons... */
+    		startProgram();
+    	}
+    	else if (e.getActionCommand().equals("freeze")) {
+    		// stop program
+    		server.bcastCcsRequest("ccs_debug", "freeze",1, numberPes, peList);
+    		continueButton.setEnabled(true);
+    		freezeButton.setEnabled(false);
+    		setStatusMessage("Program is frozen on selected pes");
+    	}
+    	else if (e.getActionCommand().equals("unfreeze")){ 
+    		// start running again
+    		server.bcastCcsRequest("ccs_continue_break_point", "",0,numberPes,peList);
+    		continueButton.setEnabled(true); 
+    		freezeButton.setEnabled(true);
+    		setStatusMessage("Program is running");
+    	} 
+    	else if (e.getActionCommand().equals("quit")) {
+    		server.bcastCcsRequest("ccs_debug_quit", "",0,numberPes,peList);
+    		quitProgram(); 
+    	}
+    	else if (e.getActionCommand().equals("startgdb")) 
+    	{ 
+    		server.bcastCcsRequest("ccs_remove_all_break_points", "",0,numberPes,peList);
+    		//server.bcastCcsRequest("ccs_debug_startgdb","",1,numberPes,peList);
         	Process gdb;
-        	try{
-        		gdb = Runtime.getRuntime().exec("ssh -2 -c blowfish "+hostname+"gdb "+new File(filename).getAbsolutePath()+" "+pid);
-        	} catch (Exception e1) {}*/
-           setStatusMessage("Gdb started on selected pes");
-        } 
-        else if (e.getActionCommand().equals("breakpoints")) {
-           // set or remove breakpoints
-           
-           JCheckBox chkbox = (JCheckBox)e.getSource();
-           String entryPointName = chkbox.getText(); 
-           if (chkbox.isSelected())
-           {
-        	server.bcastCcsRequest("ccs_set_break_point", entryPointName,0,numberPes,peList);
-        	continueButton.setEnabled(true);
-        	freezeButton.setEnabled(false);
-        	setStatusMessage ("Break Point set at entry point " +entryPointName); 
-           }
-           else
-           {
-        	server.bcastCcsRequest("ccs_remove_break_point", entryPointName,0,numberPes,peList);
-        	continueButton.setEnabled(true);   
-        	freezeButton.setEnabled(true);
-        	setStatusMessage ("Break Point removed at entry point " +entryPointName+" on selected Pes"); 
-           }
+        	for (int i=0; i<numberPes; ++i) {
+        		if (peList[i]){
+        			PList pl = server.getPList("hostinfo", i);
+        			PList cur=(PList)pl.elementAt(0);
+        			byte[] addr = ((PString)cur.elementNamed("address")).getBytes();
+        			int[] address = new int[4];
+        			for (int j=0; j<4; ++j) {
+        				address[j] = addr[j];
+        				if (address[j] < 0) address[j] += 256;
+        			}
+        			int pid = ((PNative)cur.elementNamed("pid")).getIntValue(0);
+        			String sshCommand = null;
+        			String[] str = null;
+        			String ipAddress = address[0]+"."+address[1]+"."+address[2]+"."+address[3];
+        			String script = "ssh "+ipAddress+" \"cat > /tmp/start_gdb."+pid+" << END_OF_SCRIPT\n"
+        							+"shell /bin/rm -f /tmp/start_gdb."+pid+"\n"
+        							+"handle SIGWINCH nostop noprint\n"
+        							+"handle SIGWAITING nostop noprint\n"
+        							+"attach "+pid+"\n"
+        							+"END_OF_SCRIPT\n"
+        							+"gdb "+new File(filename).getAbsolutePath()
+        							+" -x /tmp/start_gdb."+pid+"\"";
+        			if (!hostname.equals("localhost")) {
+        				sshCommand = "ssh -T "+hostname+" ssh -T";
+        				str = new String[9];
+        				str[5] = hostname;
+        				str[6] = "ssh";
+        				//str[8] = "-T";
+        				str[7] = ipAddress;
+        				str[8] = script;
+        			} else {
+        				sshCommand = "ssh -T";
+        				str = new String[7];
+        				str[5] = ipAddress;
+        				str[6] = script;
+        			}
+        			//String str[] = {"xterm ", "-title", "Node "+i, "-e", "ssh", hostname};
+        			str[0] = "xterm";
+        			str[1] = "-title";
+        			str[2] = "Node "+i;
+        			str[3] = "-e";
+        			str[4] = "/bin/bash";
+        			str[5] = "-c";
+        			//str[5] = "-T";
+        			for (int k=0;k<str.length;++k) System.out.print(str[k]+" ");
+        			System.out.println();
+        			try{
+        				gdb = Runtime.getRuntime().exec(str);
+        				//BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(gdb.getOutputStream()));
+        				//bw.write("ssh clarity gdb "+new File(filename).getAbsolutePath());
+        				//bw.write("attach "+pid);
+        				//bw.flush();
+        			} catch (Exception e1) {
+        				System.err.println(e);
+        			}
+        		}
+        	}
+    		setStatusMessage("Gdb started on selected pes");
+    	} 
+    	else if (e.getActionCommand().equals("breakpoints")) {
+    		// set or remove breakpoints
 
-        }
-	else if (e.getActionCommand().equals("memory")) {
-	    // ask the user for input
-	    MemoryDialog input = new MemoryDialog(appFrame, true, numberPes);
-	    if (input.confirmed()) {
-		JFrame frame = new JFrame("Memory visualization");
-		frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-		MemoryPanel memory = new MemoryPanel();
-		JComponent newContentPane = memory;
-		newContentPane.setOpaque(true);
-		frame.setContentPane(newContentPane);
+    		JCheckBox chkbox = (JCheckBox)e.getSource();
+    		String entryPointName = chkbox.getText(); 
+    		if (chkbox.isSelected())
+    		{
+    			server.bcastCcsRequest("ccs_set_break_point", entryPointName,0,numberPes,peList);
+    			continueButton.setEnabled(true);
+    			freezeButton.setEnabled(false);
+    			setStatusMessage ("Break Point set at entry point " +entryPointName); 
+    		}
+    		else
+    		{
+    			server.bcastCcsRequest("ccs_remove_break_point", entryPointName,0,numberPes,peList);
+    			continueButton.setEnabled(true);   
+    			freezeButton.setEnabled(true);
+    			setStatusMessage ("Break Point removed at entry point " +entryPointName+" on selected Pes"); 
+    		}
 
-		memory.loadData(input);
+    	}
+    	else if (e.getActionCommand().equals("memory")) {
+    		// ask the user for input
+    		MemoryDialog input = new MemoryDialog(appFrame, true, numberPes);
+    		if (input.confirmed()) {
+    			JFrame frame = new JFrame("Memory visualization");
+    			frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+    			MemoryPanel memory = new MemoryPanel();
+    			JComponent newContentPane = memory;
+    			newContentPane.setOpaque(true);
+    			frame.setContentPane(newContentPane);
 
-		frame.setTitle("Memory Processor "+input.getPe());
-		frame.setJMenuBar(memory.getMenu());
-		frame.pack();
-		frame.setVisible(true);
-	    }
-	}
-        else if (e.getActionCommand().equals("pecheck")) 
-	{ /* Checked or unchecked a PE box */
-           JCheckBox chkbox = (JCheckBox)e.getSource();
-           String peText = chkbox.getText();
-           String peno = peText.substring(3);
-           if (chkbox.isSelected()) 
-              peList[Integer.parseInt(peno)] = true;
-           else
-              peList[Integer.parseInt(peno)] = false;
-        } 
-        else if (e.getActionCommand().equals("lists") 
-	      || e.getActionCommand().equals("changepe")) 
-	{ /* Clicked on list or pe drop-down */
-	    if (pesbox.getSelectedItem()!=null) {
-		int forPE=Integer.parseInt((String)pesbox.getSelectedItem());
-		populateNewList(listsbox.getSelectedIndex(),forPE, listModel); 
-	    }
-        }
-	else if (e.getActionCommand().equals("exitDebugger")) {
-            if (isRunning) {
-                server.bcastCcsRequest("ccs_debug_quit", "",0,numberPes,peList);
-                quitProgram();
-            }
-            System.exit(0);
-	}
+    			memory.loadData(input);
+
+    			frame.setTitle("Memory Processor "+input.getPe());
+    			frame.setJMenuBar(memory.getMenu());
+    			frame.pack();
+    			frame.setVisible(true);
+    		}
+    	}
+    	else if (e.getActionCommand().equals("allocationTree")) {
+    		JFrame frame = new JFrame("Allocation Tree");
+    		frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+    		AllocationTreePanel at = new AllocationTreePanel();
+    		JComponent newContentPane = at;
+    		newContentPane.setOpaque(true);
+    		frame.setContentPane(newContentPane);
+    		frame.setTitle("Allocation Tree");
+    		
+    		at.loadTree(frame);
+    		
+    		frame.pack();
+    		frame.setVisible(true);
+    	}
+    	else if (e.getActionCommand().equals("allocationGraph")) {
+    	    // ask the user for input
+    	    AllocationGraphDialog input = new AllocationGraphDialog(appFrame, true, numberPes);
+    	    if (input.confirmed()) { 	    
+    		JFrame frame = new JFrame("Allocation Graph");
+    		frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+    		AllocationGraphPanel at = new AllocationGraphPanel();
+    		JComponent newContentPane = at;
+    		newContentPane.setOpaque(true);
+    		frame.setContentPane(newContentPane);
+    		frame.setTitle("Allocation Graph");
+
+    		String executable = new File(filename).getAbsolutePath();
+    		String logFile = new File(executable).getParent();
+    		if (logFile == null) logFile = ".";
+    		logFile += "/memoryLog_";
+    		at.load(frame, new MemoryTrace(logFile, numberPes), input);
+
+    		frame.pack();
+    		frame.setVisible(true);
+    	    }
+    	}
+    	else if (e.getActionCommand().equals("pecheck")) 
+    	{ /* Checked or unchecked a PE box */
+    		JCheckBox chkbox = (JCheckBox)e.getSource();
+    		String peText = chkbox.getText();
+    		String peno = peText.substring(3);
+    		if (chkbox.isSelected()) 
+    			peList[Integer.parseInt(peno)] = true;
+    		else
+    			peList[Integer.parseInt(peno)] = false;
+    	} 
+    	else if (e.getActionCommand().equals("lists") 
+    			|| e.getActionCommand().equals("changepe")) 
+    	{ /* Clicked on list or pe drop-down */
+    		if (pesbox.getSelectedItem()!=null) {
+    			int forPE=Integer.parseInt((String)pesbox.getSelectedItem());
+    			populateNewList(listsbox.getSelectedIndex(),forPE, listModel); 
+    		}
+    	}
+    	else if (e.getActionCommand().equals("exitDebugger")) {
+    		if (isRunning) {
+    			server.bcastCcsRequest("ccs_debug_quit", "",0,numberPes,peList);
+    			quitProgram();
+    		}
+    		System.exit(0);
+    	}
     } // end of actionPerformed
      
     public void valueChanged(ListSelectionEvent e) {
@@ -817,7 +912,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
 	   int bssSize = Integer.parseInt(bssValues.substring(0,endSize));
 	   int bssPos = Integer.parseInt(bssValues.substring(startPos+1));
 	   //System.out.println("string1: |"+initialInfo.substring(bssInitial+5,bssFinal).trim()+"| "+bssSize+" "+bssPos);
-	   // FIXME: here we assume the program is 32 bit!!!
+	   // FIXME: here we assume the program is 32 bit, or if 64 bit all the addresses are small
 	   globals = new byte[16]; // 4 integers of 4 bytes each
 	   CcsServer.writeInt(globals, 0, dataPos);
 	   CcsServer.writeInt(globals, 4, dataPos+dataSize);
@@ -886,7 +981,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
            int nItems;
 
            /* Reset the type information stored */
-           Inspector.initialize();
+           Inspector.initialize(server);
 
            /* Load the information regarding all chares */
            nItems = server.getListLength("charm/chares",0);
@@ -935,7 +1030,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
            /* Set the lookup lists for the message queue inspector */
            messageQueue.setLookups(epItems, msgItems, chareItems);
            } catch (Exception e) {
-        	   System.out.println("Error while starting the application. Aborting...");
+        	   System.out.println("Error while starting the application (error: "+e+". Aborting...");
         	   p.destroy();
            }
 
