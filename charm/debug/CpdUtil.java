@@ -152,6 +152,13 @@ public class CpdUtil {
     //Sends a request to the ccs server
     public String sendCcsRequest(String ccsHandlerName, String parameterName, int destPE) 
     {
+    	byte[] reply = sendCcsRequestBytes(ccsHandlerName,parameterName,destPE);
+    	if (reply != null) return new String(reply);
+    	else return null;
+    }
+    //Sends a request to the ccs server and return the answer as bytes
+    public byte[] sendCcsRequestBytes(String ccsHandlerName, String parameterName, int destPE) 
+    {
 	try {
 	    //Build a byte array describing the ccs request:
 	    int reqStr=parameterName.length();
@@ -165,7 +172,7 @@ public class CpdUtil {
 		}
 	    else {
 		byte[] resp=ccs.recvResponse(r);
-		return new String(resp);
+		return resp;
 	    }
 	} catch (IOException e) {
 	    e.printStackTrace();
