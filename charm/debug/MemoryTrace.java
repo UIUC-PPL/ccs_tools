@@ -3,9 +3,7 @@ package charm.debug;
 import java.util.Vector;
 import java.io.BufferedReader;
 import java.io.FileReader;
-import java.util.Hashtable;
 import java.io.IOException;
-import java.io.Reader;
 
 public class MemoryTrace {
 	private String filePrefix;

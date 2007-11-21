@@ -2,15 +2,11 @@ package charm.debug;
 
 import java.awt.*;
 import java.awt.image.*;
-import java.awt.event.*;
 import javax.swing.*;
 
 import charm.debug.fmt.*;
 import charm.debug.pdata.MemoryPList;
 import charm.debug.pdata.Slot;
-
-import java.util.Collections;
-import java.util.Date;
 
 /* ScrollableMemory.java is used by MemoryWindow.java to display the content of
  * the memory. */
@@ -110,7 +106,7 @@ public class ScrollableMemory extends JLabel implements Scrollable {
 	}
 
 	private void resizeImage() {
-		lineWidth = (int) (lineScan * 3 / 4);
+		lineWidth = (lineScan * 3 / 4);
 		lineStart = (lineScan - lineWidth) / 2;
 		verticalPixels = numLines * lineScan;
 
@@ -183,7 +179,7 @@ public class ScrollableMemory extends JLabel implements Scrollable {
 																						// pixel
 																						// offset
 					offset += additionalPixels; // correct for the memory holes
-					int line = (int) offset / horizontalPixels;
+					int line = offset / horizontalPixels;
 					offset -= line * horizontalPixels;
 
 					int end = (int) (holes[nextHole].getPosition() - firstByte - lostMemory);
@@ -274,7 +270,7 @@ public class ScrollableMemory extends JLabel implements Scrollable {
 																			// offset
 		offset += additionalPixels; // correct for the memory holes
 		// System.out.print("offset: "+offset);
-		int line = (int) offset / horizontalPixels;
+		int line = offset / horizontalPixels;
 		// System.out.print(" "+line);
 		offset -= line * horizontalPixels;
 		// System.out.println(" "+offset);

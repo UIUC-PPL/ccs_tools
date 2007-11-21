@@ -5,7 +5,7 @@ import java.awt.event.*;
 import javax.swing.*;
 import java.util.Vector;
 import java.io.IOException;
-import java.awt.image.*;
+//import java.awt.image.*;
 import java.util.List;
 
 public class AllocationGraphPanel extends JPanel implements ActionListener,

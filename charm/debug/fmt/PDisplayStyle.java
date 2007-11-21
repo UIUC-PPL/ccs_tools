@@ -17,7 +17,7 @@ public class PDisplayStyle {
 	private Graphics g;
 	private Font font;
 	private FontMetrics fm;
-	private int wid,ht; // Size of display region
+	private int wid; // Size of display region
 	private int indent; // pixels from left border to skip
 	private int indentDel; // change in indent between objects
 	private int pitch; // pixels between each row of data
@@ -31,7 +31,7 @@ public class PDisplayStyle {
 		font=new Font("Serif",Font.PLAIN,12);
 		g.setFont(font);
 		fm=g.getFontMetrics();
-		wid=wid_; ht=0;
+		wid=wid_;
 		pitch=fm.getHeight();
 		spaceWidth=fm.stringWidth(" ");
 		indentDel=2*pitch;

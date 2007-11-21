@@ -2,8 +2,6 @@ package charm.debug.pdata;
 
 import charm.debug.fmt.*;
 import charm.debug.inspect.Inspector;
-import charm.debug.ParDebug;
-import java.util.Vector;
 import java.nio.*;
 
 // Extract messages information from the charm/messages PList

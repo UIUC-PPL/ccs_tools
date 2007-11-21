@@ -2,11 +2,7 @@ package charm.debug.pdata;
 
 import charm.debug.fmt.*;
 import charm.debug.inspect.Inspector;
-import charm.debug.inspect.GenericType;
-import charm.debug.ParDebug;
 import java.nio.*;
-import java.util.Vector;
-import javax.swing.DefaultListModel;
 
 // Extract messages from the converse/localqueue PList
 public class CharePList extends GenericPList {

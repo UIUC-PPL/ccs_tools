@@ -1,8 +1,6 @@
 package charm.debug.pdata;
 
 import charm.debug.fmt.*;
-import java.util.Vector;
-import javax.swing.DefaultListModel;
 
 // Extract messages from the converse/localqueue PList
 public class MsgPList extends GenericPList {

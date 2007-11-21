@@ -10,9 +10,9 @@ public class MemoryDialog extends JDialog
     implements ActionListener, DocumentListener {
 
     // Default values
-    private static final int VERTICAL_LINES = 80;
-    private static final int LINE_SIZE = 10;
-    private static final int HORIZONTAL_PIXELS = 1000;
+    //private static final int VERTICAL_LINES = 80;
+    //private static final int LINE_SIZE = 10;
+    //private static final int HORIZONTAL_PIXELS = 1000;
 
     JComboBox peList;
     JTextField scanSize;

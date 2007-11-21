@@ -8,7 +8,7 @@ olawlor@acm.org
 package charm.util;
 
 import java.awt.*;
-import java.awt.image.*;
+//import java.awt.image.*;
 import java.awt.event.*; 
 import java.net.URL;
 

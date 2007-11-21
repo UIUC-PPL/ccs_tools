@@ -2,7 +2,6 @@ package charm.debug.pdata;
 
 import charm.debug.fmt.*;
 import charm.debug.ParDebug;
-import java.util.Vector;
 
 // Extract chares information from the charm/chares PList
 public class ChareTypePList extends GenericPList {

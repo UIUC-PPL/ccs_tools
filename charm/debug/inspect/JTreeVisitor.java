@@ -3,7 +3,6 @@ package charm.debug.inspect;
 import java.nio.ByteBuffer;
 import javax.swing.tree.*;
 import javax.swing.JTree;
-import javax.swing.event.TreeModelListener;
 
 public class JTreeVisitor extends TypeVisitor {
     DefaultMutableTreeNode current;

@@ -18,7 +18,7 @@ public class ScrollableAllocationGraph extends JLabel implements Scrollable, Act
 	private int rgbselected[];
 	private int maximumSize;
 	private int selectedPosition;
-	private Graphics2D image;
+	//private Graphics2D image;
 	private MemoryBar bars[];
 
 	JPopupMenu popup;
@@ -72,7 +72,7 @@ public class ScrollableAllocationGraph extends JLabel implements Scrollable, Act
 	private void resize() {
 		
 		BufferedImage tmp = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
-		image = tmp.createGraphics();
+		//image = tmp.createGraphics();
 		
 		int color;
 		rgbnormal = new int[height*barWidth];

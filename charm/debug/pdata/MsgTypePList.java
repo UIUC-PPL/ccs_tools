@@ -3,7 +3,6 @@ package charm.debug.pdata;
 import charm.debug.fmt.*;
 import charm.debug.ParDebug;
 import charm.debug.inspect.Inspector;
-import java.util.Vector;
 
 // Extract messages information from the charm/messages PList
 public class MsgTypePList extends GenericPList {

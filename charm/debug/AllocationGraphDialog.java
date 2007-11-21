@@ -13,9 +13,9 @@ public class AllocationGraphDialog extends JDialog implements ActionListener,
         DocumentListener {
 
 	// Default values
-	private static final int EVENTS_PER_BAR = 1;
-	private static final int BAR_WIDTH = 2;
-	private static final int VERTICAL_PIXELS = 800;
+	//private static final int EVENTS_PER_BAR = 1;
+	//private static final int BAR_WIDTH = 2;
+	//private static final int VERTICAL_PIXELS = 800;
 
 	JComboBox peList;
 	JTextField firstEvent;

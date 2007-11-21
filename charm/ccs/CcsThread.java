@@ -108,7 +108,7 @@ public class CcsThread implements Runnable {
 				//Wait for another request
 				try { //Give other threads a chance
 					int sleepMs=30;
-					myThread.sleep(sleepMs);
+					Thread.sleep(sleepMs);
 				} catch (InterruptedException E) {}
 			}
 			if (!keepGoing) break;

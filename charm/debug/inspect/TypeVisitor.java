@@ -27,8 +27,8 @@ public abstract class TypeVisitor {
                 GenericElement e = gt.getChild(i);
                 seek(e.getOffset());
                 GenericType t = e.getType();
-                String type = t.getName();
-                String name = e.getName();
+                //String type = t.getName();
+                //String name = e.getName();
                 String value = null;
                 if (valid) value = t.getValue(this);
                 int pointer = e.getPointer() + t.getPointer();

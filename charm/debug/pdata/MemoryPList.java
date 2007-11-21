@@ -3,7 +3,6 @@ package charm.debug.pdata;
 import charm.debug.fmt.*;
 import charm.debug.inspect.Inspector;
 import charm.debug.Symbol;
-import charm.debug.ParDebug;
 
 import java.util.Vector;
 import java.util.Collections;
@@ -220,7 +219,7 @@ public class MemoryPList {
 		    sl.setType(((PNative)llcur.elementNamed("flags")).getIntValue(0) & Slot.TYPE_MASK);
 		    //if (((Symbol)sl.getTrace(0)).getFunction().equals("CkCreateLocalGroup")) sl.setType(Slot.MESSAGE_TYPE);
 		    //if (((Symbol)sl.getTrace(0)).getFunction().equals("CkCreateLocalNodeGroup")) sl.setType(Slot.MESSAGE_TYPE);
-		    int el = addElement(type, sl);
+		    addElement(type, sl);
 		}
 		//System.out.println("name: "+lcur.getName());
 		/*PString name=(PString)(lcur.elementNamed("name"));

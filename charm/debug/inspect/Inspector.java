@@ -1,7 +1,6 @@
 package charm.debug.inspect;
 
 import charm.debug.CpdUtil;
-import charm.debug.ParDebug;
 import java.util.Hashtable;
 import java.nio.ByteOrder;
 

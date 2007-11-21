@@ -18,8 +18,8 @@ public class MemoryPanel extends JPanel
     private JMenu menuInfo;
     private JMenuItem menuStat;
     private JMenuItem menuInspect;
-    private JSlider verticalZoom;
-    private JSlider horizontalZoom;
+    //private JSlider verticalZoom;
+    //private JSlider horizontalZoom;
     private JScrollPane displayPane;
     private JPanel topPane;
     private JPanel controlPane;
@@ -32,7 +32,7 @@ public class MemoryPanel extends JPanel
     private JButton minusLines, plusLines;
     private JButton minusVert, plusVert;
     private JButton minusHPixels, plusHPixels;
-    private JLabel minusBytes, plusBytes;
+    //private JLabel minusBytes, plusBytes;
     private JTextArea info;
     private JScrollPane infoScrollPane;
     private boolean traceWrite;

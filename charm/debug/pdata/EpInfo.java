@@ -1,6 +1,5 @@
 package charm.debug.pdata;
 
-import charm.debug.pdata.ChareInfo;
 import javax.swing.*;
 
 // Information regarding an entry method

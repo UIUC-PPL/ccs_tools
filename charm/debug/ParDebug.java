@@ -22,7 +22,6 @@ import java.awt.*;
 import java.awt.event.*;
 import javax.swing.event.*;
 import java.net.*;
-import java.nio.ByteOrder;
 
 public class ParDebug extends JPanel
      implements ActionListener,ListSelectionListener{
@@ -629,7 +628,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
 
  
     public void actionPerformed(ActionEvent e) {
-    	int destPE = 0;
+    	//int destPE = 0;
     	if (e.getActionCommand().equals("browse")) 
     	{ /* Bring up file dialog box to select a new executable */
     		JFileChooser chooser = new JFileChooser(System.getProperty("user.dir"));
@@ -672,7 +671,6 @@ DEPRECATED!! The correct implementation is in CpdList.java
     	{ 
     		server.bcastCcsRequest("ccs_remove_all_break_points", "",0,numberPes,peList);
     		//server.bcastCcsRequest("ccs_debug_startgdb","",1,numberPes,peList);
-        	Process gdb;
         	for (int i=0; i<numberPes; ++i) {
         		if (peList[i]){
         			PList pl = server.getPList("hostinfo", i);
@@ -720,7 +718,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
         			for (int k=0;k<str.length;++k) System.out.print(str[k]+" ");
         			System.out.println();
         			try{
-        				gdb = Runtime.getRuntime().exec(str);
+        				Runtime.getRuntime().exec(str);
         				//BufferedWriter bw = new BufferedWriter(new OutputStreamWriter(gdb.getOutputStream()));
         				//bw.write("ssh clarity gdb "+new File(filename).getAbsolutePath());
         				//bw.write("attach "+pid);
@@ -1189,7 +1187,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
             public void windowClosing(WindowEvent e) {
                 if (debugger.isRunning)
                    {
-                        debugger.server.bcastCcsRequest("ccs_debug_quit", "",-1,numberPes,null);
+                        ParDebug.server.bcastCcsRequest("ccs_debug_quit", "",-1,numberPes,null);
                         debugger.quitProgram();
                    } 
                 System.exit(0); /* main window closed */

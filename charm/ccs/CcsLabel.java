@@ -5,7 +5,6 @@ A simple CcsLabel class. Was created due to some problems making an java.awt.Lab
 */
 
 package charm.ccs;
-import java.awt.Label;
 
 
 public class CcsLabel extends java.awt.Label implements CcsProgress {

@@ -5,9 +5,8 @@
 package charm.ccs;
 
 import java.io.*;
-import java.util.*;
+//import java.util.*;
 import charm.ccs.CcsServer;
-import charm.debug.fmt.*;
 
 public class PokeCCS
 {
