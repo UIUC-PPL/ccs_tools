@@ -43,6 +43,7 @@ public class ParDebug extends JPanel
     public static byte[] globals;
     public static int dataPos;
     static ServThread servthread;
+    private static GdbProcess gdb;
 
     /// This variable is responsible for handling all the CCS communication with
     /// the running application
@@ -227,7 +228,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
     */
 
     public static String infoCommand(String s) {
-        return servthread.infoCommand(s);
+        return gdb.infoCommand(s);
     }
 
 /************** Tiny GUI Routines ************/
@@ -291,11 +292,14 @@ DEPRECATED!! The correct implementation is in CpdList.java
        }
     }
     
-    public void setParametersForProgram(String commandLine, String peNumber, String portno)
+    public void setParametersForProgram(String commandLine, String peNumber, String portno, String host, String user, boolean ssh)
     {
        setNumberPes(peNumber);
        clparams = commandLine;
        portnumber = portno;
+       hostname = host;
+       username = user;
+       tunnelNeeded = ssh;
        addedRunParameter();
     } 
     private void addedRunParameter() {
@@ -386,6 +390,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
        listenTo(menuFileOpen,"browse","Open a parallel program to debug");
        menuFile.add(menuFileParameters = new JMenuItem("Program Parameters",'P'));
        listenTo(menuFileParameters,"params","Enter command-line parameters for the parallel program");
+       menuFile.addSeparator();
        JMenuItem menuFileExit;
        menuFile.add(menuFileExit = new JMenuItem("Exit Debugger",'X'));
        listenTo(menuFileExit,"exitDebugger",null);
@@ -616,6 +621,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
         panelForEntities.add(splitPane);
         add(panelForEntities);
 
+        gdb = new GdbProcess(this);
 	addedRunParameter();
         if (filename!="")
           startProgram();
@@ -637,7 +643,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
     	{ /* Bring up parameters dialog box to select run options */
     		ParamsDialog dialogbox = new ParamsDialog(appFrame, true, this);
     		dialogbox.setLocationRelativeTo(appFrame);
-    		dialogbox.setFields(clparams, ""+numberPes, portnumber);
+    		dialogbox.setFields(clparams, ""+numberPes, portnumber, hostname, username, tunnelNeeded);
     		dialogbox.pack();
     		dialogbox.setVisible(true);
     	}
@@ -798,6 +804,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
     		logFile += "/memoryLog_";
     		at.load(frame, new MemoryTrace(logFile, numberPes), input);
 
+    		frame.setJMenuBar(at.getMenu());
     		frame.pack();
     		frame.setVisible(true);
     	    }
@@ -846,237 +853,271 @@ DEPRECATED!! The correct implementation is in CpdList.java
     /// Start the program from scratch.
     public void startProgram() 
     {
-           isRunning = true;
-           programOutputArea.setText("");
-           String executable = new File(filename).getAbsolutePath();
-	   String charmrunDir = new File(executable).getParent();
-	   if (charmrunDir==null) charmrunDir=".";
-           String charmrunPath = charmrunDir + "/charmrun";
-           if (envDisplay.length() == 0) envDisplay = getEnvDisplay();
-           // System.out.println(envDisplay);
-	   
-           String totCommandLine = charmrunPath + " " + "+p"+ numberPes + " " +executable + " " + clparams+"  +cpd +DebugDisplay " +envDisplay+" ++server ++charmdebug";
-           if (portnumber.length() != 0)
-               totCommandLine += " ++server-port " + portnumber;
-	   if (!hostname.equals("localhost")) {
-               if (username.length()>0) {
-                   totCommandLine = "-l " + username + " " + totCommandLine;
-               }
-	       totCommandLine = "ssh " + hostname + " " + totCommandLine;
-	   }
-           System.out.println("ParDebug> "+totCommandLine);
-           programOutputArea.setText(totCommandLine);
-           Process p = null;
-           Runtime runtime = null;
-           runtime = Runtime.getRuntime();
-           try {
-               // start new process for charmrun
-               p = runtime.exec(totCommandLine);
-           }
-           catch (Exception exc) {
-                 System.out.println("ParDebug> Error executing "+totCommandLine);
-                 quitProgram();
-                 return;
-           }
+    	gdb.terminate();
+    	isRunning = true;
+    	programOutputArea.setText("");
+    	String executable = new File(filename).getAbsolutePath();
+    	String charmrunDir = new File(executable).getParent();
+    	if (charmrunDir==null) charmrunDir=".";
+    	String charmrunPath = charmrunDir + "/charmrun";
+    	if (envDisplay.length() == 0) envDisplay = getEnvDisplay();
+    	// System.out.println(envDisplay);
 
-           // start the thread that will handle the communication with charmrun
-           // (and the program output as a consequence)
-           servthread = (new ServThread(this, p));
-           servthread.start();
+    	String totCommandLine = charmrunPath + " " + "+p"+ numberPes + " " +executable + " " + clparams+"  +cpd +DebugDisplay " +envDisplay+" ++server";// ++charmdebug";
+    	if (portnumber.length() != 0)
+    		totCommandLine += " ++server-port " + portnumber;
+    	if (!hostname.equals("localhost")) {
+    		if (username.length()>0) {
+    			totCommandLine = "-l " + username + " " + totCommandLine;
+    		}
+    		totCommandLine = "ssh " + hostname + " " + totCommandLine;
+    	}
+    	System.out.println("ParDebug> "+totCommandLine);
+    	programOutputArea.setText(totCommandLine);
+    	Process p = null;
+    	Runtime runtime = null;
+    	runtime = Runtime.getRuntime();
+    	try {
+    		// start new process for charmrun
+    		p = runtime.exec(totCommandLine);
+    	}
+    	catch (Exception exc) {
+    		System.out.println("ParDebug> Error executing "+totCommandLine);
+    		quitProgram();
+    		return;
+    	}
 
-           try {
-	   // Retrieve the initial info from charmrun regarding the program segments
-	   //StringBuffer initialInfoBuf = new StringBuffer();
-           String initialInfo = servthread.infoCommand(" ");
-	   //while ((initialInfo = servthread.infoCommand(" ")).indexOf("\n(gdb)") == -1) {
-           //    initialInfoBuf.append(initialInfo);
-           //    System.out.println("++|"+initialInfo+"|");
-           //}
-	   //System.out.println("|"+initialInfo+"|");
-           //initialInfoBuf.append(initialInfo);
-           //initialInfo = initialInfoBuf.toString();
-	   //System.out.println("|"+initialInfo+"|");
-	   int dataInitial = initialInfo.indexOf("\n.data ");
-	   int dataFinal = initialInfo.indexOf("\n",dataInitial+1);
-	   String dataValues = initialInfo.substring(dataInitial+6,dataFinal).trim();
-	   int endSize = dataValues.indexOf(' ');
-	   int startPos = dataValues.lastIndexOf(' ');
-	   int dataSize = Integer.parseInt(dataValues.substring(0,endSize));
-	   dataPos = Integer.parseInt(dataValues.substring(startPos+1));
-	   //System.out.println("string1: |"+initialInfo.substring(dataInitial+6,dataFinal).trim()+"| "+dataSize+" "+dataPos);
-	   int bssInitial = initialInfo.indexOf("\n.bss");
-	   int bssFinal = initialInfo.indexOf("\n",bssInitial+1);
-	   String bssValues = initialInfo.substring(bssInitial+6,bssFinal).trim();
-	   endSize = bssValues.indexOf(' ');
-	   startPos = bssValues.lastIndexOf(' ');
-	   int bssSize = Integer.parseInt(bssValues.substring(0,endSize));
-	   int bssPos = Integer.parseInt(bssValues.substring(startPos+1));
-	   //System.out.println("string1: |"+initialInfo.substring(bssInitial+5,bssFinal).trim()+"| "+bssSize+" "+bssPos);
-	   // FIXME: here we assume the program is 32 bit, or if 64 bit all the addresses are small
-	   globals = new byte[16]; // 4 integers of 4 bytes each
-	   CcsServer.writeInt(globals, 0, dataPos);
-	   CcsServer.writeInt(globals, 4, dataPos+dataSize);
-	   CcsServer.writeInt(globals, 8, bssPos);
-	   CcsServer.writeInt(globals, 12, bssPos+bssSize);
+    	// start the thread that will handle the communication with charmrun
+    	// (and the program output as a consequence)
+    	servthread = (new ServThread(this, p));
+    	servthread.start();
 
-	   // Delete the first print made by gdb at startup
-	   //System.out.println(servthread.infoCommand(" "));
+    	try {
+    		// Retrieve the initial info from charmrun regarding the program segments
+    		//StringBuffer initialInfoBuf = new StringBuffer();
+    		String initialInfo = getInitialInfo(); //servthread.infoCommand(" ");
+    		//while ((initialInfo = servthread.infoCommand(" ")).indexOf("\n(gdb)") == -1) {
+    		//    initialInfoBuf.append(initialInfo);
+    		//    System.out.println("++|"+initialInfo+"|");
+    		//}
+    		//System.out.println("|"+initialInfo+"|");
+    		//initialInfoBuf.append(initialInfo);
+    		//initialInfo = initialInfoBuf.toString();
+    		//System.out.println("|"+initialInfo+"|");
+    		int dataInitial = initialInfo.indexOf("\n.data ");
+    		int dataFinal = initialInfo.indexOf("\n",dataInitial+1);
+    		String dataValues = initialInfo.substring(dataInitial+6,dataFinal).trim();
+    		int endSize = dataValues.indexOf(' ');
+    		int startPos = dataValues.lastIndexOf(' ');
+    		int dataSize = Integer.parseInt(dataValues.substring(0,endSize));
+    		dataPos = Integer.parseInt(dataValues.substring(startPos+1));
+    		//System.out.println("string1: |"+initialInfo.substring(dataInitial+6,dataFinal).trim()+"| "+dataSize+" "+dataPos);
+    		int bssInitial = initialInfo.indexOf("\n.bss");
+    		int bssFinal = initialInfo.indexOf("\n",bssInitial+1);
+    		String bssValues = initialInfo.substring(bssInitial+6,bssFinal).trim();
+    		endSize = bssValues.indexOf(' ');
+    		startPos = bssValues.lastIndexOf(' ');
+    		int bssSize = Integer.parseInt(bssValues.substring(0,endSize));
+    		int bssPos = Integer.parseInt(bssValues.substring(startPos+1));
+    		//System.out.println("string1: |"+initialInfo.substring(bssInitial+5,bssFinal).trim()+"| "+bssSize+" "+bssPos);
+    		// FIXME: here we assume the program is 32 bit, or if 64 bit all the addresses are small
+    		globals = new byte[16]; // 4 integers of 4 bytes each
+    		CcsServer.writeInt(globals, 0, dataPos);
+    		CcsServer.writeInt(globals, 4, dataPos+dataSize);
+    		CcsServer.writeInt(globals, 8, bssPos);
+    		CcsServer.writeInt(globals, 12, bssPos+bssSize);
 
-	 /* Wait until the "ccs:" line comes out of the program's stdout */
-           long iter = 0;
-           while (servthread.portno == null)
-           {
-              try { Thread.sleep(100); }
-              catch(InterruptedException e1)
-              { /* don't care about interrupted sleep */ }
-              if(iter++ > 60*10) abort("Timeout waiting for program to start up (and print its CCS port number)");
-           }
-           if (portnumber.length() == 0)
-               portnumber = servthread.portno;
-           if (hostname.equals("localhost")) hostnumber = servthread.hostName;
-	   System.out.println("ParDebug> Charmrun started (CCS IP "+(hostname.equals("localhost")?hostnumber:hostname)+", port "+portnumber+")");
-	 
-	 /* Connect to the new program */
-           String[] ccsArgs=new String[2];
-           ccsArgs[0]= hostname.equals("localhost")?hostnumber:hostname;
-           ccsArgs[1]= portnumber;
-           if (tunnelNeeded) {
-               System.out.println("ParDebug> Tunneling connection through ssh");
-               try {
-                   sshTunnel = runtime.exec("ssh -2 -c blowfish -L "+portnumber+":localhost:"+portnumber+" "+hostname);
-               } catch (Exception exc) {
-                   System.out.println("ParDebug> Could not create ssh tunnel");
-               }
-               try { Thread.sleep(5000); }
-               catch(InterruptedException e1) {}
-               ccsArgs[0] = "localhost";
-           }
-	   System.out.println("Connecting to: "+username+(username.length()>0?"@":"")+(hostname.equals("localhost")?hostnumber:hostname)+":"+portnumber);
-           CcsServer ccs = CcsServer.create(ccsArgs,false);
-	   server = new CpdUtil(ccs);
+    		// Delete the first print made by gdb at startup
+    		//System.out.println(servthread.infoCommand(" "));
 
-	 /* Create the pe list */
-           peList = new boolean[numberPes]; 
-           for (int i = 0; i < numberPes; i++)
-           {
-             String peNumber = (new Integer(i)).toString();
-             pesbox.addItem( peNumber );
-             String chkboxlabel = "pe " + peNumber;
-             JCheckBox chkbox = new JCheckBox(chkboxlabel); 
-             peActualPanel.add(chkbox);
-             chkbox.setSelected(true);
-             chkbox.addActionListener(this);
-             chkbox.setActionCommand("pecheck");     
-             peList[i] = true; 
-           }
-           
-           peActualPanel.updateUI();
-          
-           startButton.setEnabled(false);
-           continueButton.setEnabled(true);
-           quitButton.setEnabled(false);
-           freezeButton.setEnabled(false);
-           startGdbButton.setEnabled(true); 
+    		/* Wait until the "ccs:" line comes out of the program's stdout */
+    		long iter = 0;
+    		while (servthread.portno == null)
+    		{
+    			try { Thread.sleep(100); }
+    			catch(InterruptedException e1)
+    			{ /* don't care about interrupted sleep */ }
+    			if(iter++ > 60*10) abort("Timeout waiting for program to start up (and print its CCS port number)");
+    		}
+    		if (portnumber.length() == 0)
+    			portnumber = servthread.portno;
+    		if (hostname.equals("localhost")) hostnumber = servthread.hostName;
+    		System.out.println("ParDebug> Charmrun started (CCS IP "+(hostname.equals("localhost")?hostnumber:hostname)+", port "+portnumber+")");
 
-           int nItems;
+    		/* Connect to the new program */
+    		String[] ccsArgs=new String[2];
+    		ccsArgs[0]= hostname.equals("localhost")?hostnumber:hostname;
+    		ccsArgs[1]= portnumber;
+    		if (tunnelNeeded) {
+    			System.out.println("ParDebug> Tunneling connection through ssh");
+    			try {
+    				sshTunnel = runtime.exec("ssh -2 -c blowfish -L "+portnumber+":localhost:"+portnumber+" "+hostname);
+    			} catch (Exception exc) {
+    				System.out.println("ParDebug> Could not create ssh tunnel");
+    			}
+    			try { Thread.sleep(5000); }
+    			catch(InterruptedException e1) {}
+    			ccsArgs[0] = "localhost";
+    		}
+    		System.out.println("Connecting to: "+username+(username.length()>0?"@":"")+(hostname.equals("localhost")?hostnumber:hostname)+":"+portnumber);
+    		CcsServer ccs = CcsServer.create(ccsArgs,false);
+    		server = new CpdUtil(ccs);
 
-           /* Reset the type information stored */
-           Inspector.initialize(server);
+    		/* Create the pe list */
+    		peList = new boolean[numberPes]; 
+    		for (int i = 0; i < numberPes; i++)
+    		{
+    			String peNumber = (new Integer(i)).toString();
+    			pesbox.addItem( peNumber );
+    			String chkboxlabel = "pe " + peNumber;
+    			JCheckBox chkbox = new JCheckBox(chkboxlabel); 
+    			peActualPanel.add(chkbox);
+    			chkbox.setSelected(true);
+    			chkbox.addActionListener(this);
+    			chkbox.setActionCommand("pecheck");     
+    			peList[i] = true; 
+    		}
 
-           /* Load the information regarding all chares */
-           nItems = server.getListLength("charm/chares",0);
-           chareItems.load(server.getPList("charm/chares",0,0,nItems));
+    		peActualPanel.updateUI();
 
-           /* Set up the lookup information for the Entry Methods */
-           epItems.setLookups(chareItems);
+    		startButton.setEnabled(false);
+    		continueButton.setEnabled(true);
+    		quitButton.setEnabled(false);
+    		freezeButton.setEnabled(false);
+    		startGdbButton.setEnabled(true); 
 
-           /* Create the entities lists */
-           nItems=server.getListLength("charm/entries",0);
-	   epItems.load(server.getPList("charm/entries",0,0,nItems));
-           
-           Vector items;
-           items = epItems.getUserEps();
-           int l = items.size();
-           int i = 0;
-           while (i < l)
-           {
-                   String tmp = (items.elementAt(i)).toString();
-                   i++;
-                   JCheckBox chkbox = new JCheckBox(tmp);
-                   chkbox.addActionListener(this);
-                   chkbox.setActionCommand("breakpoints"); 
-                   userEpsActualPanel.add(chkbox);
-                   
-           }
-           userEpsActualPanel.updateUI();
-           items = epItems.getSystemEps();
-           l = items.size();
-           i = 0;
-           while (i < l)
-           {
-                   String tmp = (items.elementAt(i)).toString();
-                   i++;
-                   JCheckBox chkbox = new JCheckBox(tmp);
-                   chkbox.addActionListener(this);
-                   chkbox.setActionCommand("breakpoints"); 
-                   sysEpsActualPanel.add(chkbox);
-                   
-           }
+    		int nItems;
 
-           /* Load the information regarding all messages */
-           nItems = server.getListLength("charm/messages",0);
-           msgItems.load(server.getPList("charm/messages",0,0,nItems));
+    		/* Reset the type information stored */
+    		Inspector.initialize(server);
 
-           /* Set the lookup lists for the message queue inspector */
-           messageQueue.setLookups(epItems, msgItems, chareItems);
-           } catch (Exception e) {
-        	   System.out.println("Error while starting the application (error: "+e+". Aborting...");
-        	   p.destroy();
-           }
+    		/* Load the information regarding all chares */
+    		nItems = server.getListLength("charm/chares",0);
+    		chareItems.load(server.getPList("charm/chares",0,0,nItems));
 
-           sysEpsActualPanel.updateUI();
-           listsbox.setEnabled(true);
-           pesbox.setEnabled(true);  
-           quitButton.setEnabled(true);
+    		/* Set up the lookup information for the Entry Methods */
+    		epItems.setLookups(chareItems);
+
+    		/* Create the entities lists */
+    		nItems=server.getListLength("charm/entries",0);
+    		epItems.load(server.getPList("charm/entries",0,0,nItems));
+
+    		Vector items;
+    		items = epItems.getUserEps();
+    		int l = items.size();
+    		int i = 0;
+    		while (i < l)
+    		{
+    			String tmp = (items.elementAt(i)).toString();
+    			i++;
+    			JCheckBox chkbox = new JCheckBox(tmp);
+    			chkbox.addActionListener(this);
+    			chkbox.setActionCommand("breakpoints"); 
+    			userEpsActualPanel.add(chkbox);
+
+    		}
+    		userEpsActualPanel.updateUI();
+    		items = epItems.getSystemEps();
+    		l = items.size();
+    		i = 0;
+    		while (i < l)
+    		{
+    			String tmp = (items.elementAt(i)).toString();
+    			i++;
+    			JCheckBox chkbox = new JCheckBox(tmp);
+    			chkbox.addActionListener(this);
+    			chkbox.setActionCommand("breakpoints"); 
+    			sysEpsActualPanel.add(chkbox);
+
+    		}
+
+    		/* Load the information regarding all messages */
+    		nItems = server.getListLength("charm/messages",0);
+    		msgItems.load(server.getPList("charm/messages",0,0,nItems));
+
+    		/* Set the lookup lists for the message queue inspector */
+    		messageQueue.setLookups(epItems, msgItems, chareItems);
+    	} catch (Exception e) {
+    		System.out.println("Error while starting the application (error: "+e+". Aborting...");
+    		p.destroy();
+    	}
+
+    	sysEpsActualPanel.updateUI();
+    	listsbox.setEnabled(true);
+    	pesbox.setEnabled(true);  
+    	quitButton.setEnabled(true);
     }
 
     /// Exit the debugged program.
     public void quitProgram()
     {
-            portnumber = "";
-            isRunning = false;
-            if (sshTunnel != null) {
-		try { Thread.sleep(2);
-		} catch (InterruptedException e) {}
-                sshTunnel.destroy();
-                sshTunnel = null;
-            }
-            startButton.setEnabled(true);
-            continueButton.setEnabled(false); 
-            quitButton.setEnabled(false);
-            freezeButton.setEnabled(false);
-            startGdbButton.setEnabled(false);
-            listModel.removeAllElements();
-            outputArea.setList(null); 
-            listsbox.setEnabled(false);
-            pesbox.removeAllItems(); 
-            pesbox.setEnabled(false);
+    	gdb.terminate();
+    	portnumber = "";
+    	isRunning = false;
+    	if (sshTunnel != null) {
+    		try { Thread.sleep(2);
+    		} catch (InterruptedException e) {}
+    		sshTunnel.destroy();
+    		sshTunnel = null;
+    	}
+    	startButton.setEnabled(true);
+    	continueButton.setEnabled(false); 
+    	quitButton.setEnabled(false);
+    	freezeButton.setEnabled(false);
+    	startGdbButton.setEnabled(false);
+    	listModel.removeAllElements();
+    	outputArea.setList(null); 
+    	listsbox.setEnabled(false);
+    	pesbox.removeAllItems(); 
+    	pesbox.setEnabled(false);
 
-            peActualPanel.removeAll();
-            peActualPanel.updateUI();
-            userEpsActualPanel.removeAll(); 
-            userEpsActualPanel.updateUI(); 
-            sysEpsActualPanel.removeAll(); 
-            sysEpsActualPanel.updateUI(); 
-            setStatusMessage(new String("Ready to start new program"));
+    	peActualPanel.removeAll();
+    	peActualPanel.updateUI();
+    	userEpsActualPanel.removeAll(); 
+    	userEpsActualPanel.updateUI(); 
+    	sysEpsActualPanel.removeAll(); 
+    	sysEpsActualPanel.updateUI(); 
+    	setStatusMessage(new String("Ready to start new program"));
     }
     
-
+    private String getInitialInfo() {
+		String executable = new File(getFilename()).getAbsolutePath();
+		String totCommandLine = "size -A " + executable;
+		String hostname = getHostname();
+		if (!hostname.equals("localhost")) {
+			totCommandLine = hostname + " " + totCommandLine;
+			String username = getUsername();
+			if (!username.equals("")) {
+				totCommandLine = "-l " + username + " " + totCommandLine;
+			}
+			totCommandLine = "ssh " + totCommandLine;
+		}
+		try {
+			//System.out.println("Starting: '"+totCommandLine+"'");
+			Process p = Runtime.getRuntime().exec(totCommandLine);
+			BufferedReader output = new BufferedReader(new InputStreamReader(p.getInputStream()));
+			StringBuffer reply = new StringBuffer();
+			int c;
+			while ((c = output.read()) != -1) {
+				reply.append((char)c);
+			}
+			//System.out.println("STRINGA: "+reply.toString());
+			return reply.toString();
+		} catch (Exception e) {
+			System.out.println("Failed to start gdb info program");
+			return "error";
+		}
+    }
+    
     public static void printUsage()
     {
         System.out.println("Usage: java ParDebug [[-file <charm program name>] [[-param \"<charm program parameters>\"][-pes <number of pes>]] [-host <hostname>] [-user <username>] [-port <port>] [-sshtunnel] [-display <display>]]");
     }
-  
+    
+    String getFilename() { return filename; }
+    String getHostname() { return hostname; }
+    String getUsername() { return username; }
+    
     public static void main(String[] args) {
         hostname = "localhost";
         username = "";

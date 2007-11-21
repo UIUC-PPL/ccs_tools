@@ -3,19 +3,37 @@ package charm.debug;
 import java.awt.*;
 import java.awt.event.*;
 import javax.swing.*;
-
 import java.util.Vector;
 import java.io.IOException;
 import java.awt.image.*;
+import java.util.List;
 
 public class AllocationGraphPanel extends JPanel implements ActionListener,
-        MouseListener, MouseMotionListener {
+        MouseListener, MouseMotionListener, ItemListener {
 
+    private JMenuBar menuBar;
+    private JMenu menuAction;
+    private JCheckBoxMenuItem menuAllocationTree;
+    private JCheckBoxMenuItem menuAllocationTreeFromBeginning;
 	private JScrollPane displayPane;
 	private ScrollableAllocationGraph allocationData;
+	private JFrame atFrame;
+	private AllocationTreePanel at;
+	private boolean traceWrite;
 
 	AllocationGraphPanel() {
 		setLayout(new BorderLayout());
+		atFrame = null;
+		
+		// Create the menu
+		menuBar = new JMenuBar();
+		menuBar.add(menuAction = new JMenu("Allocation Tree"));
+		menuAction.setMnemonic('A');
+		menuAction.add(menuAllocationTree = new JCheckBoxMenuItem("Show"));
+		menuAllocationTree.addItemListener(this);
+		menuAction.add(menuAllocationTreeFromBeginning = new JCheckBoxMenuItem("Start from beginning"));
+		menuAllocationTreeFromBeginning.addItemListener(this);
+
 		displayPane = new JScrollPane();
 		add(displayPane, BorderLayout.CENTER);
 	}
@@ -27,8 +45,18 @@ public class AllocationGraphPanel extends JPanel implements ActionListener,
 		}
 	}
 
-	public void load(JFrame frame, MemoryTrace log, AllocationGraphDialog input) {
+    public JMenuBar getMenu() {return menuBar;}
+
+    public void load(JFrame frame, MemoryTrace log, AllocationGraphDialog input) {
 		Vector logs;
+		traceWrite = true;
+		frame.addWindowListener(new WindowAdapter() {
+			public void windowClosed(WindowEvent e) {
+				if (atFrame != null) atFrame.dispose();
+			}
+		}
+		);
+		
 		try {
 			logs = log.readLogs(input.getPe(), input.getFirstEvent(), input.getLastEvent());
 		} catch (IOException e) {
@@ -63,14 +91,57 @@ public class AllocationGraphPanel extends JPanel implements ActionListener,
 		displayPane.setCorner(JScrollPane.LOWER_LEFT_CORNER, new Corner());
 	}
 
+    class AllocationTreeWindowClosed extends WindowAdapter {
+    	AllocationGraphPanel parent;
+    	AllocationTreeWindowClosed(AllocationGraphPanel agp) {
+    		super();
+    		parent = agp;
+    	}
+    	public void windowClosing(WindowEvent e) {
+    		parent.menuAllocationTree.setSelected(false);
+    		parent.menuAllocationTree.setText("Show");
+    	}
+    }
+    
 	public void actionPerformed(ActionEvent e) {
-		// TODO Auto-generated method stub
 
+	}
+	
+	public void itemStateChanged(ItemEvent e) {
+		if (e.getItemSelectable() == menuAllocationTree) {
+			if (e.getStateChange() == ItemEvent.SELECTED) {
+				if (atFrame == null) {
+		    		atFrame = new JFrame("Allocation Tree");
+		    		atFrame.setDefaultCloseOperation(JFrame.HIDE_ON_CLOSE);
+		    		atFrame.addWindowListener(new AllocationTreeWindowClosed(this));
+		    		at = new AllocationTreePanel();
+		    		JComponent newContentPane = at;
+		    		newContentPane.setOpaque(true);
+		    		atFrame.setContentPane(newContentPane);
+		    		atFrame.setTitle("Allocation Tree");
+		    		
+					List logs;
+					if (menuAllocationTreeFromBeginning.isSelected()) logs = allocationData.getLogsFromBeginning();
+					else logs = allocationData.getSelectedLogs();
+		    		at.loadMemoryLogs(logs, menuAllocationTreeFromBeginning.isSelected());
+					atFrame.pack();
+				}
+				atFrame.setVisible(true);
+				menuAllocationTree.setText("Hide");
+			} else {
+				atFrame.setVisible(false);
+				menuAllocationTree.setText("Show");
+			}
+		} else if (e.getItemSelectable() == menuAllocationTreeFromBeginning) {
+			updateAllocationTreeFrame();
+		}
 	}
 
 	public void mouseClicked(MouseEvent e) {
-		// TODO Auto-generated method stub
-
+		if (e.getSource() == allocationData) {
+		    traceWrite = !traceWrite;
+		    updatePosition(e);
+		}
 	}
 
 	public void mouseEntered(MouseEvent e) {
@@ -116,15 +187,28 @@ public class AllocationGraphPanel extends JPanel implements ActionListener,
 	}
 	
 	private void updatePosition(MouseEvent e) {
-		//System.out.println("Tooltip JPanel "+(createToolTip().isEnabled()?"enabled":"disabled"));
-		if (e.getSource() == allocationData) {
-		    allocationData.selectPosition(e.getX(), e.getY());
-		} else {
-		    allocationData.selectPosition(-1, 0);
+		if (traceWrite) {
+			//System.out.println("Tooltip JPanel "+(createToolTip().isEnabled()?"enabled":"disabled"));
+			if (e.getSource() == allocationData) {
+				allocationData.selectPosition(e);
+			} else {
+				allocationData.selectPosition(null);
+			}
+			updateAllocationTreeFrame();
 		}
 	}
 
+	private void updateAllocationTreeFrame() {
+		if (atFrame != null && atFrame.isVisible()) {
+			List logs;
+			if (menuAllocationTreeFromBeginning.isSelected()) logs = allocationData.getLogsFromBeginning();
+			else logs = allocationData.getSelectedLogs();
+			at.loadMemoryLogs(logs, menuAllocationTreeFromBeginning.isSelected());
+			//at.repaint();
+		}
+	}
+	
 	private void deletePosition() {
-		allocationData.selectPosition(-1, 0);
+		if (traceWrite) allocationData.selectPosition(null);
 	}
 }

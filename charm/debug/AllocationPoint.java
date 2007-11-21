@@ -17,9 +17,13 @@ public class AllocationPoint implements TreeNode {
 
 	public AllocationPoint(AllocationPoint p) {
 		parent = p;
+		size = count = 0;
+		isLeak = false;
+		location = null;
+		children = null;
 	}
 	
-	public void read(ByteBuffer buf) {
+	public void readPuppedBuffer(ByteBuffer buf) {
 		long key;
 		if (Inspector.is64bit()) key = buf.getLong();
 		else key = buf.getInt();
@@ -32,15 +36,61 @@ public class AllocationPoint implements TreeNode {
 		for (int i=0; i<numChildren; ++i) {
 			AllocationPoint child =new AllocationPoint(this); 
 			children.addElement(child);
-			child.read(buf);
+			child.readPuppedBuffer(buf);
 		}
 	}
 
+	public void addMemoryLog(MemoryLog log, int depth) {
+		if (depth >= 0) {
+			if (location == null) location = Symbol.get(log.getStack(depth));
+			size += log.getSize();
+			count ++;
+		}
+		
+		if (log.getStack().length > depth+1) {
+			AllocationPoint child = getChildWithLocation(log.getStack(depth+1));
+			if (child == null) {
+				child = new AllocationPoint(this);
+				if (children == null) children = new Vector();
+				children.add(child);
+			}
+			child.addMemoryLog(log, depth+1);
+		}
+	}
+	
+	public void removeMemoryLog(MemoryLog log, int depth) {
+		int sizePlus = log.getSize();
+		if (sizePlus < 0) sizePlus = - sizePlus;
+		if (depth >= 0) {
+			if (location == null) location = Symbol.get(log.getStack(depth));
+			size -= sizePlus;
+			count --;
+		}
+		
+		if (log.getStack().length > depth+1) {
+			AllocationPoint child = getChildWithLocation(log.getStack(depth+1));
+			if (child != null) {
+				child.removeMemoryLog(log, depth+1);
+				if (child.size == 0) children.remove(child);
+			}
+		}
+	}
+	
+	AllocationPoint getChildWithLocation(long loc) {
+		if (children == null) return null;
+		for (int i=0; i<children.size(); ++i) {
+			AllocationPoint child = (AllocationPoint)children.elementAt(i);
+			if (child.location.equals(loc)) return child;
+		}
+		return null;
+	}
+	
 	public String toString() {
 		return (isLeak?"* ":"")+location+": size="+size+", count="+count;
 	}
 
 	public Enumeration children() {
+		if (children == null) return null;
 	    return children.elements();
     }
 
@@ -53,10 +103,12 @@ public class AllocationPoint implements TreeNode {
     }
 
 	public int getChildCount() {
+		if (children == null) return 0;
 	    return children.size();
     }
 
 	public int getIndex(TreeNode node) {
+		if (children == null) return -1;
 		for (int i=0; i<children.size(); ++i) if (children.elementAt(i)==node) return i;
 	    return -1;
     }
@@ -66,6 +118,6 @@ public class AllocationPoint implements TreeNode {
     }
 
 	public boolean isLeaf() {
-	    return children.size()==0;
+	    return children==null || children.size()==0;
     }
 }

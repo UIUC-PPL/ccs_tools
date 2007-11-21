@@ -89,22 +89,25 @@ public class MemoryTrace {
 	}
 
 	public Vector readLogs(int proc, int from, int to) throws IOException {
-		Vector results = new Vector(to - from + 1);
+		Vector results = new Vector(to - from + 2);
 		BufferedReader file = new BufferedReader(new FileReader(getFilename(proc)));
 		int totalsize = 0;
 		for (int i = 0; i < from; ++i) {
-			totalsize += getNext(file, totalsize).getSize();
+			totalsize += getNext(file, totalsize, false).getSize();
 			
 		}
+		long stack[] = new long[1];
+		stack[0] = 0;
+		results.add(new MemoryLog(0, totalsize, 0, stack));
 		for (int i = from; i <= to; ++i) {
-			MemoryLog log = getNext(file, totalsize); 
+			MemoryLog log = getNext(file, totalsize, true);
 			results.add(log);
 			totalsize += log.getSize();
 		}
 		return results;
 	}
 
-	private MemoryLog getNext(BufferedReader file, int totalsize)
+	private MemoryLog getNext(BufferedReader file, int totalsize, boolean getStack)
 	        throws IOException {
 		String line = file.readLine();
 		if (line == null) return null;
@@ -112,11 +115,15 @@ public class MemoryTrace {
 		int type = Integer.parseInt(tokens[0]);
 		long location;
 		int size;
+		int recordedStack = 0;
+		long stack[] = null;
 		if (type == BEGIN_TRACE) {
 			location = 0;
 			size = Integer.parseInt(tokens[1]);
 			if (size > totalsize) {
 				size -= totalsize;
+				stack = new long[1];
+				stack[0] = 0;
 			} else {
 				size = totalsize - size;
 			}
@@ -127,11 +134,25 @@ public class MemoryTrace {
 				location = 0;
 				if (!tokens[1].equals("(nil)")) throw ne;
 			}
-			if (type == MALLOC) size = Integer.parseInt(tokens[2]);
-			else if (type == FREE) size = -Integer.parseInt(tokens[2]);
+			if (type == MALLOC) {
+				size = Integer.parseInt(tokens[2]);
+				recordedStack = Integer.parseInt(tokens[3]);
+				int stackSize = recordedStack;
+				if (stackSize == 0) stackSize = 1;
+				stack = new long[stackSize];
+				stack[0] = 0; // Initialize the case where no stack is present
+				for (int i=0; i<recordedStack; ++i) {
+					stack[i] = Long.decode(tokens[i+4]).longValue();
+				}
+			}
+			else if (type == FREE) {
+				size = -Integer.parseInt(tokens[2]);
+				stack = new long[1];
+				stack[0] = 0;
+			}
 			else throw new IOException("Unrecognized Memory Log format");
 		}
-		return new MemoryLog(location, size, totalsize);
+		return new MemoryLog(location, size, totalsize, stack);
 	}
 
 	public static void main(String[] argv) throws IOException {
