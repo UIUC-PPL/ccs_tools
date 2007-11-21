@@ -103,7 +103,7 @@ public class DataType extends GenericType {
                         if (((TypedefType)superType).isVirtual()) isVirtual=true;
                     }
 
-                    String offsetValue = ParDebug.infoCommand("info:print (class "+superName+"*)((class "+name+"*)"+ParDebug.dataPos+")\n");
+                    String offsetValue = ParDebug.infoCommand("print (class "+superName+"*)((class "+name+"*)"+ParDebug.dataPos+")\n");
                     System.out.println("info:print (class "+superName+"*)((class "+name+"*)"+ParDebug.dataPos+") = "+offsetValue);
                     int offset;
                     if (offsetValue.indexOf(" 0x") != -1) {
@@ -204,10 +204,10 @@ public class DataType extends GenericType {
 		    dt = dt.build(varType, varTypeDesc);
                 }
             }
-            String offsetValue = ParDebug.infoCommand("info:print &((class "+name+"*)"+ParDebug.dataPos+")->"+varName+"\n");
+            String offsetValue = ParDebug.infoCommand("print &((class "+name+"*)"+ParDebug.dataPos+")->"+varName+"\n");
             System.out.println("info:print &((class "+name+"*)"+ParDebug.dataPos+")->"+varName+" = "+offsetValue);
             if (offsetValue.indexOf(" 0x") == -1) {
-                offsetValue = ParDebug.infoCommand("info:print &(("+name+"*)"+ParDebug.dataPos+")->"+varName+"\n");
+                offsetValue = ParDebug.infoCommand("print &(("+name+"*)"+ParDebug.dataPos+")->"+varName+"\n");
                 System.out.println("info:print &(("+name+"*)"+ParDebug.dataPos+")->"+varName+" = "+offsetValue);
             }
             int offset;

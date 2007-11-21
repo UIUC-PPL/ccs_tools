@@ -42,7 +42,7 @@ public class InspectPanel extends JPanel implements ActionListener {
 			ByteBuffer buf = null;
 			PAbstract info = cur.elementNamed("value");
 			if (info != null) buf = ByteBuffer.wrap(((PString)info).getBytes()).order(Inspector.getByteOrder());
-			String request = "info:info symbol 0x";
+			String request = "info symbol 0x";
 			if (Inspector.is64bit()) request += Long.toHexString(buf.getLong());
 			else request += Integer.toHexString(buf.getInt());
 			request += "\n";

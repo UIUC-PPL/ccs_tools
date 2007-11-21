@@ -42,11 +42,11 @@ public abstract class GenericType extends VisitableType {
     public abstract String memoryToString(String indent, ByteBuffer mem, int start);
 
     static String getDescription(String type) {
-        String desc = ParDebug.infoCommand("info:ptype class "+type+"\n");
+        String desc = ParDebug.infoCommand("ptype class "+type+"\n");
         System.out.println("info1:ptype "+type+" = "+desc);
         if (desc.length()==0) {
             // trying without "class" keyword
-            desc = ParDebug.infoCommand("info:ptype "+type+"\n");
+            desc = ParDebug.infoCommand("ptype "+type+"\n");
 	    System.out.println("info2:ptype "+type+" = "+desc);
         }
         if (desc.length()==0) {
