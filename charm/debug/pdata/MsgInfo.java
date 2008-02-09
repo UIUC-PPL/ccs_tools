@@ -4,6 +4,7 @@ import javax.swing.*;
 
 import charm.debug.fmt.PList;
 import charm.debug.inspect.Inspector;
+import charm.debug.inspect.InspectPanel;
 
 // Information regarding a message in the queue
 public class MsgInfo extends GenericInfo {
@@ -33,12 +34,13 @@ public class MsgInfo extends GenericInfo {
         //+userData.toString()+"\n";
     }
 
-    public JComponent getDetails() {
+    public void getDetails(InspectPanel panel) {
         System.out.println(Inspector.getTypeCreate(chare.getType()));
-        return new JLabel("Sender processor: "+from+"\n"+
-            "Destination: "+chare.getType()+"::"+ep.toString()+" (type "+msgFor+")\n"+
-            "Size: "+userSize+"\n"+
-            "User data:\n"+userData.toString());
+        panel.load("<html>Sender processor: "+from+"<br>"+
+            "Destination: "+chare.getType()+"::"+ep.toString()+" (type "+msgFor+")<br>"+
+            "Size: "+userSize+"<br>"+
+            "User data:\n"+userData.toString()+
+            "</html>");
     }
 }
 

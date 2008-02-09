@@ -1,6 +1,7 @@
 package charm.debug.pdata;
 
 import javax.swing.*;
+import charm.debug.inspect.InspectPanel;
 
 // Information regarding an entry method
 public class EpInfo extends GenericInfo {
@@ -23,8 +24,8 @@ public class EpInfo extends GenericInfo {
         return chare.getIndex();
     }
 
-    public JComponent getDetails() {
-        return new JLabel("chare type "+chare.getIndex()+": "+chare.getType()+"\n"+
+    public void getDetails(InspectPanel panel) {
+        panel.load("chare type "+chare.getIndex()+": "+chare.getType()+"\n"+
             "entry point "+epIdx+": "+name);//+"\n"+
         //"message type: "+msgIdx;
     }

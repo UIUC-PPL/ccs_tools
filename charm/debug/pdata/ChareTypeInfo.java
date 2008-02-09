@@ -3,6 +3,7 @@ package charm.debug.pdata;
 import javax.swing.JLabel;
 import javax.swing.JComponent;
 import charm.debug.inspect.Inspector;
+import charm.debug.inspect.InspectPanel;
 
 // Information regarding a chare type
 public class ChareTypeInfo extends GenericInfo {
@@ -30,11 +31,11 @@ public class ChareTypeInfo extends GenericInfo {
     public String getDescription() {
         return description;
     }
-    public JComponent getDetails() {
+    public void getDetails(InspectPanel panel) {
         System.out.println(Inspector.getTypeCreate(name));
         String str = "Type "+index+": "+name+", size "+size+" bytes\n"+
             ((description!=null)?("Description:\n"+description):"Description not available");
-        return new JLabel(str);
+        panel.load(str);
     }
 }
 

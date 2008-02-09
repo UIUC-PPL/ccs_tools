@@ -4,10 +4,7 @@
  */
 package charm.debug;
 
-import java.io.*;
-import java.util.*;
 import charm.ccs.CcsServer;
-import charm.debug.fmt.*;
 
 public class TinyClient
 {

@@ -1,0 +1,82 @@
+<!-- 
+
+Running "ant" in this directory will cause the projections.jar file to
+be built.
+
+The directory bin will contain the final jar file
+The directory build will contain the compiled class files
+
+author = idooley2
+
+-->
+
+
+<project name="CharmDebug" default="dist" basedir="." >
+    <description>
+        Ant based build system for CharmDebug
+    </description>
+
+  <target name="cleanbuild" depends="clean,dist" description="Performing a fresh build" />
+
+  <!-- Setup anything for the build -->
+  <target name="init">
+    <mkdir dir="bin"/>
+    <mkdir dir="classes"/>
+  </target>
+
+
+  <!-- set the property NewJava if the current java version is at least 1.5 -->
+<!--  <target name="getJavaVersion">
+    <condition property="NewJava">
+      <not>
+        <or>
+          <equals arg1="${ant.java.version}" arg2="1.1"/>
+          <equals arg1="${ant.java.version}" arg2="1.2"/>
+          <equals arg1="${ant.java.version}" arg2="1.3"/>
+          <equals arg1="${ant.java.version}" arg2="1.4"/>
+        </or>
+      </not>
+    </condition>
+
+  </target>
+-->
+
+  <!-- Compile the java code. Put class files into "classes" directory -->
+  <target name="compile" depends="init" description="compile the source" >
+
+    <javac sourcepath="" srcdir="." destdir="classes"  debug="false" debuglevel="lines,vars,source" >
+      <include name="charm/debug/**"/>
+      <include name="charm/ccs/**"/>
+    </javac>
+
+  </target>
+
+
+  <!-- Make the jar file from the files in "build" -->
+  <target name="dist" depends="compile" description="generate the jar file" >
+   
+    <!-- Copy images over -->
+<!--
+  	<mkdir dir="build/projections/images"/>
+    <copy file="projections/images/bgimage.jpg" tofile="build/projections/images/bgimage.jpg" />
+    <copy file="projections/images/ZoomIn24.gif" tofile="build/projections/images/ZoomIn24.gif" />
+    <copy file="projections/images/ZoomOut24.gif" tofile="build/projections/images/ZoomOut24.gif" />
+-->
+    <jar jarfile="bin/charmdebug.jar" basedir="classes">
+      <include name="charm/debug/**"/>
+      <include name="charm/ccs/**"/>
+   	</jar>
+
+  </target>
+
+
+  <!-- Cleanup -->
+  <target name="clean" description="clean up" >
+    <!-- Delete the build directory -->
+    <delete dir="classes"/>
+    <delete file="bin/charmdebug.jar"/>
+  </target>
+
+
+</project>
+

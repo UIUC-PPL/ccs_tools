@@ -26,40 +26,49 @@ public class ChareInfo extends GenericInfo {
         //+userData.toString()+"\n";
     }
 
-    public JComponent getDetails() {
+    public void getDetails(InspectPanel panel) {
         if (type != null) {
-            StringVisitor st = new StringVisitor(memory);
-            st.visit(type);
+        	SuperClassElement el = new SuperClassElement(type, 0);
+        	panel.load(el, memory);
+        	//return panel;
+            /*StringVisitor st = new StringVisitor(memory);
+            st.visit(el);
             System.out.println(st.getResult());
             JTreeVisitor jtv = new JTreeVisitor(memory, type.getName());
-            jtv.visit(type);
-/*            JFrame frame = new JFrame();
-            frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);*/
+            jtv.visit(el);
+//            JFrame frame = new JFrame();
+//            frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 //            JPanel panel = new JPanel()
             //JScrollPane scr = new JScrollPane((JTree)jtv.getResult());
             //panel.add(scr);
             //frame.pack();
             //frame.setVisible(true);
             //return type.memoryToString(memory);
-            return (JTree)jtv.getResult();
+            return (JTree)jtv.getResult();*/
         }
         else if (id != null) {
             int nItems = ParDebug.server.getListLength("charm/object",ParDebug.currentListedPE);
             PList list = ParDebug.server.getPList("charm/object",ParDebug.currentListedPE,0,nItems,id);
-            if (list==null) return null;
+            if (list==null) {
+            	panel.clear();
+            	return;
+            }
             PList cur = (PList)list.elementAt(0);
             type = Inspector.getTypeCreate(((PString)cur.elementNamed("type")).getString());
             memory = ByteBuffer.wrap(((PString)cur.elementNamed("value")).getBytes()).order(Inspector.getByteOrder());
             
             System.out.println("Loaded type "+name);
-            StringVisitor st = new StringVisitor(memory);
-            st.visit(type);
+        	SuperClassElement el = new SuperClassElement(type, 0);
+        	panel.load(el, memory);
+        	//return panel;
+            /*StringVisitor st = new StringVisitor(memory);
+            st.visit(el);
             System.out.println(st.getResult());
             JTreeVisitor jtv = new JTreeVisitor(memory, type.getName());
-            jtv.visit(type);
+            jtv.visit(el);
             //return type.memoryToString(memory);
             //JScrollPane scr = new JScrollPane((JTree)jtv.getResult());
-            return (JTree)jtv.getResult();
+            return (JTree)jtv.getResult();*/
             /*
             StringBuffer buf = new StringBuffer();
             ByteBuffer bid = ByteBuffer.wrap(id).order(Inspector.getByteOrder());
@@ -76,7 +85,7 @@ public class ChareInfo extends GenericInfo {
             return buf.toString();
             */
         }
-        return null;
+        //return null;
         /*System.out.println(Inspector.getTypeCreate(chare.getType()));
         return "Sender processor: "+from+"\n"+
             "Destination: "+chare.getType()+"::"+ep.toString()+" (type "+msgFor+")\n"+

@@ -33,7 +33,11 @@ public class JTreeVisitor extends TypeVisitor {
     }
 
     public Object getResult() {
-    	if (tree != null) return tree;
-    	else return (tree = new JTree(top));
+    	if (tree == null) {
+    		tree = new JTree(top);
+    		tree.setRootVisible(false);
+    		tree.expandRow(0);
+    	}
+    	return tree;
     }
 }

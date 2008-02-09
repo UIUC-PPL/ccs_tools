@@ -3,12 +3,12 @@ package charm.debug.inspect;
 import java.nio.ByteBuffer;
 
 /** Representation of a variable inside a class */
-class VariableElement extends GenericElement {
+public class VariableElement extends GenericElement {
     String name;
     int size;
     int pointer;
 
-    VariableElement(GenericType t, String n, int s, int p, int o) {
+    public VariableElement(GenericType t, String n, int s, int p, int o) {
         type = t;
         name = n;
         size = s;

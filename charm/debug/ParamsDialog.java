@@ -2,18 +2,23 @@ package charm.debug;
 
 import java.awt.*;
 import java.awt.event.*;
+
 import javax.swing.*;
 
-public class ParamsDialog extends JDialog {
+import charm.debug.preference.Execution;
 
-	ParDebug mainObject = null;
+public class ParamsDialog extends JDialog implements ActionListener {
 
-	private JTextField  clParams, numPes, portno, hostname, username;
+	//ParDebug mainObject = null;
+	Execution exec = null;
+
+	private JTextField  clParams, numPes, portno, hostname, username, filename;
 	private JCheckBox sshTunnel;
+	private JButton chooser;
 
-	public ParamsDialog(Frame parent, boolean modal, ParDebug obj) {
+	public ParamsDialog(Frame parent, boolean modal, Execution obj) {
 		super (parent, modal);
-		mainObject = obj;
+		exec = obj;
 		initComponents();
 		pack();
 		setResizable(false);
@@ -41,6 +46,36 @@ public class ParamsDialog extends JDialog {
 
 		c.gridx = 0;
 		c.gridy = 0;
+		c.gridwidth = 1;
+		c.anchor = GridBagConstraints.WEST;
+		c.insets = new Insets(12,12,0,0);
+		JLabel filenamelabel = new JLabel("Executable:");
+		filenamelabel.setLabelFor(filename);
+		grid.setConstraints(filenamelabel, c);
+		contents.add(filenamelabel);
+		
+		filename = new JTextField(35);
+		c.gridx = 1;
+		c.gridy = 0;
+		c.gridwidth = 2;
+		c.fill = GridBagConstraints.HORIZONTAL;
+		c.weightx = 1.0;
+		c.insets = new Insets(11,7,0,0);
+		grid.setConstraints(filename, c);
+		
+		chooser = new JButton("Change");
+		chooser.setActionCommand("browse");
+		chooser.addActionListener(this);
+		c.gridx = 3;
+		c.gridy = 0;
+		c.gridwidth = 1;
+		c.fill = GridBagConstraints.EAST;
+		c.insets = new Insets(12,5,0,10);
+		grid.setConstraints(chooser, c);
+		
+		c.gridx = 0;
+		c.gridy = 1;
+		c.gridwidth = 1;
 		c.anchor = GridBagConstraints.WEST;
 		c.insets = new Insets(12,12,0,0);
 		JLabel paramlabel = new JLabel();
@@ -51,7 +86,7 @@ public class ParamsDialog extends JDialog {
 
 		clParams = new JTextField(35);
 		c.gridx = 1;
-		c.gridy = 0;
+		c.gridy = 1;
 		c.gridwidth = 3;
 		c.fill = GridBagConstraints.HORIZONTAL;
 		c.weightx = 1.0;
@@ -59,7 +94,8 @@ public class ParamsDialog extends JDialog {
 		grid.setConstraints(clParams,c); 
 
 		c.gridx = 0;
-		c.gridy = 1;
+		c.gridy = 2;
+		c.gridwidth = 1;
 		c.anchor = GridBagConstraints.WEST;
 		c.insets = new Insets(12,12,0,0);
 		JLabel peslabel = new JLabel();
@@ -70,7 +106,7 @@ public class ParamsDialog extends JDialog {
 
 		numPes = new JTextField(5);
 		c.gridx = 1;
-		c.gridy = 1;
+		c.gridy = 2;
 		c.gridwidth = 1;
 		c.fill = GridBagConstraints.NONE;
 		c.anchor = GridBagConstraints.WEST;
@@ -79,7 +115,7 @@ public class ParamsDialog extends JDialog {
 
 
 		c.gridx = 0;
-		c.gridy = 2;
+		c.gridy = 3;
 		c.anchor = GridBagConstraints.WEST;
 		c.insets = new Insets(12,12,0,0);
 		JLabel portNumberLabel = new JLabel();
@@ -89,7 +125,7 @@ public class ParamsDialog extends JDialog {
 		contents.add(portNumberLabel);
 
 		c.gridx = 1;
-		c.gridy = 2;
+		c.gridy = 3;
 		c.gridwidth = 1;
 		c.fill = GridBagConstraints.NONE;
 		c.anchor = GridBagConstraints.WEST;
@@ -99,7 +135,7 @@ public class ParamsDialog extends JDialog {
 		//contents.add(portno);
 
 		c.gridx = 0;
-		c.gridy = 3;
+		c.gridy = 4;
 		c.anchor = GridBagConstraints.WEST;
 		c.insets = new Insets(12,12,0,0);
 		JLabel hostNameLabel = new JLabel();
@@ -109,7 +145,7 @@ public class ParamsDialog extends JDialog {
 		contents.add(hostNameLabel);
 
 		c.gridx = 1;
-		c.gridy = 3;
+		c.gridy = 4;
 		c.gridwidth = 1;
 		c.fill = GridBagConstraints.NONE;
 		c.anchor = GridBagConstraints.WEST;
@@ -118,7 +154,7 @@ public class ParamsDialog extends JDialog {
 		grid.setConstraints(hostname, c);
 
 		c.gridx = 0;
-		c.gridy = 4;
+		c.gridy = 5;
 		c.anchor = GridBagConstraints.WEST;
 		c.insets = new Insets(6,12,0,0);
 		JLabel userNameLabel = new JLabel();
@@ -128,7 +164,7 @@ public class ParamsDialog extends JDialog {
 		contents.add(userNameLabel);
 
 		c.gridx = 1;
-		c.gridy = 4;
+		c.gridy = 5;
 		c.gridwidth = 1;
 		c.fill = GridBagConstraints.NONE;
 		c.anchor = GridBagConstraints.WEST;
@@ -137,7 +173,7 @@ public class ParamsDialog extends JDialog {
 		grid.setConstraints(username, c);
 
 		c.gridx = 1;
-		c.gridy = 5;
+		c.gridy = 6;
 		c.gridwidth = 1;
 		c.fill = GridBagConstraints.NONE;
 		c.anchor = GridBagConstraints.WEST;
@@ -145,6 +181,8 @@ public class ParamsDialog extends JDialog {
 		sshTunnel = new JCheckBox("Use ssh tunneling");
 		grid.setConstraints(sshTunnel, c);
 		
+		contents.add(filename);
+		contents.add(chooser);
 		contents.add(clParams);
 		contents.add(numPes);
 		contents.add(portno);
@@ -190,9 +228,29 @@ public class ParamsDialog extends JDialog {
 		contents.add(buttonPanel);
 
 		getContentPane().add(contents);
+
+		filename.setText(exec.executable);
+		clParams.setText(exec.parameters);
+		numPes.setText(""+exec.npes);
+		portno.setText(""+exec.port);
+		hostname.setText(exec.hostname);
+		username.setText(exec.username);
+		sshTunnel.setSelected(exec.sshTunnel);
 	}
 
-	private void windowAction(Object actionCommand) {
+    public void actionPerformed(ActionEvent e) {
+    	//int destPE = 0;
+    	if (e.getActionCommand().equals("browse")) 
+    	{ /* Bring up file dialog box to select a new executable */
+    		JFileChooser chooser = new JFileChooser(System.getProperty("user.dir"));
+    		int returnVal = chooser.showOpenDialog(ParamsDialog.this);
+    		if(returnVal == JFileChooser.APPROVE_OPTION) {
+    			filename.setText(chooser.getSelectedFile().getAbsolutePath());
+    		}
+    	}
+    }
+    
+    private void windowAction(Object actionCommand) {
 		boolean closeWindow = false;
 		String cmd = null;
 		if (actionCommand != null) {
@@ -209,8 +267,24 @@ public class ParamsDialog extends JDialog {
 			closeWindow = true;
 		} else if (cmd.equals("cmd.ok")) {
 			//System.out.println("your 'OK' code here...");
-			mainObject.setParametersForProgram(clParams.getText(), numPes.getText(), portno.getText(),
-					hostname.getText(), username.getText(), sshTunnel.isSelected());
+			//mainObject.setParametersForProgram(clParams.getText(), numPes.getText(), portno.getText(),
+			//		hostname.getText(), username.getText(), sshTunnel.isSelected());
+			int numberPes;
+			int portNumber;
+			try {
+				numberPes = Integer.parseInt(numPes.getText());
+				portNumber = Integer.parseInt(portno.getText());
+			} catch (NumberFormatException e) {
+				JOptionPane.showMessageDialog(this, "All values must be positive integers", "Error", JOptionPane.ERROR_MESSAGE);
+				return;
+			}
+			exec.executable = filename.getText();
+			exec.parameters = clParams.getText();
+			exec.npes = numberPes;
+			exec.port = portno.getText();
+			exec.hostname = hostname.getText();
+			exec.username = username.getText();
+			exec.sshTunnel = sshTunnel.isSelected();
 			closeWindow = true;
 		} 
 		if (closeWindow) {

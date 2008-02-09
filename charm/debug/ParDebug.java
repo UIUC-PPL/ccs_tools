@@ -14,6 +14,8 @@ import charm.ccs.CcsServer;
 import charm.debug.fmt.*;
 import charm.debug.pdata.*;
 import charm.debug.inspect.Inspector;
+import charm.debug.inspect.InspectPanel;
+import charm.debug.preference.*;
 
 import javax.swing.*;
 import java.io.*;
@@ -29,15 +31,16 @@ public class ParDebug extends JPanel
     // ******* VARIABLES ************   
     //  FIXME: make these not be static, by moving main's command line
     //   handling into a regular function called by the constructor.
-    private static String filename;
-    private static String hostname;
-    private static String username;
-    private static String portnumber;
+	private Execution exec;
+    //private static String filename;
+    //private static String hostname;
+    //private static String username;
+    //private static String portnumber;
     private static String hostnumber;
-    private static int numberPes;
-    private static String clparams;
+    //private static int numberPes;
+    //private static String clparams;
     private static String envDisplay;
-    private static boolean tunnelNeeded;
+    //private static boolean tunnelNeeded;
     private static Process sshTunnel;
     public static byte[] globals;
     public static int dataPos;
@@ -105,8 +108,10 @@ public class ParDebug extends JPanel
     
     private JTextArea programOutputArea;
     private JScrollPane outputAreaScrollPane;
+    private InspectPanel outputPanel;
     private PListOutputArea outputArea;
     private JTextArea newOutputArea;
+    private JSplitPane bottomSplitPane;
     private JTextField statusArea;
     private JComboBox listsbox;
     private JComboBox pesbox;
@@ -116,7 +121,8 @@ public class ParDebug extends JPanel
     private JMenu menuFile;
     private JMenu menuAction;
     private JMenuItem menuFileOpen;
-    private JMenuItem menuFileParameters;
+    private JMenuItem menuFileEdit;
+    private JMenuItem menuFileSave;
     private JMenuItem menuActionStart; 
     private JMenuItem menuActionContinue;
     private JMenuItem menuActionQuit;
@@ -281,13 +287,14 @@ DEPRECATED!! The correct implementation is in CpdList.java
        ));
     } 
     
+/*
     private static void setNumberPes(String peNumber) {
        try {
          numberPes = Integer.parseInt(peNumber);
        } 
        catch(Exception e) {
          System.out.println("Could not convert number of pes "+peNumber+" to an integer.");
-	 System.exit(1); /* FIXME: this is overkill. */
+	 System.exit(1); / * FIXME: this is overkill. * /
        }
     }
     
@@ -300,11 +307,19 @@ DEPRECATED!! The correct implementation is in CpdList.java
        username = user;
        tunnelNeeded = ssh;
        addedRunParameter();
-    } 
-    private void addedRunParameter() {
-       setStatusMessage("Executable: " +filename+ "        number of pes: "+numberPes);
     }
+*/
     
+    private void addedRunParameter() {
+       setStatusMessage("Executable: " +exec.executable+ "        number of pes: "+exec.npes);
+    }
+    private void loadedRunParameter() {
+    	setStatusMessage("Loaded configuration => Executable: "+exec.executable+"     number of pes: "+exec.npes);
+    }
+    private void savedRunParameter(String file) {
+    	setStatusMessage("Saved current configuration to file  "+file);
+    }
+
     public void setStatusMessage (String txt)
     {
        statusArea.setText(txt);
@@ -344,24 +359,33 @@ DEPRECATED!! The correct implementation is in CpdList.java
     {
         currentListedPE = forPE;
     	String detailedName=cpdLists[cpdListIndex].detailedName;
+    	int position = bottomSplitPane.getDividerLocation();
 	if (detailedName==null) {
                 if (cpdLists[cpdListIndex].list != null) {
-                    outputAreaScrollPane.setViewportView(newOutputArea);
+                    //outputAreaScrollPane.setViewportView(newOutputArea);
+                	bottomSplitPane.setRightComponent(outputPanel);
+                	bottomSplitPane.setDividerLocation(position);
                     Object selected = listItemNames.getSelectedValue();
                     if (selected instanceof GenericInfo) {
                         //newOutputArea.setText(((GenericInfo)selected).getDetails());
                         //System.out.println(((GenericInfo)selected).getDetails());
                         //newOutputArea.setCaretPosition(0);
-                    	outputAreaScrollPane.setViewportView(((GenericInfo)selected).getDetails());
+                    	//outputAreaScrollPane.setViewportView(((GenericInfo)selected).getDetails());
+                    	//bottomSplitPane.setRightComponent(((GenericInfo)selected).getDetails());
+                    	((GenericInfo)selected).getDetails(outputPanel);
                     } else {
                         System.out.println("Error: element not of type GenericInfo");
                     }
                 } else {
-                    outputAreaScrollPane.setViewportView(outputArea);
+                    //outputAreaScrollPane.setViewportView(outputArea);
+                	bottomSplitPane.setRightComponent(outputAreaScrollPane);
+                	bottomSplitPane.setDividerLocation(position);
                     outputArea.setList((PList)listItems.elementAt(listItem));
                 }
 	} else { /* There's a list to consult for further detail */
-                outputAreaScrollPane.setViewportView(outputArea);            
+                //outputAreaScrollPane.setViewportView(outputArea);
+		bottomSplitPane.setRightComponent(outputAreaScrollPane);
+    	bottomSplitPane.setDividerLocation(position);
 		PList detailList=server.getPList(detailedName,forPE,listItem,listItem+1);
 		outputArea.setList((PList)detailList);//.elementAt(0));
 	}
@@ -374,8 +398,9 @@ DEPRECATED!! The correct implementation is in CpdList.java
     }
     
 /************** Giant Horrible GUI Routines ************/
-    public ParDebug() {
-       isRunning = false;     
+    public ParDebug(Execution e) {
+       isRunning = false;
+       exec = e;
 
        setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
        
@@ -385,10 +410,12 @@ DEPRECATED!! The correct implementation is in CpdList.java
        menuBar.add(menuFile = new JMenu("File"));
        menuFile.setMnemonic('F');
        
-       menuFile.add(menuFileOpen = new JMenuItem("Open Program",'O'));
-       listenTo(menuFileOpen,"browse","Open a parallel program to debug");
-       menuFile.add(menuFileParameters = new JMenuItem("Program Parameters",'P'));
-       listenTo(menuFileParameters,"params","Enter command-line parameters for the parallel program");
+       menuFile.add(menuFileOpen = new JMenuItem("Open Configuration",'O'));
+       listenTo(menuFileOpen,"openConf","Open the configuration of a parallel program to debug");
+       menuFile.add(menuFileEdit = new JMenuItem("Edit Configuration",'E'));
+       listenTo(menuFileEdit,"editConf","Edit the parameters for the current configuration");
+       menuFile.add(menuFileSave = new JMenuItem("Save Configuration",'S'));
+       listenTo(menuFileSave,"saveConf","Save the current configuration");
        menuFile.addSeparator();
        JMenuItem menuFileExit;
        menuFile.add(menuFileExit = new JMenuItem("Exit Debugger",'X'));
@@ -413,9 +440,10 @@ DEPRECATED!! The correct implementation is in CpdList.java
        menuAction.add(menuActionAllocationGraph = new JMenuItem("Memory Allocation Graph",'G'));
        listenTo(menuActionAllocationGraph,"allocationGraph","Print the memory allocation graph");
 
-       //Creating status bar on the top
+       //Creating status bar
        statusArea = new JTextField(60);
-       statusArea.setBorder(BorderFactory.createTitledBorder("Status"));
+       //statusArea.setBorder(BorderFactory.createTitledBorder("Status"));
+       statusArea.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLoweredBevelBorder(),BorderFactory.createEmptyBorder(2,2,2,2)));
        statusArea.setMaximumSize(new Dimension(1000000,40));
        statusArea.setEditable(false);
        statusArea.setBackground(Color.lightGray); 
@@ -552,8 +580,6 @@ DEPRECATED!! The correct implementation is in CpdList.java
        //middlePanel.add(secondPanelWithOutput);
        middlePanel.setPreferredSize(new Dimension(600, 380));
 
-       add(statusArea);
-       add(Box.createRigidArea(new Dimension(0, 20)));
        add(middlePanel);
         
  
@@ -597,7 +623,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
 
         JScrollPane listScrollPane = new JScrollPane(listItemNames);
         listScrollPane.setBorder(BorderFactory.createTitledBorder("Entities"));
-
+        
         //second display pane
         outputArea = new PListOutputArea();
         newOutputArea = new JTextArea();
@@ -606,72 +632,110 @@ DEPRECATED!! The correct implementation is in CpdList.java
         newOutputArea.setLineWrap(true);
         newOutputArea.setWrapStyleWord(true);
         outputAreaScrollPane = new JScrollPane(outputArea);
-	outputAreaScrollPane.setHorizontalScrollBarPolicy(
-		 JScrollPane.HORIZONTAL_SCROLLBAR_NEVER
-	);
+        outputAreaScrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
         outputAreaScrollPane.setBorder(BorderFactory.createTitledBorder("Details"));
-
-        listScrollPane.setPreferredSize(new Dimension(200,230));
-        outputAreaScrollPane.setPreferredSize(new Dimension(400,230));
-
-        JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, listScrollPane, outputAreaScrollPane);
-        splitPane.setOneTouchExpandable(true);
+        outputPanel = new InspectPanel();
+        outputPanel.setBorder(BorderFactory.createTitledBorder("Details"));
         
-        panelForEntities.add(splitPane);
+        //listScrollPane.setSize(new Dimension(200,230));
+        //outputPanel.setSize(new Dimension(400,230));
+
+        bottomSplitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, listScrollPane, outputPanel);
+        bottomSplitPane.setOneTouchExpandable(true);
+        
+        panelForEntities.add(bottomSplitPane);
         add(panelForEntities);
+
+        add(statusArea);
+        //add(Box.createRigidArea(new Dimension(0, 20)));
 
         gdb = new GdbProcess(this);
 	addedRunParameter();
-        if (filename!="")
+        if (exec.executable!="")
           startProgram();
     }
 
  
     public void actionPerformed(ActionEvent e) {
     	//int destPE = 0;
-    	if (e.getActionCommand().equals("browse")) 
-    	{ /* Bring up file dialog box to select a new executable */
+    	if (e.getActionCommand().equals("openConf")) 
+    	{ /* Bring up file dialog box to select a new configuration */
     		JFileChooser chooser = new JFileChooser(System.getProperty("user.dir"));
     		int returnVal = chooser.showOpenDialog(ParDebug.this);
     		if(returnVal == JFileChooser.APPROVE_OPTION) {
-    			filename = chooser.getSelectedFile().getAbsolutePath();
-    			addedRunParameter();
+    			File filename = chooser.getSelectedFile();
+    			try {
+    			ObjectInputStream ois = new ObjectInputStream(new FileInputStream(filename));
+    			exec = (Execution) ois.readObject();
+    			} catch (IOException ioe) {
+    				setStatusMessage("Failed to load configuration file");
+    				return;
+    			} catch (ClassNotFoundException cnfe) {
+    				setStatusMessage("Configuration file corrupted");
+    				return;
+    			}
+    			loadedRunParameter();
     		}
     	}
-    	else if (e.getActionCommand().equals("params")) 
+    	else if (e.getActionCommand().equals("editConf")) 
     	{ /* Bring up parameters dialog box to select run options */
-    		ParamsDialog dialogbox = new ParamsDialog(appFrame, true, this);
+    		ParamsDialog dialogbox = new ParamsDialog(appFrame, true, exec);
     		dialogbox.setLocationRelativeTo(appFrame);
-    		dialogbox.setFields(clparams, ""+numberPes, portnumber, hostname, username, tunnelNeeded);
+    		//dialogbox.setFields(clparams, ""+numberPes, portnumber, hostname, username, tunnelNeeded);
     		dialogbox.pack();
     		dialogbox.setVisible(true);
+    	}
+    	else if (e.getActionCommand().equals("saveConf")) {
+    		/* Bring up file dialog box to save the current configuration */
+    		JFileChooser chooser = new JFileChooser(System.getProperty("user.dir"));
+    		int returnVal = chooser.showSaveDialog(ParDebug.this);
+    		if(returnVal == JFileChooser.APPROVE_OPTION) {
+    			File filename = chooser.getSelectedFile();
+    			if (filename.exists()) {
+    				int response;
+    				response = JOptionPane.showConfirmDialog(ParDebug.this, "Do you want to overwrite the file?", "File overwrite", JOptionPane.YES_NO_OPTION);
+    				if (response != JOptionPane.YES_OPTION) {
+    					setStatusMessage("Save aborted");
+    					return;
+    				}
+    			}
+    			try {
+    				ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(filename));
+    				oos.writeObject(exec);
+    				oos.close();
+    			} catch (IOException ioe) {
+    				setStatusMessage("Failed to save configuration file");
+    				return;
+    			}
+    			savedRunParameter(filename.getAbsolutePath());
+    		}
     	}
     	else if (e.getActionCommand().equals("begin")) { /* buttons... */
     		startProgram();
     	}
     	else if (e.getActionCommand().equals("freeze")) {
     		// stop program
-    		server.bcastCcsRequest("ccs_debug", "freeze",1, numberPes, peList);
+    		server.bcastCcsRequest("ccs_debug", "freeze",1, exec.npes, peList);
     		continueButton.setEnabled(true);
     		freezeButton.setEnabled(false);
     		setStatusMessage("Program is frozen on selected pes");
     	}
     	else if (e.getActionCommand().equals("unfreeze")){ 
     		// start running again
-    		server.bcastCcsRequest("ccs_continue_break_point", "",0,numberPes,peList);
+    		server.bcastCcsRequest("ccs_continue_break_point", "",0,exec.npes,peList);
     		continueButton.setEnabled(true); 
     		freezeButton.setEnabled(true);
     		setStatusMessage("Program is running");
     	} 
     	else if (e.getActionCommand().equals("quit")) {
-    		server.bcastCcsRequest("ccs_debug_quit", "",0,numberPes,peList);
+    		server.bcastCcsRequest("ccs_debug_quit", "",0,exec.npes,peList);
     		quitProgram(); 
     	}
     	else if (e.getActionCommand().equals("startgdb")) 
     	{ 
-    		server.bcastCcsRequest("ccs_remove_all_break_points", "",0,numberPes,peList);
+    		server.bcastCcsRequest("ccs_remove_all_break_points", "",0,exec.npes,peList);
     		//server.bcastCcsRequest("ccs_debug_startgdb","",1,numberPes,peList);
-        	for (int i=0; i<numberPes; ++i) {
+        	for (int i=0; i<exec.npes; ++i) {
         		if (peList[i]){
         			PList pl = server.getPList("hostinfo", i);
         			PList cur=(PList)pl.elementAt(0);
@@ -691,12 +755,12 @@ DEPRECATED!! The correct implementation is in CpdList.java
         							+"handle SIGWAITING nostop noprint\n"
         							+"attach "+pid+"\n"
         							+"END_OF_SCRIPT\n"
-        							+"gdb "+new File(filename).getAbsolutePath()
+        							+"gdb "+new File(exec.executable).getAbsolutePath()
         							+" -x /tmp/start_gdb."+pid+"\"";
-        			if (!hostname.equals("localhost")) {
-        				sshCommand = "ssh -T "+hostname+" ssh -T";
+        			if (!exec.hostname.equals("localhost")) {
+        				sshCommand = "ssh -T "+exec.hostname+" ssh -T";
         				str = new String[9];
-        				str[5] = hostname;
+        				str[5] = exec.hostname;
         				str[6] = "ssh";
         				//str[8] = "-T";
         				str[7] = ipAddress;
@@ -737,14 +801,14 @@ DEPRECATED!! The correct implementation is in CpdList.java
     		String entryPointName = chkbox.getText(); 
     		if (chkbox.isSelected())
     		{
-    			server.bcastCcsRequest("ccs_set_break_point", entryPointName,0,numberPes,peList);
+    			server.bcastCcsRequest("ccs_set_break_point", entryPointName,0,exec.npes,peList);
     			continueButton.setEnabled(true);
     			freezeButton.setEnabled(false);
     			setStatusMessage ("Break Point set at entry point " +entryPointName); 
     		}
     		else
     		{
-    			server.bcastCcsRequest("ccs_remove_break_point", entryPointName,0,numberPes,peList);
+    			server.bcastCcsRequest("ccs_remove_break_point", entryPointName,0,exec.npes,peList);
     			continueButton.setEnabled(true);   
     			freezeButton.setEnabled(true);
     			setStatusMessage ("Break Point removed at entry point " +entryPointName+" on selected Pes"); 
@@ -753,7 +817,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
     	}
     	else if (e.getActionCommand().equals("memory")) {
     		// ask the user for input
-    		MemoryDialog input = new MemoryDialog(appFrame, true, numberPes);
+    		MemoryDialog input = new MemoryDialog(appFrame, true, exec.npes);
     		if (input.confirmed()) {
     			JFrame frame = new JFrame("Memory visualization");
     			frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
@@ -786,7 +850,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
     	}
     	else if (e.getActionCommand().equals("allocationGraph")) {
     	    // ask the user for input
-    	    AllocationGraphDialog input = new AllocationGraphDialog(appFrame, true, numberPes);
+    	    AllocationGraphDialog input = new AllocationGraphDialog(appFrame, true, exec.npes);
     	    if (input.confirmed()) { 	    
     		JFrame frame = new JFrame("Allocation Graph");
     		frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
@@ -796,11 +860,11 @@ DEPRECATED!! The correct implementation is in CpdList.java
     		frame.setContentPane(newContentPane);
     		frame.setTitle("Allocation Graph");
 
-    		String executable = new File(filename).getAbsolutePath();
+    		String executable = new File(exec.executable).getAbsolutePath();
     		String logFile = new File(executable).getParent();
     		if (logFile == null) logFile = ".";
     		logFile += "/memoryLog_";
-    		at.load(frame, new MemoryTrace(logFile, numberPes), input);
+    		at.load(frame, new MemoryTrace(logFile, exec.npes), input);
 
     		frame.setJMenuBar(at.getMenu());
     		frame.pack();
@@ -827,7 +891,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
     	}
     	else if (e.getActionCommand().equals("exitDebugger")) {
     		if (isRunning) {
-    			server.bcastCcsRequest("ccs_debug_quit", "",0,numberPes,peList);
+    			server.bcastCcsRequest("ccs_debug_quit", "",0,exec.npes,peList);
     			quitProgram();
     		}
     		System.exit(0);
@@ -854,21 +918,22 @@ DEPRECATED!! The correct implementation is in CpdList.java
     	gdb.terminate();
     	isRunning = true;
     	programOutputArea.setText("");
-    	String executable = new File(filename).getAbsolutePath();
+    	String executable = new File(exec.executable).getAbsolutePath();
     	String charmrunDir = new File(executable).getParent();
     	if (charmrunDir==null) charmrunDir=".";
     	String charmrunPath = charmrunDir + "/charmrun";
     	if (envDisplay.length() == 0) envDisplay = getEnvDisplay();
     	// System.out.println(envDisplay);
 
-    	String totCommandLine = charmrunPath + " " + "+p"+ numberPes + " " +executable + " " + clparams+"  +cpd +DebugDisplay " +envDisplay+" ++server";// ++charmdebug";
-    	if (portnumber.length() != 0)
-    		totCommandLine += " ++server-port " + portnumber;
-    	if (!hostname.equals("localhost")) {
-    		if (username.length()>0) {
-    			totCommandLine = "-l " + username + " " + totCommandLine;
+    	numberPesGlobal = exec.npes;
+    	String totCommandLine = charmrunPath + " " + "+p"+ exec.npes + " " +executable + " " + exec.parameters+"  +cpd +DebugDisplay " +envDisplay+" ++server";// ++charmdebug";
+    	if (exec.port.length() != 0)
+    		totCommandLine += " ++server-port " + exec.port;
+    	if (!exec.hostname.equals("localhost")) {
+    		if (exec.username.length()>0) {
+    			totCommandLine = "-l " + exec.username + " " + totCommandLine;
     		}
-    		totCommandLine = "ssh " + hostname + " " + totCommandLine;
+    		totCommandLine = "ssh " + exec.hostname + " " + totCommandLine;
     	}
     	System.out.println("ParDebug> "+totCommandLine);
     	programOutputArea.setText(totCommandLine);
@@ -937,19 +1002,19 @@ DEPRECATED!! The correct implementation is in CpdList.java
     			{ /* don't care about interrupted sleep */ }
     			if(iter++ > 60*10) abort("Timeout waiting for program to start up (and print its CCS port number)");
     		}
-    		if (portnumber.length() == 0)
-    			portnumber = servthread.portno;
-    		if (hostname.equals("localhost")) hostnumber = servthread.hostName;
-    		System.out.println("ParDebug> Charmrun started (CCS IP "+(hostname.equals("localhost")?hostnumber:hostname)+", port "+portnumber+")");
+    		if (exec.port.length() == 0)
+    			exec.port = servthread.portno;
+    		if (exec.hostname.equals("localhost")) hostnumber = servthread.hostName;
+    		System.out.println("ParDebug> Charmrun started (CCS IP "+(exec.hostname.equals("localhost")?hostnumber:exec.hostname)+", port "+exec.port+")");
 
     		/* Connect to the new program */
     		String[] ccsArgs=new String[2];
-    		ccsArgs[0]= hostname.equals("localhost")?hostnumber:hostname;
-    		ccsArgs[1]= portnumber;
-    		if (tunnelNeeded) {
+    		ccsArgs[0]= exec.hostname.equals("localhost")?hostnumber:exec.hostname;
+    		ccsArgs[1]= exec.port;
+    		if (exec.sshTunnel) {
     			System.out.println("ParDebug> Tunneling connection through ssh");
     			try {
-    				sshTunnel = runtime.exec("ssh -2 -c blowfish -L "+portnumber+":localhost:"+portnumber+" "+hostname);
+    				sshTunnel = runtime.exec("ssh -2 -c blowfish -L "+exec.port+":localhost:"+exec.port+" "+exec.hostname);
     			} catch (Exception exc) {
     				System.out.println("ParDebug> Could not create ssh tunnel");
     			}
@@ -957,13 +1022,13 @@ DEPRECATED!! The correct implementation is in CpdList.java
     			catch(InterruptedException e1) {}
     			ccsArgs[0] = "localhost";
     		}
-    		System.out.println("Connecting to: "+username+(username.length()>0?"@":"")+(hostname.equals("localhost")?hostnumber:hostname)+":"+portnumber);
+    		System.out.println("Connecting to: "+exec.username+(exec.username.length()>0?"@":"")+(exec.hostname.equals("localhost")?hostnumber:exec.hostname)+":"+exec.port);
     		CcsServer ccs = CcsServer.create(ccsArgs,false);
     		server = new CpdUtil(ccs);
 
     		/* Create the pe list */
-    		peList = new boolean[numberPes]; 
-    		for (int i = 0; i < numberPes; i++)
+    		peList = new boolean[exec.npes]; 
+    		for (int i = 0; i < exec.npes; i++)
     		{
     			String peNumber = (new Integer(i)).toString();
     			pesbox.addItem( peNumber );
@@ -1050,7 +1115,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
     public void quitProgram()
     {
     	gdb.terminate();
-    	portnumber = "";
+    	//exec.port = "";
     	isRunning = false;
     	if (sshTunnel != null) {
     		try { Thread.sleep(2);
@@ -1112,20 +1177,22 @@ DEPRECATED!! The correct implementation is in CpdList.java
         System.out.println("Usage: java ParDebug [[-file <charm program name>] [[-param \"<charm program parameters>\"][-pes <number of pes>]] [-host <hostname>] [-user <username>] [-port <port>] [-sshtunnel] [-display <display>]]");
     }
     
-    String getFilename() { return filename; }
-    String getHostname() { return hostname; }
-    String getUsername() { return username; }
+    String getFilename() { return exec.executable; }
+    String getHostname() { return exec.hostname; }
+    String getUsername() { return exec.username; }
     
+    public static int numberPesGlobal;
     public static void main(String[] args) {
-        hostname = "localhost";
-        username = "";
-        filename = "";
-        portnumber = "";
-        numberPes = 1;
+    	Execution exec = new Execution();
+        exec.hostname = "localhost";
+        exec.username = "";
+        exec.executable = "";
+        exec.port = "";
+        exec.npes = 1;
 	String numberPesString="1";
-        clparams = "";
+        exec.parameters = "";
         envDisplay = "";
-        tunnelNeeded = false;
+        exec.sshTunnel = false;
         sshTunnel = null;
 
         // parsing command-line parameters
@@ -1134,21 +1201,21 @@ DEPRECATED!! The correct implementation is in CpdList.java
         while (i < args.length)
         {
           if (args[i].equals("-host"))
-              hostname = args[i+1];
+              exec.hostname = args[i+1];
           else if (args[i].equals("-user"))
-              username = args[i+1];
+              exec.username = args[i+1];
           else if (args[i].equals("-port"))
-              portnumber = args[i+1];
+              exec.port = args[i+1];
           else if (args[i].equals("-file"))
-              filename = args[i+1];
+              exec.executable = args[i+1];
           else if (args[i].equals("-param"))
-              clparams = args[i+1];
+              exec.parameters = args[i+1];
           else if (args[i].equals("-pes") || args[i].equals("+p"))
               numberPesString = args[i+1];
           else if (args[i].equals("-display"))
               envDisplay = args[i+1];
           else if (args[i].equals("-sshtunnel")) {
-              tunnelNeeded = true;
+              exec.sshTunnel = true;
               i--;
           }
           else
@@ -1161,12 +1228,12 @@ DEPRECATED!! The correct implementation is in CpdList.java
                  System.exit(1);
 	       }
 	       else {
-	         filename=args[i]; 
+	         exec.executable=args[i]; 
 		 gotFilename=true;
 	       }
 	     } 
 	     else /* gotFilename, so these are arguments */ {
-	       clparams=clparams+" "+args[i];
+	       exec.parameters += " "+args[i];
 	     }
 	     i--; /* HACK: turns i+=2 into i++ for these single arguments... */
           }
@@ -1177,17 +1244,17 @@ DEPRECATED!! The correct implementation is in CpdList.java
              printUsage();
              System.exit(1);
         }
-        setNumberPes(numberPesString);
+        //setNumberPes(numberPesString);
            
         appFrame = new JFrame("Charm Parallel Debugger");
         appFrame.setSize(1000, 1000);
-        final ParDebug debugger = new ParDebug();
+        final ParDebug debugger = new ParDebug(exec);
 
         appFrame.addWindowListener(new WindowAdapter() {
             public void windowClosing(WindowEvent e) {
                 if (debugger.isRunning)
                    {
-                        ParDebug.server.bcastCcsRequest("ccs_debug_quit", "",-1,numberPes,null);
+                        ParDebug.server.bcastCcsRequest("ccs_debug_quit", "",-1,numberPesGlobal,null);
                         debugger.quitProgram();
                    } 
                 System.exit(0); /* main window closed */

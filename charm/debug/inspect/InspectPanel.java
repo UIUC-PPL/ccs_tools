@@ -30,6 +30,14 @@ public class InspectPanel extends JPanel implements ActionListener {
 		add(scroll);
 	}
 	
+	public void clear() {
+		scroll.setViewportView(new JLabel(""));
+	}
+	
+	public void load(String s) {
+		scroll.setViewportView(new JLabel(s));
+	}
+	
 	public void load(int pe, long location, GenericType type) {
 		this.pe = pe;
 		System.out.println("location = "+(int)location+", "+(int)(location>>>32));
@@ -50,23 +58,27 @@ public class InspectPanel extends JPanel implements ActionListener {
 			if (result.startsWith("vtable for")) {
 				String strtype = result.substring(10, result.indexOf('+')).trim();
 				GenericType gt = Inspector.getTypeCreate(strtype);
-				JTreeVisitor jtv = new JTreeVisitor(buf, gt.getName());
-				jtv.visit(gt);
-				tree = (JTree)jtv.getResult();
-				tree.getSelectionModel().setSelectionMode(TreeSelectionModel.SINGLE_TREE_SELECTION);
-				scroll.setViewportView(tree);
-				//InspectTree it = new InspectTree(new SuperClassElement(gt, 0));
-				//scroll.setViewportView(it);
-				JPopupMenu popup = new JPopupMenu();
-				JMenuItem menuItem;
-				menuItem = new JMenuItem("Follow pointer");
-				menuItem.setActionCommand("dereference");
-				menuItem.addActionListener(this);
-				popup.add(menuItem);
-				MouseListener popupListener = new PopupListener(popup);
-				tree.addMouseListener(popupListener);
+				load(new SuperClassElement(gt,0), buf);
 			}
 		}
+	}
+	
+	public void load(GenericElement type, ByteBuffer buf) {
+		JTreeVisitor jtv = new JTreeVisitor(buf, type.getName());
+		jtv.visit(type);
+		tree = (JTree)jtv.getResult();
+		tree.getSelectionModel().setSelectionMode(TreeSelectionModel.SINGLE_TREE_SELECTION);
+		scroll.setViewportView(tree);
+		//InspectTree it = new InspectTree(new SuperClassElement(gt, 0));
+		//scroll.setViewportView(it);
+		JPopupMenu popup = new JPopupMenu();
+		JMenuItem menuItem;
+		menuItem = new JMenuItem("Follow pointer");
+		menuItem.setActionCommand("dereference");
+		menuItem.addActionListener(this);
+		popup.add(menuItem);
+		MouseListener popupListener = new PopupListener(popup);
+		tree.addMouseListener(popupListener);
 	}
 	
 	public void actionPerformed(ActionEvent e) {

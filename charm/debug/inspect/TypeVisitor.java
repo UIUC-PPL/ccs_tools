@@ -25,23 +25,27 @@ public abstract class TypeVisitor {
             push();
             for (int i=0; i<children; ++i) {
                 GenericElement e = gt.getChild(i);
-                seek(e.getOffset());
-                GenericType t = e.getType();
-                //String type = t.getName();
-                //String name = e.getName();
-                String value = null;
-                if (valid) value = t.getValue(this);
-                int pointer = e.getPointer() + t.getPointer();
-                if (pointer > 0 && valid) {
-                    if (value != null) value += " " + GenericType.printPointer(buf, offset);
-                    else value = GenericType.printPointer(buf, offset);
-                }
-                addElement(e, value);
-                if (pointer == 0) visit(t);
-                revertSeek();
+                visit(e);
             }
             pop();
         }
+    }
+    
+    public void visit(GenericElement e) {
+        seek(e.getOffset());
+        GenericType t = e.getType();
+        //String type = t.getName();
+        //String name = e.getName();
+        String value = null;
+        if (valid) value = t.getValue(this);
+        int pointer = e.getPointer() + t.getPointer();
+        if (pointer > 0 && valid) {
+            if (value != null) value += " " + GenericType.printPointer(buf, offset);
+            else value = GenericType.printPointer(buf, offset);
+        }
+        addElement(e, value);
+        if (pointer == 0) visit(t);
+        revertSeek();
     }
 
     public abstract Object getResult();

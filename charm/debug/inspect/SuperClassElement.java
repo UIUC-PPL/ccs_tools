@@ -2,9 +2,9 @@ package charm.debug.inspect;
 
 import java.nio.ByteBuffer;
 
-class SuperClassElement extends GenericElement {
+public class SuperClassElement extends GenericElement {
 
-    SuperClassElement(GenericType t, int o) {
+    public SuperClassElement(GenericType t, int o) {
         type = t;
         offset = o;
     }
