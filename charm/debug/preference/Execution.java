@@ -10,4 +10,5 @@ public class Execution implements Serializable {
 	public String hostname;
 	public String username;
 	public boolean sshTunnel;
+	public String locationOnDisk;
 }

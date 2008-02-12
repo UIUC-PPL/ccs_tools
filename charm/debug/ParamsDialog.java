@@ -273,7 +273,7 @@ public class ParamsDialog extends JDialog implements ActionListener {
 			int portNumber;
 			try {
 				numberPes = Integer.parseInt(numPes.getText());
-				portNumber = Integer.parseInt(portno.getText());
+				if (!portno.getText().equals("")) portNumber = Integer.parseInt(portno.getText());
 			} catch (NumberFormatException e) {
 				JOptionPane.showMessageDialog(this, "All values must be positive integers", "Error", JOptionPane.ERROR_MESSAGE);
 				return;

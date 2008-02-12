@@ -18,6 +18,7 @@ import charm.debug.inspect.InspectPanel;
 import charm.debug.preference.*;
 
 import javax.swing.*;
+
 import java.io.*;
 import java.util.*;
 import java.awt.*;
@@ -31,6 +32,7 @@ public class ParDebug extends JPanel
     // ******* VARIABLES ************   
     //  FIXME: make these not be static, by moving main's command line
     //   handling into a regular function called by the constructor.
+	private Preference preferences;
 	private Execution exec;
     //private static String filename;
     //private static String hostname;
@@ -123,6 +125,8 @@ public class ParDebug extends JPanel
     private JMenuItem menuFileOpen;
     private JMenuItem menuFileEdit;
     private JMenuItem menuFileSave;
+    private JMenu menuRecent;
+    private JMenuItem menuWindowSettings;
     private JMenuItem menuActionStart; 
     private JMenuItem menuActionContinue;
     private JMenuItem menuActionQuit;
@@ -325,6 +329,15 @@ DEPRECATED!! The correct implementation is in CpdList.java
        statusArea.setText(txt);
     }
 
+    public Dimension getPreferredSize() {
+    	if (preferences.size != null) return preferences.size;
+    	return super.getPreferredSize();
+    }
+    
+    public Point getPreferredLocation() {
+    	return preferences.location;
+    }
+    
     /// The user has just selected the cpdListIndex'th list on forPE.
     ///  Expand a list of the contents into dest.
     private void populateNewList(int cpdListIndex,int forPE, DefaultListModel dest)
@@ -400,6 +413,8 @@ DEPRECATED!! The correct implementation is in CpdList.java
 /************** Giant Horrible GUI Routines ************/
     public ParDebug(Execution e) {
        isRunning = false;
+       preferences = new Preference();
+       preferences.load();
        exec = e;
 
        setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
@@ -416,7 +431,11 @@ DEPRECATED!! The correct implementation is in CpdList.java
        listenTo(menuFileEdit,"editConf","Edit the parameters for the current configuration");
        menuFile.add(menuFileSave = new JMenuItem("Save Configuration",'S'));
        listenTo(menuFileSave,"saveConf","Save the current configuration");
+       menuFile.add(menuRecent = new JMenu("Recent Configurations"));
+       updateRecentConfig();
        menuFile.addSeparator();
+       menuFile.add(menuWindowSettings = new JMenuItem("Save Window Settings",'W'));
+       listenTo(menuWindowSettings,"saveWindowSet","Save the current window settings");
        JMenuItem menuFileExit;
        menuFile.add(menuFileExit = new JMenuItem("Exit Debugger",'X'));
        listenTo(menuFileExit,"exitDebugger",null);
@@ -651,30 +670,55 @@ DEPRECATED!! The correct implementation is in CpdList.java
 
         gdb = new GdbProcess(this);
 	addedRunParameter();
-        if (exec.executable!="")
-          startProgram();
+        //if (exec.executable!="")
+        //  startProgram();
     }
 
+	public void updateRecentConfig() {
+		Object []files = preferences.getRecent();
+		menuRecent.removeAll();
+		//System.out.println("updateRecentConfig: "+files.length);
+		if (files.length > 0) {
+			menuRecent.setEnabled(true);
+			JMenuItem item;
+			for (int i=0; i<files.length; ++i) {
+				//System.out.println("updateRecentConfig: "+files[i]);
+				item = new JMenuItem((String)files[i]);
+				listenTo(item, "openRecent", null);
+				menuRecent.add(item);
+			}
+		} else {
+			menuRecent.setEnabled(false);
+		}
+	}
+	
+	private void loadConfigFile(File filename) {
+		try {
+			ObjectInputStream ois = new ObjectInputStream(new FileInputStream(filename));
+			exec = (Execution) ois.readObject();
+			exec.locationOnDisk = filename.getAbsolutePath();
+		} catch (IOException ioe) {
+			setStatusMessage("Failed to load configuration file");
+			return;
+		} catch (ClassNotFoundException cnfe) {
+			setStatusMessage("Configuration file corrupted");
+			return;
+		}
+		loadedRunParameter();
+		preferences.addRecent(exec.locationOnDisk);
+		updateRecentConfig();
+	}
  
     public void actionPerformed(ActionEvent e) {
     	//int destPE = 0;
     	if (e.getActionCommand().equals("openConf")) 
     	{ /* Bring up file dialog box to select a new configuration */
     		JFileChooser chooser = new JFileChooser(System.getProperty("user.dir"));
+    		chooser.addChoosableFileFilter(new CpdFilter());
+    		chooser.setAcceptAllFileFilterUsed(false);
     		int returnVal = chooser.showOpenDialog(ParDebug.this);
     		if(returnVal == JFileChooser.APPROVE_OPTION) {
-    			File filename = chooser.getSelectedFile();
-    			try {
-    			ObjectInputStream ois = new ObjectInputStream(new FileInputStream(filename));
-    			exec = (Execution) ois.readObject();
-    			} catch (IOException ioe) {
-    				setStatusMessage("Failed to load configuration file");
-    				return;
-    			} catch (ClassNotFoundException cnfe) {
-    				setStatusMessage("Configuration file corrupted");
-    				return;
-    			}
-    			loadedRunParameter();
+    			loadConfigFile(chooser.getSelectedFile());
     		}
     	}
     	else if (e.getActionCommand().equals("editConf")) 
@@ -688,9 +732,14 @@ DEPRECATED!! The correct implementation is in CpdList.java
     	else if (e.getActionCommand().equals("saveConf")) {
     		/* Bring up file dialog box to save the current configuration */
     		JFileChooser chooser = new JFileChooser(System.getProperty("user.dir"));
+    		chooser.addChoosableFileFilter(new CpdFilter());
+    		chooser.setAcceptAllFileFilterUsed(false);
     		int returnVal = chooser.showSaveDialog(ParDebug.this);
     		if(returnVal == JFileChooser.APPROVE_OPTION) {
     			File filename = chooser.getSelectedFile();
+    			if (!filename.getName().endsWith(".cpd")) {
+    				filename = new File(filename.getAbsolutePath()+".cpd");
+    			}
     			if (filename.exists()) {
     				int response;
     				response = JOptionPane.showConfirmDialog(ParDebug.this, "Do you want to overwrite the file?", "File overwrite", JOptionPane.YES_NO_OPTION);
@@ -708,7 +757,20 @@ DEPRECATED!! The correct implementation is in CpdList.java
     				return;
     			}
     			savedRunParameter(filename.getAbsolutePath());
+    			exec.locationOnDisk = filename.getAbsolutePath();
+    			preferences.addRecent(exec.locationOnDisk);
+    			updateRecentConfig();
     		}
+    	}
+    	else if (e.getActionCommand().equals("openRecent")) {
+    		JMenuItem item = (JMenuItem)e.getSource();
+    		String filename = item.getText();
+    		System.out.println("Loading configuration file: "+filename);
+    		loadConfigFile(new File(filename));
+    	}
+    	else if (e.getActionCommand().equals("saveWindowSet")) {
+    		preferences.location = getParent().getLocationOnScreen();
+    		preferences.size = getParent().getSize();
     	}
     	else if (e.getActionCommand().equals("begin")) { /* buttons... */
     		startProgram();
@@ -894,6 +956,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
     			server.bcastCcsRequest("ccs_debug_quit", "",0,exec.npes,peList);
     			quitProgram();
     		}
+            preferences.save();
     		System.exit(0);
     	}
     } // end of actionPerformed
@@ -1245,6 +1308,11 @@ DEPRECATED!! The correct implementation is in CpdList.java
              System.exit(1);
         }
         //setNumberPes(numberPesString);
+        try {
+        	exec.npes = Integer.parseInt(numberPesString);
+        } catch (NumberFormatException e) {
+        	System.out.println("Could not understand the specified number of processors");
+        }
            
         appFrame = new JFrame("Charm Parallel Debugger");
         appFrame.setSize(1000, 1000);
@@ -1257,6 +1325,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
                         ParDebug.server.bcastCcsRequest("ccs_debug_quit", "",-1,numberPesGlobal,null);
                         debugger.quitProgram();
                    } 
+                debugger.preferences.save();
                 System.exit(0); /* main window closed */
             }
         });
@@ -1267,6 +1336,8 @@ DEPRECATED!! The correct implementation is in CpdList.java
         appFrame.setLocation(50 +bounds.x, 50 + bounds.y);
         appFrame.setJMenuBar(debugger.menuBar);
         appFrame.pack();
+        if (debugger.getPreferredSize() != null) appFrame.setSize(debugger.getPreferredSize());
+        if (debugger.getPreferredLocation() != null) appFrame.setLocation(debugger.getPreferredLocation());
         appFrame.setVisible(true);
     }
 }
