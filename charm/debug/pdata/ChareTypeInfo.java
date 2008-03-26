@@ -11,12 +11,14 @@ public class ChareTypeInfo extends GenericInfo {
     String name;
     int size;
     String description;
+	boolean system;
 
-    ChareTypeInfo(int i, String n, int s, String d) {
+    ChareTypeInfo(int i, String n, int s, String d, boolean sys) {
         index = i;
         name = n;
         size = s;
         description = d;
+		system = sys;
     }
 
     public String toString() {
@@ -31,10 +33,14 @@ public class ChareTypeInfo extends GenericInfo {
     public String getDescription() {
         return description;
     }
+	public boolean isSystem() {
+		return system;
+	}
     public void getDetails(InspectPanel panel) {
         System.out.println(Inspector.getTypeCreate(name));
-        String str = "Type "+index+": "+name+", size "+size+" bytes\n"+
-            ((description!=null)?("Description:\n"+description):"Description not available");
+        String str = "<html>Type "+index+": "+name+", size "+size+" bytes"+
+			(system?" SYSTEM":"")+"<br>"+
+            ((description!=null)?("Description:<br>"+description):"Description not available")+"</html>";
         panel.load(str);
     }
 }

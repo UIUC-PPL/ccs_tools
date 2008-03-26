@@ -28,6 +28,7 @@ public class PythonExecute extends PythonAbstract {
     private static final byte FLAG_HIGHLEVEL = (byte)32;
     private static final byte FLAG_ITERATE = (byte)16;
     private static final byte FLAG_WAIT = (byte)8;
+    private static final byte FLAG_NOCHECK = (byte)4;
 
     public PythonExecute(String _code, boolean _persistent, boolean _highlevel, int _interp) {
 	magic = memorySize ^ localmagic;
@@ -52,7 +53,7 @@ public class PythonExecute extends PythonAbstract {
 	methodName = _method;
 	infoSize = _info.size();
 	info = _info;
-	flags = 0;
+	flags = FLAG_ITERATE;
 	if (_persistent) {
 	    flags |= FLAG_PERSISTENT;
 	    flags |= FLAG_KEEPPRINT;
@@ -101,6 +102,11 @@ public class PythonExecute extends PythonAbstract {
 	else flags &= ~FLAG_WAIT;
     }
 
+    public void setNoCheck(boolean _set) {
+	if (_set) flags |= FLAG_NOCHECK;
+	else flags &= ~FLAG_NOCHECK;
+    }
+
     public void setInterpreter(int i) {
 	interpreter = i;
     }
@@ -125,6 +131,10 @@ public class PythonExecute extends PythonAbstract {
 	return (flags & FLAG_WAIT) != 0;
     }
 
+    public boolean isNoCheck() {
+	return (flags & FLAG_NOCHECK) != 0;
+    }
+
     public int getInterpreter() {
 	return interpreter;
     }
@@ -133,9 +143,10 @@ public class PythonExecute extends PythonAbstract {
 
     public byte[] pack() {
 	byte[] result = new byte[size()];
+	System.out.println("Code: "+codeLength+", method: "+methodNameLength+", info: "+infoSize);
 	CcsServer.writeInt(result, 0, magic);
 	CcsServer.writeInt(result, 4, codeLength);
-	CcsServer.writeInt(result, 16, methodNameLength);
+	CcsServer.writeInt(result, 24, methodNameLength);
 	CcsServer.writeInt(result, 28, infoSize);
 	CcsServer.writeInt(result, 40, interpreter);
 	result[44] = flags;

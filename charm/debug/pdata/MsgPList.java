@@ -39,8 +39,9 @@ public class MsgPList extends GenericPList {
                 int ep = ((PNative)msg.elementNamed("ep")).getIntValue(0);
                 PList msgData = (PList)msg.elementNamed("data");
                 EpInfo epEntry = epList.getEntryFor(ep);
-
-                data.add(new MsgInfo(from, prioBits, userSize, msgList.elementAt(msgType), msgFor, chareList.elementAt(epEntry.getChareType()), epEntry, msgData));
+                int flags = 0;
+                if (((PString)lcur.elementNamed("name")).getString().equals("Breakpoint")) flags |= MsgInfo.BREAKPOINT;
+                data.add(new MsgInfo(from, prioBits, userSize, msgList.elementAt(msgType), msgFor, chareList.elementAt(epEntry.getChareType()), epEntry, msgData, flags));
             }
             /*
             PString lstr = (PString)lcur.elementNamed("name");

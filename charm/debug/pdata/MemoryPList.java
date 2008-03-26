@@ -180,6 +180,7 @@ public class MemoryPList {
 		    else sl = new Slot(((PNative)llcur.elementNamed("loc")).getIntValue(0));
 		    sl.setSize(((PNative)llcur.elementNamed("size")).getIntValue(0));
 		    int flags = ((PNative)llcur.elementNamed("flags")).getIntValue(0);
+		    sl.setChareID(((PNative)llcur.elementNamed("chare")).getIntValue(0));
 		    System.out.println("Found "+sl);
 		    if ((flags & Slot.LEAK_FLAG) != 0) sl.setLeak(true);
 		    PNative st = (PNative)llcur.elementNamed("stack");

@@ -19,6 +19,8 @@ public abstract class GenericPList {
     public GenericPList() {
         data = new Vector();
     }
+    
+    public int size() { return data.size(); }
 
     public void populate(DefaultListModel model) {
         for (int i=0; i<data.size(); ++i) {

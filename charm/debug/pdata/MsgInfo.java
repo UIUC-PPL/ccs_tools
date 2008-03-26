@@ -16,8 +16,11 @@ public class MsgInfo extends GenericInfo {
     ChareTypeInfo chare;
     EpInfo ep;
     PList userData;
+    int flags;
+    
+    public static final int BREAKPOINT = 0x1;
 
-    MsgInfo(int f, int p, int s, MsgTypeInfo t, int mf, ChareTypeInfo c, EpInfo e, PList d) {
+    MsgInfo(int f, int p, int s, MsgTypeInfo t, int mf, ChareTypeInfo c, EpInfo e, PList d, int fl) {
         from = f;
         prioBits = p;
         userSize = s;
@@ -26,11 +29,19 @@ public class MsgInfo extends GenericInfo {
         chare = c;
         ep = e;
         userData = d;
+        flags = fl;
     }
 
     public String toString() {
+    	StringBuffer buf = new StringBuffer("<html><body");
+    	if ((flags & BREAKPOINT) != 0) buf.append(" bgcolor=\"#FF3333\"");
+    	else if (ep.checkBox.isSelected()) buf.append(" bgcolor=\"#EEAA55\"");
+    	buf.append(">");
+    	buf.append(chare.getType()+"::"+ep.toString());
+    	buf.append("</body>");
+    	buf.append("</html>");
         return //type.toString()+"\nFrom "+from+" of size "+userSize+"\nTo: "+
-            chare.getType()+"::"+ep.toString();
+            buf.toString();
         //+userData.toString()+"\n";
     }
 

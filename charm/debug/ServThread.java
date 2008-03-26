@@ -16,9 +16,11 @@ public class ServThread extends Thread {
 	Runtime runtime = null; 
 	Process p = null; 
 	ParDebug mainThread = null;
+	volatile int flag;
 	public ServThread(ParDebug d, Process par){
 		mainThread = d;
 		p = par;
+		flag = 0;
 		/*try {
 			//charmrunIn = new BufferedWriter(new OutputStreamWriter(p.getOutputStream()));
 			//charmrunOut = new BufferedReader(new InputStreamReader(p.getErrorStream()));
@@ -39,7 +41,9 @@ public class ServThread extends Thread {
 	public void run() {
 		runtime = Runtime.getRuntime();
 		try {
+			System.out.println("ServThread started");
 			BufferedReader prout = new BufferedReader(new InputStreamReader(p.getInputStream()));
+			BufferedReader prerr = new BufferedReader(new InputStreamReader(p.getErrorStream()));
 			boolean foundPort = false;
 			try {
 				while (true) 
@@ -58,6 +62,7 @@ public class ServThread extends Thread {
 						{
 							int portStart, portEnd;
 							int nameStart, nameEnd;
+							//System.out.println("Debug servhread: "+outline);
 							if(outline.indexOf("ccs: Server IP =", 0) != -1)
 							{
 								nameStart = outline.indexOf("Server IP = ",0);
@@ -69,12 +74,20 @@ public class ServThread extends Thread {
 								portEnd = outline.indexOf("$",0);
 								portno = outline.substring(portStart, portEnd-1);
 								foundPort = true;
+								flag = 1;
+							}
+							if(outline.indexOf("Password:", 0) != -1) {
+								System.out.println("Password requested");
+								char [] passwd = null;
+								new PasswordDialog(passwd);
+								System.out.println(passwd);
 							}
 						}
 
 						if (outline.indexOf("Break point reached", 0) != -1)
 						{
-							mainThread.setStatusMessage(outline);
+							mainThread.notifyBreakpoint(outline);
+							//mainThread.setStatusMessage(outline);
 						}
 						else {
 							// User output: Print this out to a display area on the debugger
@@ -95,12 +108,14 @@ public class ServThread extends Thread {
 
 					if (outline==null) {
 						System.out.println("ServThread terminated");
+						flag = 2;
 						break; /* Program is now finished. */
 					}
 				}
 			}
 			catch(Exception e) {
 				System.out.println("Failed to print");
+				e.printStackTrace();
 			}
 			System.out.println("Finished running parallel program");
 			mainThread.quitProgram();
@@ -112,5 +127,6 @@ public class ServThread extends Thread {
 		} 
 	}
 
+	public int getFlag() { return flag; }
 };
 

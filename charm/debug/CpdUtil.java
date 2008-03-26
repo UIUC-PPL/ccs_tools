@@ -150,35 +150,42 @@ public class CpdUtil {
     }
   
     //Sends a request to the ccs server
-    public String sendCcsRequest(String ccsHandlerName, String parameterName, int destPE) 
-    {
+    public String sendCcsRequest(String ccsHandlerName, String parameterName, int destPE) {
     	byte[] reply = sendCcsRequestBytes(ccsHandlerName,parameterName,destPE);
     	if (reply != null) return new String(reply);
     	else return null;
     }
     //Sends a request to the ccs server and return the answer as bytes
-    public byte[] sendCcsRequestBytes(String ccsHandlerName, String parameterName, int destPE) 
-    {
-	try {
-	    //Build a byte array describing the ccs request:
-	    int reqStr=parameterName.length();
-	    int reqLen = reqStr+1;
-	    byte[] req=new byte[reqLen];
-	    CcsServer.writeString(req,0,reqStr+1,parameterName);
-	    CcsServer.Request r=ccs.sendRequest(ccsHandlerName,destPE,req);
-	    if ( parameterName.equalsIgnoreCase("freeze") || ccsHandlerName.equalsIgnoreCase("ccs_debug_quit") || ccsHandlerName.equalsIgnoreCase("ccs_remove_all_break_points") || ccsHandlerName.equalsIgnoreCase("ccs_set_break_point") || ccsHandlerName.equalsIgnoreCase("ccs_remove_break_point") || ccsHandlerName.equalsIgnoreCase("ccs_continue_break_point"))
-		{
-		    return null;
-		}
-	    else {
-		byte[] resp=ccs.recvResponse(r);
-		return resp;
-	    }
-	} catch (IOException e) {
-	    e.printStackTrace();
-	    abort("Network error connecting to PE "+destPE+" to perform "+ccsHandlerName);
-	    return null;
-	}
+    public byte[] sendCcsRequestBytes(String ccsHandlerName, String parameterName, int destPE) {
+		//Build a byte array describing the ccs request:
+		int reqStr=parameterName.length();
+		int reqLen = reqStr+1;
+		byte[] req=new byte[reqLen];
+		CcsServer.writeString(req,0,reqStr+1,parameterName);
+		boolean waiting = ! (parameterName.equalsIgnoreCase("freeze") ||
+				ccsHandlerName.equalsIgnoreCase("ccs_debug_quit") ||
+				ccsHandlerName.equalsIgnoreCase("ccs_remove_all_break_points") ||
+				ccsHandlerName.equalsIgnoreCase("ccs_set_break_point") ||
+				ccsHandlerName.equalsIgnoreCase("ccs_remove_break_point") ||
+				ccsHandlerName.equalsIgnoreCase("ccs_continue_break_point"));
+		return sendCcsRequestBytes(ccsHandlerName, req, destPE, waiting);
+    }
+    public byte[] sendCcsRequestBytes(String ccsHandlerName, byte[] req, int destPE, boolean waitForReply) {
+    	try {
+    		CcsServer.Request r=ccs.sendRequest(ccsHandlerName,destPE,req);
+    		if (waitForReply)
+    		{
+    			byte[] resp=ccs.recvResponse(r);
+    			return resp;
+    		}
+    		else {
+    			return null;
+    		}
+    	} catch (IOException e) {
+    		e.printStackTrace();
+    		abort("Network error connecting to PE "+destPE+" to perform "+ccsHandlerName);
+    		return null;
+    	}
     }
 
     //if parameter forSelectedPes <= 0, ccs message sent to all pes

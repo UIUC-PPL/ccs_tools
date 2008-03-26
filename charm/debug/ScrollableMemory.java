@@ -2,6 +2,8 @@ package charm.debug;
 
 import java.awt.*;
 import java.awt.image.*;
+import java.util.Vector;
+
 import javax.swing.*;
 
 import charm.debug.fmt.*;
@@ -35,9 +37,13 @@ public class ScrollableMemory extends JLabel implements Scrollable {
 	private Slot[] crossReference;
 	private int rgbnormal[][];
 	private int rgbleak[][];
+	private int rgbdim[][];
+	private int rgbdimleak[][];
 	private int rgbselected[];
 	private int rgbhole[];
 	private Slot selectedSlot;
+	private boolean selectDim;
+	private Vector chareLists;
 
 	public int viewX, viewY;
 
@@ -45,6 +51,7 @@ public class ScrollableMemory extends JLabel implements Scrollable {
 	        int horiz) {
 		super();
 
+		selectDim = false;
 		lineScan = scan;
 		numLines = lines;
 		horizontalPixels = horiz;
@@ -146,6 +153,15 @@ public class ScrollableMemory extends JLabel implements Scrollable {
 				rgbleak[j][i] = color;
 			for (int i = (int) (0.75 * lineWidth); i < lineWidth; ++i)
 				rgbleak[j][i] = rgbnormal[j][i];
+		}
+		
+		rgbdim = new int[5][lineWidth];
+		rgbdimleak = new int[5][lineWidth];
+		for (int j = 0; j < 5; ++j) {
+			for (int i = 0; i < lineWidth; ++i) {
+				rgbdim[j][i] = rgbnormal[j][i] - (128 << 24);
+				rgbdimleak[j][i] = rgbleak[j][i] - (128 << 24);
+			}
 		}
 
 		rgbselected = new int[lineWidth];
@@ -251,10 +267,16 @@ public class ScrollableMemory extends JLabel implements Scrollable {
 
 		setIcon(new ImageIcon(tmp));
 		selectSlot(selectedSlot);
+		chareLists = null;
+		dimByChareID(selectDim);
 		maxUnitIncrement = lineScan;
 	}
 
 	private void drawSlot(Slot sl, int[] color) {
+		drawSlot(sl, color, lineWidth);
+	}
+	
+	private void drawSlot(Slot sl, int[] color, int lineW) {
 		long lostMemory = 0;
 		int additionalPixels = 0;
 		for (int index = 1; index <= holes[0].getPosition()
@@ -292,7 +314,7 @@ public class ScrollableMemory extends JLabel implements Scrollable {
 			// print the pixels
 			// System.out.println("position: "+pos+" "+ln*lineScan+1);
 			((BufferedImage) ((ImageIcon) getIcon()).getImage()).setRGB(pos, ln
-			        * lineScan + lineStart, 1, lineWidth, color, 0, 1);
+			        * lineScan + lineStart, 1, lineW, color, 0, 1);
 		}
 		repaint();
 	}
@@ -302,10 +324,62 @@ public class ScrollableMemory extends JLabel implements Scrollable {
 			if (selectedSlot.isLeak()) drawSlot(selectedSlot, rgbleak[selectedSlot.getType()]);
 			else drawSlot(selectedSlot, rgbnormal[selectedSlot.getType()]);
 		}
-		selectedSlot = sl;
-		if (sl != null) {
-			drawSlot(sl, rgbselected);
+		if (selectDim) {
+			// dim the different type
+			if (selectedSlot != null) {
+				Vector list = (Vector)chareLists.elementAt(selectedSlot.getChareID());
+				for (int i=0; i<list.size(); ++i) {
+					Slot s = (Slot)list.elementAt(i);
+					if (s.isLeak()) drawSlot(s, rgbdimleak[s.getType()]);
+					else drawSlot(s, rgbdim[s.getType()]);
+				}
+			}
+			if (sl != null) {
+				Vector list = (Vector)chareLists.elementAt(sl.getChareID());
+				for (int i=0; i<list.size(); ++i) {
+					Slot s = (Slot)list.elementAt(i);
+					if (s.isLeak()) drawSlot(s, rgbleak[s.getType()]);
+					else drawSlot(s, rgbnormal[s.getType()]);
+				}
+			}
 		}
+		selectedSlot = sl;
+		if (sl != null) drawSlot(sl, rgbselected, lineWidth>>1);
+	}
+
+	public void dimByChareID(boolean dim) {
+		if (dim && chareLists == null) {
+			// construct the lists
+			chareLists = new Vector();
+			for (int i=0; i<data.size(); ++i) {
+				for (int j=0; j<data.size(i); ++j) {
+					Slot sl = data.elementAt(i, j);
+					int type = sl.getChareID();
+					if (chareLists.size() <= type) chareLists.setSize(type+1);
+					if (chareLists.elementAt(type)==null) chareLists.setElementAt(new Vector(), type);
+					((Vector)chareLists.elementAt(type)).add(sl);
+				}
+			}
+		}
+		if (dim) {
+			for (int i=0; i<data.size(); ++i) {
+				for (int j=0; j<data.size(i); ++j) {
+					Slot sl = data.elementAt(i, j);
+					if (sl.isLeak()) drawSlot(sl, rgbdimleak[sl.getType()]);
+					else drawSlot(sl, rgbdim[sl.getType()]);
+				}
+			}
+		} else {
+			for (int i=0; i<data.size(); ++i) {
+				for (int j=0; j<data.size(i); ++j) {
+					Slot sl = data.elementAt(i, j);
+					if (sl.isLeak()) drawSlot(sl, rgbleak[sl.getType()]);
+					else drawSlot(sl, rgbnormal[sl.getType()]);
+				}
+			}
+		}
+		selectDim = dim;
+		selectSlot(selectedSlot);
 	}
 
 	public Slot getSelectedSlot() {

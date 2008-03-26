@@ -9,7 +9,7 @@ import charm.debug.pdata.Slot;
 import charm.debug.inspect.InspectPanel;
 
 public class MemoryPanel extends JPanel
-    implements ActionListener, MouseListener, MouseMotionListener {
+    implements ActionListener, MouseListener, MouseMotionListener, ItemListener {
 
     private JMenuBar menuBar;
     private JMenu menuAction;
@@ -18,6 +18,7 @@ public class MemoryPanel extends JPanel
     private JMenu menuInfo;
     private JMenuItem menuStat;
     private JMenuItem menuInspect;
+    private JCheckBoxMenuItem menuDim;
     //private JSlider verticalZoom;
     //private JSlider horizontalZoom;
     private JScrollPane displayPane;
@@ -54,7 +55,9 @@ public class MemoryPanel extends JPanel
 	menuStat.addActionListener(this);
 	menuInfo.add(menuInspect = new JMenuItem("Inspect",'I'));
 	menuInspect.addActionListener(this);
-
+	menuInfo.add(menuDim = new JCheckBoxMenuItem("Dim by chare ID"));
+	menuDim.addItemListener(this);
+	
 	topPane = new JPanel();
 	topPane.setLayout(new BorderLayout());
 
@@ -380,6 +383,12 @@ public class MemoryPanel extends JPanel
 		}
 	    }
 	}
+    }
+    
+    public void itemStateChanged(ItemEvent e) {
+    	if (e.getItemSelectable() == menuDim) {
+    		memoryData.dimByChareID(e.getStateChange() == ItemEvent.SELECTED);
+    	}
     }
 
     public void mouseClicked(MouseEvent e) {

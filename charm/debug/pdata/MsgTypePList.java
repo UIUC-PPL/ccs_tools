@@ -27,7 +27,7 @@ public class MsgTypePList extends GenericPList {
             int size;
             if (Inspector.is64bit()) size = (int)((PNative)lcur.elementNamed("size")).getLongValue(0);
             else size = ((PNative)lcur.elementNamed("size")).getIntValue(0);
-            System.out.println("msg info:ptype "+name+"\n");
+            //System.out.println("msg info:ptype "+name+"\n");
             String desc = ParDebug.infoCommand("ptype "+name+"\n");
             //if (desc.startsWith("no symbol")) desc = null;
             //else desc = desc.substring(7,desc.length()-7);

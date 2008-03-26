@@ -42,7 +42,10 @@ public class CharePList extends GenericPList {
             ByteBuffer buf = null;
             info = lcur.elementNamed("value");
             if (info != null) buf = ByteBuffer.wrap(((PString)info).getBytes()).order(Inspector.getByteOrder());
-            data.add(new ChareInfo(name, id, type!=null?Inspector.getTypeCreate(type):null, buf));
+			int group = -1;
+			info = lcur.elementNamed("group");
+			if (info != null) group = ((PNative)info).getIntValue(0);
+            data.add(new ChareInfo(name, id, type!=null?Inspector.getTypeCreate(type):null, buf, group));
         }
     }
  

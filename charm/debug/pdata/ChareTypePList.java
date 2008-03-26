@@ -24,11 +24,12 @@ public class ChareTypePList extends GenericPList {
 
             String name = ((PString)lcur.elementNamed("name")).getString();
             int size = ((PNative)lcur.elementNamed("size")).getIntValue(0);
-            System.out.println("chare info:ptype "+name+"\n");
+            //System.out.println("chare info:ptype "+name+"\n");
             String desc = ParDebug.infoCommand("ptype "+name+"\n");
             //if (desc.startsWith("no symbol")) desc = null;
             //else desc = desc.substring(7,desc.length()-7);
-            data.add(new ChareTypeInfo(index++, name, size, desc));
+            int inCharm=((PNative)(lcur.elementNamed("inCharm"))).getIntValue(0);
+			data.add(new ChareTypeInfo(index++, name, size, desc, (inCharm==1)));
         }
     }
  

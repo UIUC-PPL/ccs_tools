@@ -12,16 +12,21 @@ public class ChareInfo extends GenericInfo {
     byte[] id;
     GenericType type;
     ByteBuffer memory;
+	int groupID;
 
-    ChareInfo(String n, byte[] i, GenericType t, ByteBuffer m) {
+    ChareInfo(String n, byte[] i, GenericType t, ByteBuffer m, int g) {
         name = n;
         id = i;
         type = t;
         memory = m;
+		groupID = g;
     }
 
+	public int getGroupID() { return groupID; }
+
     public String toString() {
-        return name;//type.toString()+"\nFrom "+from+" of size "+userSize+"\nTo: "+
+        return name+(groupID!=-1?" ("+groupID+")":"");
+		//type.toString()+"\nFrom "+from+" of size "+userSize+"\nTo: "+
             //type.getName();//+"::"+ep.toString();
         //+userData.toString()+"\n";
     }
