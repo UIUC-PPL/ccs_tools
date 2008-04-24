@@ -336,7 +336,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
        statusArea.setText(txt);
     }
     
-    public void notifyBreakpoint (String txt) {
+    public void notifyBreakpoint () {
     	stepButton.setEnabled(true);
     	continueButton.setEnabled(true);
     	freezeButton.setEnabled(false);
@@ -345,7 +345,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
 			int forPE=Integer.parseInt((String)pesbox.getSelectedItem());
 			populateNewList(listsbox.getSelectedIndex(),forPE, listModel);
 		}
-    	setStatusMessage(txt);
+    	//setStatusMessage(txt);
     }
 
     public Dimension getPreferredSize() {
@@ -1072,6 +1072,8 @@ DEPRECATED!! The correct implementation is in CpdList.java
     	String totCommandLine = charmrunPath + " " + "+p"+ exec.npes + " " +executable + " " + exec.parameters+"  +cpd +DebugDisplay " +envDisplay+" ++server";// ++charmdebug";
     	if (exec.port.length() != 0)
     		totCommandLine += " ++server-port " + exec.port;
+    	// TODO: add a parameter to the input parameters to allow a working directory
+    	//totCommandLine = "(cd /expand/home/bohm/work/leanCP/binary/water_32M_10Ry_cpmd_correct; "+totCommandLine+")";
     	if (!exec.hostname.equals("localhost")) {
     		if (exec.username.length()>0) {
     			totCommandLine = "-l " + exec.username + " " + totCommandLine;

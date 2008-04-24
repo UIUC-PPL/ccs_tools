@@ -2,6 +2,8 @@ package charm.debug;
 
 //import java.net.*;
 import java.io.*;
+
+import javax.swing.SwingUtilities;
 //import java.security.*;
 
 
@@ -86,8 +88,12 @@ public class ServThread extends Thread {
 
 						if (outline.indexOf("Break point reached", 0) != -1)
 						{
-							mainThread.notifyBreakpoint(outline);
-							//mainThread.setStatusMessage(outline);
+							Runnable doWorkRunnable = new Runnable() {
+							    public void run() { mainThread.notifyBreakpoint(); }
+							};
+							SwingUtilities.invokeLater(doWorkRunnable);
+							//mainThread.notifyBreakpoint(outline);
+							mainThread.setStatusMessage(outline);
 						}
 						else {
 							// User output: Print this out to a display area on the debugger
