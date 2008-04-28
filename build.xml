@@ -44,9 +44,10 @@ author = idooley2
   <!-- Compile the java code. Put class files into "classes" directory -->
   <target name="compile" depends="init" description="compile the source" >
 
-    <javac sourcepath="" srcdir="." destdir="classes" debug="false" debuglevel="lines,vars,source" >
+    <javac sourcepath="" srcdir="." destdir="classes" debug="true" debuglevel="lines,vars,source" >
       <include name="charm/debug/**"/>
       <include name="charm/ccs/**"/>
+      <include name="charm/util/**"/>
     </javac>
 
   </target>
@@ -65,7 +66,8 @@ author = idooley2
     <jar jarfile="bin/charmdebug.jar" basedir="classes">
       <include name="charm/debug/**"/>
       <include name="charm/ccs/**"/>
-   	</jar>
+      <include name="charm/util/**"/>
+    </jar>
 
   </target>
 
