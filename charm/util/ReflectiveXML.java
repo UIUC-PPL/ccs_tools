@@ -1,3 +1,21 @@
+/**
+ * ReflectiveXML allows a simple java class to be serialized into an XML
+ * file, and later reconstructed from that file. It's main purpose it to
+ * save configuration parameters or other properties into a human readable
+ * format. This format allows the user to modify it manually if he so
+ * chooses. Moreover, and most importantly, if the definition of the class
+ * is changed in a later version of the program, the configuration file is
+ * still usable, with the clause that new variables will be initialized to
+ * null for classes, false for boolean, 0 for all other primitive types.
+ * 
+ * Currently ReflectiveXML supports generic classes, arrays, and primitive
+ * types. Static variables are currently overwritten when an object is restored.
+ * 
+ * Created by Filippo Gioachin, April 2008.
+ * gioachin@uiuc.edu
+ * 
+ */
+
 package charm.util;
 
 import java.io.*;
@@ -103,7 +121,6 @@ public class ReflectiveXML {
 							if (fieldName != null) {
 								fld = container.getClass().getDeclaredField(fieldName);
 								fld.setAccessible(true);
-								String fldType = fld.getType().getName();
 							}
 							if (localName.equals("int")) {
 								if (fieldName != null) 
@@ -127,9 +144,9 @@ public class ReflectiveXML {
 									Array.setDouble(container, Integer.parseInt(arrPos), Double.parseDouble(attrs.getValue("value")));
 							} else if (localName.equals("boolean")) {
 								if (fieldName != null)
-									fld.setBoolean(container, Boolean.parseBoolean(attrs.getValue("value")));
+									fld.setBoolean(container, Boolean.getBoolean(attrs.getValue("value")));
 								else if (arrPos != null)
-									Array.setBoolean(container, Integer.parseInt(arrPos), Boolean.parseBoolean(attrs.getValue("value")));
+									Array.setBoolean(container, Integer.parseInt(arrPos), Boolean.getBoolean(attrs.getValue("value")));
 							} else if (localName.equals("byte")) {
 								if (fieldName != null)
 									fld.setByte(container, Byte.parseByte(attrs.getValue("value")));
