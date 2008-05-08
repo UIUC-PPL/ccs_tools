@@ -12,9 +12,9 @@ public class ParamsDialog extends JDialog implements ActionListener {
 	//ParDebug mainObject = null;
 	Execution exec = null;
 
-	private JTextField  clParams, numPes, portno, hostname, username, filename;
+	private JTextField  clParams, numPes, portno, hostname, username, filename, dir;
 	private JCheckBox sshTunnel;
-	private JButton chooser;
+	private JButton chooser, dirchooser;
 
 	public ParamsDialog(Frame parent, boolean modal, Execution obj) {
 		super (parent, modal);
@@ -78,6 +78,35 @@ public class ParamsDialog extends JDialog implements ActionListener {
 		c.gridwidth = 1;
 		c.anchor = GridBagConstraints.WEST;
 		c.insets = new Insets(12,12,0,0);
+		JLabel dirlabel = new JLabel("Working dir:");
+		dirlabel.setLabelFor(dir);
+		grid.setConstraints(dirlabel, c);
+		contents.add(dirlabel);
+		
+		dir = new JTextField(35);
+		c.gridx = 1;
+		c.gridy = 1;
+		c.gridwidth = 2;
+		c.fill = GridBagConstraints.HORIZONTAL;
+		c.weightx = 1.0;
+		c.insets = new Insets(11,7,0,0);
+		grid.setConstraints(dir, c);
+		
+		dirchooser = new JButton("Change");
+		dirchooser.setActionCommand("browsedir");
+		dirchooser.addActionListener(this);
+		c.gridx = 3;
+		c.gridy = 1;
+		c.gridwidth = 1;
+		c.fill = GridBagConstraints.EAST;
+		c.insets = new Insets(12,5,0,10);
+		grid.setConstraints(dirchooser, c);
+		
+		c.gridx = 0;
+		c.gridy = 2;
+		c.gridwidth = 1;
+		c.anchor = GridBagConstraints.WEST;
+		c.insets = new Insets(12,12,0,0);
 		JLabel paramlabel = new JLabel();
 		paramlabel.setText("Command Line Parameters:");
 		paramlabel.setLabelFor(clParams);
@@ -86,7 +115,7 @@ public class ParamsDialog extends JDialog implements ActionListener {
 
 		clParams = new JTextField(35);
 		c.gridx = 1;
-		c.gridy = 1;
+		c.gridy = 2;
 		c.gridwidth = 3;
 		c.fill = GridBagConstraints.HORIZONTAL;
 		c.weightx = 1.0;
@@ -94,7 +123,7 @@ public class ParamsDialog extends JDialog implements ActionListener {
 		grid.setConstraints(clParams,c); 
 
 		c.gridx = 0;
-		c.gridy = 2;
+		c.gridy = 3;
 		c.gridwidth = 1;
 		c.anchor = GridBagConstraints.WEST;
 		c.insets = new Insets(12,12,0,0);
@@ -106,7 +135,7 @@ public class ParamsDialog extends JDialog implements ActionListener {
 
 		numPes = new JTextField(5);
 		c.gridx = 1;
-		c.gridy = 2;
+		c.gridy = 3;
 		c.gridwidth = 1;
 		c.fill = GridBagConstraints.NONE;
 		c.anchor = GridBagConstraints.WEST;
@@ -115,7 +144,7 @@ public class ParamsDialog extends JDialog implements ActionListener {
 
 
 		c.gridx = 0;
-		c.gridy = 3;
+		c.gridy = 4;
 		c.anchor = GridBagConstraints.WEST;
 		c.insets = new Insets(12,12,0,0);
 		JLabel portNumberLabel = new JLabel();
@@ -125,7 +154,7 @@ public class ParamsDialog extends JDialog implements ActionListener {
 		contents.add(portNumberLabel);
 
 		c.gridx = 1;
-		c.gridy = 3;
+		c.gridy = 4;
 		c.gridwidth = 1;
 		c.fill = GridBagConstraints.NONE;
 		c.anchor = GridBagConstraints.WEST;
@@ -135,7 +164,7 @@ public class ParamsDialog extends JDialog implements ActionListener {
 		//contents.add(portno);
 
 		c.gridx = 0;
-		c.gridy = 4;
+		c.gridy = 5;
 		c.anchor = GridBagConstraints.WEST;
 		c.insets = new Insets(12,12,0,0);
 		JLabel hostNameLabel = new JLabel();
@@ -145,7 +174,7 @@ public class ParamsDialog extends JDialog implements ActionListener {
 		contents.add(hostNameLabel);
 
 		c.gridx = 1;
-		c.gridy = 4;
+		c.gridy = 5;
 		c.gridwidth = 1;
 		c.fill = GridBagConstraints.NONE;
 		c.anchor = GridBagConstraints.WEST;
@@ -154,7 +183,7 @@ public class ParamsDialog extends JDialog implements ActionListener {
 		grid.setConstraints(hostname, c);
 
 		c.gridx = 0;
-		c.gridy = 5;
+		c.gridy = 6;
 		c.anchor = GridBagConstraints.WEST;
 		c.insets = new Insets(6,12,0,0);
 		JLabel userNameLabel = new JLabel();
@@ -164,7 +193,7 @@ public class ParamsDialog extends JDialog implements ActionListener {
 		contents.add(userNameLabel);
 
 		c.gridx = 1;
-		c.gridy = 5;
+		c.gridy = 6;
 		c.gridwidth = 1;
 		c.fill = GridBagConstraints.NONE;
 		c.anchor = GridBagConstraints.WEST;
@@ -173,7 +202,7 @@ public class ParamsDialog extends JDialog implements ActionListener {
 		grid.setConstraints(username, c);
 
 		c.gridx = 1;
-		c.gridy = 6;
+		c.gridy = 7;
 		c.gridwidth = 1;
 		c.fill = GridBagConstraints.NONE;
 		c.anchor = GridBagConstraints.WEST;
@@ -183,6 +212,8 @@ public class ParamsDialog extends JDialog implements ActionListener {
 		
 		contents.add(filename);
 		contents.add(chooser);
+		contents.add(dir);
+		contents.add(dirchooser);
 		contents.add(clParams);
 		contents.add(numPes);
 		contents.add(portno);
@@ -217,7 +248,7 @@ public class ParamsDialog extends JDialog implements ActionListener {
 		buttonPanel.add(cancelButton);
 
 		c.gridx = 1;
-		c.gridy = 6;
+		c.gridy = 7;
 		c.gridwidth = 7;
 		c.weightx = 0.0;
 		c.weighty = 0.0;
@@ -236,6 +267,7 @@ public class ParamsDialog extends JDialog implements ActionListener {
 		hostname.setText(exec.hostname);
 		username.setText(exec.username);
 		sshTunnel.setSelected(exec.sshTunnel);
+		dir.setText(exec.workingDir);
 	}
 
     public void actionPerformed(ActionEvent e) {
@@ -246,6 +278,14 @@ public class ParamsDialog extends JDialog implements ActionListener {
     		int returnVal = chooser.showOpenDialog(ParamsDialog.this);
     		if(returnVal == JFileChooser.APPROVE_OPTION) {
     			filename.setText(chooser.getSelectedFile().getAbsolutePath());
+    		}
+    	} else if (e.getActionCommand().equals("browsedir")) 
+    	{ /* Bring up file dialog box to select a new executable */
+    		JFileChooser chooser = new JFileChooser(System.getProperty("user.dir"));
+    		chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+    		int returnVal = chooser.showOpenDialog(ParamsDialog.this);
+    		if(returnVal == JFileChooser.APPROVE_OPTION) {
+    			dir.setText(chooser.getSelectedFile().getAbsolutePath());
     		}
     	}
     }
@@ -285,6 +325,7 @@ public class ParamsDialog extends JDialog implements ActionListener {
 			exec.hostname = hostname.getText();
 			exec.username = username.getText();
 			exec.sshTunnel = sshTunnel.isSelected();
+			exec.workingDir = dir.getText();
 			closeWindow = true;
 		} 
 		if (closeWindow) {

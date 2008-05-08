@@ -17,6 +17,7 @@ import charm.debug.pdata.*;
 import charm.debug.inspect.Inspector;
 import charm.debug.inspect.InspectPanel;
 import charm.debug.preference.*;
+import charm.util.ReflectiveXML;
 
 import javax.swing.*;
 
@@ -27,6 +28,7 @@ import java.awt.event.*;
 import javax.swing.event.*;
 import java.net.*;
 import javax.swing.tree.*;
+import org.xml.sax.SAXException;
 
 public class ParDebug extends JPanel
      implements ActionListener,ListSelectionListener{
@@ -39,7 +41,7 @@ public class ParDebug extends JPanel
     //private static String filename;
     //private static String hostname;
     //private static String username;
-    //private static String portnumber;
+    private String portnumber;
     private static String hostnumber;
     //private static int numberPes;
     //private static String clparams;
@@ -50,6 +52,7 @@ public class ParDebug extends JPanel
     public static int dataPos;
     static ServThread servthread;
     private static GdbProcess gdb;
+    private boolean attachMode; 
 
     /// This variable is responsible for handling all the CCS communication with
     /// the running application
@@ -134,6 +137,7 @@ public class ParDebug extends JPanel
     private JMenu menuRecent;
     private JMenuItem menuWindowSettings;
     private JMenuItem menuActionStart; 
+    private JMenuItem menuActionAttach;
     private JMenuItem menuActionContinue;
     private JMenuItem menuActionQuit;
     private JMenuItem menuActionFreeze;
@@ -432,8 +436,10 @@ DEPRECATED!! The correct implementation is in CpdList.java
 /************** Giant Horrible GUI Routines ************/
     public ParDebug(Execution e) {
        isRunning = false;
-       preferences = new Preference();
-       preferences.load();
+       //preferences = new Preference();
+       //preferences.load();
+	   preferences = Preference.load();
+	   if (preferences == null) preferences = new Preference();
        exec = e;
        breakpointSet = new HashSet();
 
@@ -465,6 +471,8 @@ DEPRECATED!! The correct implementation is in CpdList.java
        
        menuAction.add(menuActionStart = new JMenuItem("Start",'S'));
        listenTo(menuActionStart,"begin","Start the parallel program"); 
+       menuAction.add(menuActionAttach = new JMenuItem("Attach",'A'));
+       listenTo(menuActionAttach,"attach","Attach to a running parallel program"); 
        menuAction.add(menuActionContinue = new JMenuItem("Continue",'C'));
        listenTo(menuActionContinue,"unfreeze","Continue to run the parallel program"); 
        menuAction.add(menuActionFreeze = new JMenuItem("Freeze",'F'));
@@ -738,6 +746,9 @@ DEPRECATED!! The correct implementation is in CpdList.java
 		} catch (ClassNotFoundException cnfe) {
 			setStatusMessage("Configuration file corrupted");
 			return;
+		} catch (SAXException se) {
+			setStatusMessage("Configuration file corrupted");
+			return;
 		}
 		loadedRunParameter();
 		preferences.addRecent(exec.locationOnDisk);
@@ -784,9 +795,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
     				}
     			}
     			try {
-    				ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(filename));
-    				oos.writeObject(exec);
-    				oos.close();
+					exec.save(filename);
     			} catch (IOException ioe) {
     				setStatusMessage("Failed to save configuration file");
     				return;
@@ -808,9 +817,13 @@ DEPRECATED!! The correct implementation is in CpdList.java
     		preferences.size = getParent().getSize();
     	}
     	else if (e.getActionCommand().equals("begin")) { /* buttons... */
+    		attachMode = false;
     		startProgram();
     	}
-    	else if (e.getActionCommand().equals("freeze")) {
+    	else if (e.getActionCommand().equals("attach")) {
+    		attachMode = true;
+    		startProgram();
+    	} else if (e.getActionCommand().equals("freeze")) {
     		// stop program
     		server.bcastCcsRequest("ccs_debug", "freeze",1, exec.npes, peList);
     		stepButton.setEnabled(true);
@@ -1074,6 +1087,8 @@ DEPRECATED!! The correct implementation is in CpdList.java
     		totCommandLine += " ++server-port " + exec.port;
     	// TODO: add a parameter to the input parameters to allow a working directory
     	//totCommandLine = "(cd /expand/home/bohm/work/leanCP/binary/water_32M_10Ry_cpmd_correct; "+totCommandLine+")";
+    	if (exec.workingDir != null && exec.workingDir.length() != 0)
+    		totCommandLine = "cd "+exec.workingDir+"; "+totCommandLine;
     	if (!exec.hostname.equals("localhost")) {
     		if (exec.username.length()>0) {
     			totCommandLine = "-l " + exec.username + " " + totCommandLine;
@@ -1081,36 +1096,39 @@ DEPRECATED!! The correct implementation is in CpdList.java
     		totCommandLine = "ssh " + exec.hostname + " " + totCommandLine;
     	}
     	System.out.println("ParDebug> "+totCommandLine);
-    	programOutputArea.setText(totCommandLine);
-    	Process p = null;
-    	Runtime runtime = null;
-    	runtime = Runtime.getRuntime();
-    	try {
-    		// start new process for charmrun
-    		p = runtime.exec(totCommandLine);
-			//BufferedReader prerr = new BufferedReader(new InputStreamReader(p.getErrorStream()));
-			//BufferedReader prout = new BufferedReader(new InputStreamReader(p.getInputStream()));
-			//System.out.println("Start reading p");
-			//System.out.println("1|"+prout.readLine()+"|");
-			//System.out.println("2|"+prerr.readLine()+"|");
-			//System.out.println("Finished reading p");
-    	}
-    	catch (Exception exc) {
-    		System.out.println("ParDebug> Error executing "+totCommandLine);
-    		quitProgram();
-    		return;
-    	}
+		Process p = null;
+		Runtime runtime = null;
+		runtime = Runtime.getRuntime();
+    	if (! attachMode) {
+    		programOutputArea.setText(totCommandLine);
+    		try {
+    			// start new process for charmrun
+    			p = runtime.exec(totCommandLine);
+    			//BufferedReader prerr = new BufferedReader(new InputStreamReader(p.getErrorStream()));
+    			//BufferedReader prout = new BufferedReader(new InputStreamReader(p.getInputStream()));
+    			//System.out.println("Start reading p");
+    			//System.out.println("1|"+prout.readLine()+"|");
+    			//System.out.println("2|"+prerr.readLine()+"|");
+    			//System.out.println("Finished reading p");
+    		}
+    		catch (Exception exc) {
+    			System.out.println("ParDebug> Error executing "+totCommandLine);
+    			quitProgram();
+    			return;
+    		}
 
-    	// start the thread that will handle the communication with charmrun
-    	// (and the program output as a consequence)
-    	servthread = (new ServThread(this, p));
-    	servthread.start();
-		while (servthread.getFlag() == 0);
-		if (servthread.getFlag() != 1) {
-			setStatusMessage("Failed to start program");
-			return;
-		}
-
+    		// start the thread that will handle the communication with charmrun
+    		// (and the program output as a consequence)
+    		servthread = (new ServThread(this, p));
+    		servthread.start();
+    		while (servthread.getFlag() == 0);
+    		if (servthread.getFlag() != 1) {
+    			setStatusMessage("Failed to start program");
+    			return;
+    		}
+    	} else {
+    		programOutputArea.setText("Attaching to running program");
+    	}
     	try {
     		// Retrieve the initial info from charmrun regarding the program segments
     		//StringBuffer initialInfoBuf = new StringBuffer();
@@ -1158,19 +1176,19 @@ DEPRECATED!! The correct implementation is in CpdList.java
     			{ /* don't care about interrupted sleep */ }
     			if(iter++ > 60*10) abort("Timeout waiting for program to start up (and print its CCS port number)");
     		}
-    		if (exec.port.length() == 0)
-    			exec.port = servthread.portno;
+    		if (exec.port.length() == 0) portnumber = servthread.portno;
+    		else portnumber = exec.port;
     		if (exec.hostname.equals("localhost")) hostnumber = servthread.hostName;
-    		System.out.println("ParDebug> Charmrun started (CCS IP "+(exec.hostname.equals("localhost")?hostnumber:exec.hostname)+", port "+exec.port+")");
+    		System.out.println("ParDebug> Charmrun started (CCS IP "+(exec.hostname.equals("localhost")?hostnumber:exec.hostname)+", port "+portnumber+")");
 
     		/* Connect to the new program */
     		String[] ccsArgs=new String[2];
     		ccsArgs[0]= exec.hostname.equals("localhost")?hostnumber:exec.hostname;
-    		ccsArgs[1]= exec.port;
+    		ccsArgs[1]= portnumber;
     		if (exec.sshTunnel) {
     			System.out.println("ParDebug> Tunneling connection through ssh");
     			try {
-    				sshTunnel = runtime.exec("ssh -2 -c blowfish -L "+exec.port+":localhost:"+exec.port+" "+exec.hostname);
+    				sshTunnel = runtime.exec("ssh -2 -c blowfish -L "+portnumber+":localhost:"+portnumber+" "+exec.hostname);
     			} catch (Exception exc) {
     				System.out.println("ParDebug> Could not create ssh tunnel");
     			}
@@ -1178,7 +1196,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
     			catch(InterruptedException e1) {}
     			ccsArgs[0] = "localhost";
     		}
-    		System.out.println("Connecting to: "+exec.username+(exec.username.length()>0?"@":"")+(exec.hostname.equals("localhost")?hostnumber:exec.hostname)+":"+exec.port);
+    		System.out.println("Connecting to: "+exec.username+(exec.username.length()>0?"@":"")+(exec.hostname.equals("localhost")?hostnumber:exec.hostname)+":"+portnumber);
     		CcsServer ccs = CcsServer.create(ccsArgs,false);
     		server = new CpdUtil(ccs);
 
@@ -1294,7 +1312,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
     	} catch (Exception e) {
     		System.out.println("Error while starting the application (error: "+e+". Aborting...");
 			e.printStackTrace();
-    		p.destroy();
+    		if (! attachMode) p.destroy();
     	}
 
     	//sysEpsActualPanel.updateUI();
@@ -1382,6 +1400,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
     	exec.hostname = "localhost";
     	exec.username = "";
     	exec.executable = "";
+    	exec.workingDir = System.getProperty("user.dir");
     	exec.port = "";
     	exec.npes = 1;
     	String numberPesString="1";
@@ -1405,10 +1424,18 @@ DEPRECATED!! The correct implementation is in CpdList.java
     			exec.executable = args[i+1];
     		else if (args[i].equals("-param"))
     			exec.parameters = args[i+1];
-    		else if (args[i].equals("-pes") || args[i].equals("+p"))
+    		else if (args[i].equals("-pes") || args[i].equals("+p")) {
     			numberPesString = args[i+1];
+    	    	try {
+    	    		exec.npes = Integer.parseInt(numberPesString);
+    	    	} catch (NumberFormatException e) {
+    	    		System.out.println("Could not understand the specified number of processors");
+    	    	}
+    		}
     		else if (args[i].equals("-display"))
     			envDisplay = args[i+1];
+    		else if (args[i].equals("-dir"))
+    			exec.workingDir = args[i+1];
     		else if (args[i].equals("-sshtunnel")) {
     			exec.sshTunnel = true;
     			i--;
@@ -1423,12 +1450,20 @@ DEPRECATED!! The correct implementation is in CpdList.java
     				ioe.printStackTrace();
     			} catch (ClassNotFoundException cnfe) {
     				System.out.println("Configuration file corrupted");
-    			}
+    			} catch (SAXException se) {
+					System.out.println("Configuration file corrupted");
+				}
     		}
     		else
     		{ /* Just a 1-argument */
-    			if (args[i].startsWith("+p"))
+    			if (args[i].startsWith("+p")) {
     				numberPesString=args[i].substring(2);
+    				try {
+    					exec.npes = Integer.parseInt(numberPesString);
+    				} catch (NumberFormatException e) {
+    					System.out.println("Could not understand the specified number of processors");
+    				}
+    			}
     			else if (!gotFilename) {
     				if (args[i].startsWith("-") || args[i].startsWith("+")) {
     					printUsage();
@@ -1452,11 +1487,11 @@ DEPRECATED!! The correct implementation is in CpdList.java
     		System.exit(1);
     	}
     	//setNumberPes(numberPesString);
-    	try {
-    		exec.npes = Integer.parseInt(numberPesString);
-    	} catch (NumberFormatException e) {
-    		System.out.println("Could not understand the specified number of processors");
-    	}
+//    	try {
+//    		exec.npes = Integer.parseInt(numberPesString);
+//    	} catch (NumberFormatException e) {
+//    		System.out.println("Could not understand the specified number of processors");
+//    	}
 
     	appFrame = new JFrame("Charm Parallel Debugger");
     	appFrame.setSize(1000, 1000);
