@@ -46,15 +46,19 @@ public class GdbProcess {
 		try {
 			gdbIn.write(command);
 			gdbIn.flush();
-			debugOutput.write("request: {"+command+"}");
+			try {
+				debugOutput.write("request: {"+command+"}");
+			} catch (Exception ex) {}
 			StringBuffer reply = new StringBuffer();
 			while (!reply.toString().endsWith("(gdb) ")) {
 				//Thread.yield();
 				while (gdbOut.ready()) reply.append((char)gdbOut.read());
 			}
 			reply.setLength(reply.length()-6);
-			debugOutput.write("reply: |"+reply+"|");
-			debugOutput.flush();
+			try {
+				debugOutput.write("reply: |"+reply+"|");
+				debugOutput.flush();
+			} catch (Exception ex) {}
 			return reply.toString();
 		} catch (IOException e) {
 			return "error";
