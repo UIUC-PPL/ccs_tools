@@ -11,6 +11,15 @@
  * Currently ReflectiveXML supports generic classes, arrays, and primitive
  * types. Static variables are currently overwritten when an object is restored.
  * 
+ * The two methods of interest to the user are:
+ * 
+ * - public static void write(FileWriter f, Object o) throws IOException
+ * - public static Object read(FileReader f) throws IOException, SAXException
+ * 
+ * The first serializes an object "o" into an opened file "f". The second reads
+ * the serialization of an object saved with the first method from an opened
+ * file "f" and return the new object.
+ * 
  * Created by Filippo Gioachin, April 2008.
  * gioachin@uiuc.edu
  * 
