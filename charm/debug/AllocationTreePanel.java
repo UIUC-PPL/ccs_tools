@@ -42,6 +42,8 @@ public class AllocationTreePanel extends JPanel {
 		root.readPuppedBuffer(buf);
 		tree = new JTree(root);
 		tree.getSelectionModel().setSelectionMode(TreeSelectionModel.SINGLE_TREE_SELECTION);
+		tree.setShowsRootHandles(true);
+		tree.setRootVisible(false);
 		scroll.setViewportView(tree);
 	}
 	
