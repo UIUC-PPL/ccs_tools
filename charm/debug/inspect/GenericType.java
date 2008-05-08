@@ -19,6 +19,18 @@ public abstract class GenericType extends VisitableType {
     public String getName() {
         return name;
     }
+    
+    public GenericType getType() {
+    	return this;
+    }
+    
+    public boolean equals(GenericType t) {
+    	return name.equals(t.name);
+    }
+    
+    public boolean equals(TypedefType t) {
+    	return name.equals(t.name) || equals(t.real);
+    }
 
     public int getChildren() { return 0; }
     public GenericElement getChild(int i) { return null; }

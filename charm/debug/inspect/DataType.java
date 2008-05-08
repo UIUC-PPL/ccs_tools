@@ -243,6 +243,74 @@ public class DataType extends GenericType {
 
     public String getValue(TypeVisitor v) { return null; }
 
+    public boolean hasSuperclass(GenericType s) {
+    	for (int i=0; i<superclasses.size(); ++i) {
+    		SuperClassElement sup = (SuperClassElement)superclasses.elementAt(i);
+    		if (sup.getType().equals(s)) return true;
+    		GenericType gt = sup.getType().getType();
+    		if (gt instanceof DataType && ((DataType)gt).hasSuperclass(s)) return true;
+    	}
+    	return false;
+    }
+    
+    public int getSuperclassOffset(GenericType s) {
+    	for (int i=0; i<superclasses.size(); ++i) {
+    		SuperClassElement sup = (SuperClassElement)superclasses.elementAt(i);
+    		if (sup.getType().equals(s)) return sup.getOffset();
+    		GenericType gt = sup.getType().getType();
+    		if (gt instanceof DataType) {
+    			int result = ((DataType)gt).getSuperclassOffset(s);
+    			if (result >= 0) return result + sup.getOffset();
+    		}
+    	}
+    	return -1;
+    }
+    
+    public boolean hasVariable(String name) {
+    	for (int i=0; i<variables.size(); ++i) {
+    		VariableElement el = (VariableElement)variables.elementAt(i);
+    		if (el.getName().equals(name)) return true;
+    	}
+    	for (int i=0; i<superclasses.size(); ++i) {
+    		SuperClassElement sup = (SuperClassElement)superclasses.elementAt(i);
+    		GenericType gt = sup.getType().getType();
+    		if (gt instanceof DataType && ((DataType)gt).hasVariable(name)) return true;
+    	}
+    	return false;
+    }
+    
+    public int getVariableOffset(String name) {
+    	for (int i=0; i<variables.size(); ++i) {
+    		VariableElement el = (VariableElement)variables.elementAt(i);
+    		if (el.getName().equals(name)) return el.getOffset();
+    	}
+    	for (int i=0; i<superclasses.size(); ++i) {
+    		SuperClassElement sup = (SuperClassElement)superclasses.elementAt(i);
+    		GenericType gt = sup.getType().getType();
+    		if (gt instanceof DataType) {
+    			int result = ((DataType)gt).getVariableOffset(name);
+    			if (result >= 0) return result + sup.getOffset();
+    		}
+    	}
+    	return -1;
+    }
+    
+    public GenericType getVariableType(String name) {
+    	for (int i=0; i<variables.size(); ++i) {
+    		VariableElement el = (VariableElement)variables.elementAt(i);
+    		if (el.getName().equals(name)) return el.getType();
+    	}
+    	for (int i=0; i<superclasses.size(); ++i) {
+    		SuperClassElement sup = (SuperClassElement)superclasses.elementAt(i);
+    		GenericType gt = sup.getType().getType();
+    		if (gt instanceof DataType) {
+    			GenericType result = ((DataType)gt).getVariableType(name);
+    			if (result != null) return result;
+    		}
+    	}
+    	return null;
+    }
+    
     public String toString(String ind) {
         if (name == null) return "";
         if (desc == null) return "(no info available)";

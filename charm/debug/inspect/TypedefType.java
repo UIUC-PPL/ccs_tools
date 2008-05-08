@@ -63,6 +63,18 @@ public class TypedefType extends GenericType {
         if (pointer>0) return pointerSize();
         return real.getSize();
     }
+    
+    public GenericType getType() {
+    	return real.getType();
+    }
+    
+    public boolean equals(GenericType t) {
+    	return name.equals(t.name) || real.equals(t);
+    }
+    
+    public boolean equals(TypedefType t) {
+    	return name.equals(t.name) || equals(t.real);
+    }
 
     public String toString (String indent) {
         System.out.println("typedef: |"+name+"| to |"+real.getName()+"|");
