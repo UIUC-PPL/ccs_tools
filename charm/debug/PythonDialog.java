@@ -8,19 +8,28 @@ import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.Frame;
 import java.awt.event.*;
+import java.io.*;
 import java.util.Vector;
 
+import charm.debug.inspect.DataType;
+import charm.debug.inspect.GenericType;
+import charm.debug.inspect.Inspector;
 import charm.debug.pdata.CharePList;
 import charm.debug.pdata.ChareInfo;
 import charm.debug.pdata.ChareTypePList;
 import charm.debug.pdata.EpInfo;
 import charm.debug.pdata.EpPList;
+import charm.debug.preference.PyFilter;
 
 public class PythonDialog extends JDialog
 	implements ActionListener {
 
 	private static final String beginning = "def method(self):";
 
+	private JMenuBar menuBar;
+	private JMenu menuFile;
+	private JMenuItem menuOpen;
+	private JMenuItem menuSave;
 	private JComboBox chare;
 	private JTextArea input;
 	private JScrollPane inputScrollPane;
@@ -157,6 +166,18 @@ public class PythonDialog extends JDialog
 		
 		getContentPane().add(buttons, BorderLayout.SOUTH);
 		
+		// Create the menu
+		menuBar = new JMenuBar();
+		menuBar.add(menuFile = new JMenu("File"));
+		menuFile.setMnemonic('F');
+		menuFile.add(menuOpen = new JMenuItem("Open"));
+		menuOpen.setActionCommand("open");
+		menuOpen.addActionListener(this);
+		menuFile.add(menuSave = new JMenuItem("Save..."));
+		menuSave.setActionCommand("save");
+		menuSave.addActionListener(this);
+
+		setJMenuBar(menuBar);
 		pack();
 		setVisible(true);
 	}
@@ -214,14 +235,56 @@ public class PythonDialog extends JDialog
 				} else {
 					last = parsedString.indexOf(',', startArgs);
 					String type = parsedString.substring(last+1,parsedString.indexOf(',',last+1)).trim();
+					GenericType t = Inspector.getTypeCreate(type);
 					System.out.println("get type "+type+" (last="+last+")");
 					last = parsedString.indexOf(',',last+1);
+					int splitPoint = parsedString.indexOf(')',last+1);
 					if (parsedString.startsWith("Array",first)) {
-						
+						//int num;
+						//try {
+						//num = Integer.parseInt(parsedString.substring(last+1,parsedString.indexOf(')',last+1)).trim());
+						//}
+						int size = t.getSize();
+						parsedString = parsedString.substring(0,splitPoint)+
+							","+(size)+ parsedString.substring(splitPoint);
 					} else if (parsedString.startsWith("Value",first)) {
-						
+						String name = parsedString.substring(last+1,parsedString.indexOf(')',last+1)).trim();
+						if (! (t instanceof DataType)) {
+							JOptionPane.showMessageDialog(this, "Invalid parameter '"+type+"' to function getValue", "Error", JOptionPane.ERROR_MESSAGE);
+							return;
+						}
+						DataType dt = (DataType)t;
+						int offset = dt.getVariableOffset(name);
+						if (offset < 0) {
+							JOptionPane.showMessageDialog(this, "Invalid variable '"+name+"' in type '"+type+"' to function getValue", "Error", JOptionPane.ERROR_MESSAGE);
+							return;
+						}
+						GenericType resultType = dt.getVariableType(name);
+						parsedString = parsedString.substring(0,splitPoint)+
+							","+offset+","+resultType.getType().getName()+
+							parsedString.substring(splitPoint);
 					} else if (parsedString.startsWith("Cast",first)) {
-						
+						String newtype = parsedString.substring(last+1,parsedString.indexOf(')',last+1)).trim();
+						GenericType nt = Inspector.getTypeCreate(newtype);
+						if (! (t instanceof DataType)) {
+							JOptionPane.showMessageDialog(this, "Invalid parameter '"+type+"' to function getCast", "Error", JOptionPane.ERROR_MESSAGE);
+							return;
+						}
+						if (! (nt instanceof DataType)) {
+							JOptionPane.showMessageDialog(this, "Invalid parameter '"+newtype+"' to function getCast", "Error", JOptionPane.ERROR_MESSAGE);
+							return;
+						}
+						DataType dt = (DataType)t;
+						DataType ndt = (DataType)nt;
+						int offset = 0;
+						if (dt.hasSuperclass(ndt)) offset = dt.getSuperclassOffset(ndt);
+						else if (ndt.hasSuperclass(dt)) offset = ndt.getSuperclassOffset(dt);
+						else {
+							JOptionPane.showMessageDialog(this, "Could not cast between '"+type+"' and '"+newtype+"'", "Error", JOptionPane.ERROR_MESSAGE);
+							return;
+						}
+						parsedString = parsedString.substring(0,splitPoint)+
+							","+offset+parsedString.substring(splitPoint);
 					}
 				}
 			}
@@ -234,5 +297,64 @@ public class PythonDialog extends JDialog
 			parsedString = null;
 			setVisible(false);
 		}
+		else if (e.getActionCommand().equals("open")) {
+    		JFileChooser chooser = new JFileChooser(System.getProperty("user.dir"));
+    		chooser.addChoosableFileFilter(new PyFilter());
+    		chooser.setAcceptAllFileFilterUsed(false);
+    		int returnVal = chooser.showOpenDialog(this);
+    		if(returnVal == JFileChooser.APPROVE_OPTION) {
+    			loadPythonCode(chooser.getSelectedFile());
+    		}
+		} else if (e.getActionCommand().equals("save")) {
+    		JFileChooser chooser = new JFileChooser(System.getProperty("user.dir"));
+    		chooser.addChoosableFileFilter(new PyFilter());
+    		chooser.setAcceptAllFileFilterUsed(false);
+    		int returnVal = chooser.showSaveDialog(this);
+    		if(returnVal == JFileChooser.APPROVE_OPTION) {
+    			File filename = chooser.getSelectedFile();
+    			if (!filename.getName().endsWith(".py")) {
+    				filename = new File(filename.getAbsolutePath()+".py");
+    			}
+    			if (filename.exists()) {
+    				int response;
+    				response = JOptionPane.showConfirmDialog(this, "Do you want to overwrite the file?", "File overwrite", JOptionPane.YES_NO_OPTION);
+    				if (response != JOptionPane.YES_OPTION) {
+    					//setStatusMessage("Save aborted");
+    					return;
+    				}
+    			}
+    			savePythonCode(filename);
+    		}	
+		}
+	}
+
+	boolean loadPythonCode(File f) {
+		try {
+			StringBuffer fileData = new StringBuffer(1000);
+			BufferedReader reader = new BufferedReader(new FileReader(f));
+			char[] buf = new char[1024];
+			int numRead=0;
+			while((numRead=reader.read(buf)) != -1){
+				fileData.append(buf, 0, numRead);
+			}
+			reader.close();
+			input.setText(fileData.toString());
+		} catch (IOException ex) {
+			JOptionPane.showMessageDialog(this, "Unable to load file '"+f.getName()+"'", "Error", JOptionPane.ERROR_MESSAGE);
+			return false;
+		}
+		return true;
+	}
+	
+	boolean savePythonCode(File f) {
+		try {
+			BufferedWriter writer = new BufferedWriter(new FileWriter(f));
+			writer.write(input.getText());
+			writer.close();
+		} catch (IOException ex) {
+			JOptionPane.showMessageDialog(this, "Unable to save file '"+f.getName()+"'", "Error", JOptionPane.ERROR_MESSAGE);
+			return false;
+		}
+		return true;
 	}
 }
