@@ -182,8 +182,8 @@ public class ScrollableMemory extends JLabel implements Scrollable {
 										// memory holes
 			for (int j = 0; j < data.size(i); ++j) {
 				Slot sl = data.elementAt(i, j);
-				System.out.println("slot " + sl.getLocation() + " + "
-				        + sl.getSize());
+				/*System.out.println("slot " + sl.getLocation() + " + "
+				        + sl.getSize()); */
 
 				if (nextHole > 0
 				        && holes[nextHole].getPosition() < sl.getLocation()) {
@@ -231,11 +231,11 @@ public class ScrollableMemory extends JLabel implements Scrollable {
 																					// pixel
 																					// offset
 				offset += additionalPixels; // correct for the memory holes
-				System.out.print("offset: " + offset);
+				//System.out.print("offset: " + offset);
 				int line = offset / horizontalPixels;
-				System.out.print(" " + line);
+				//System.out.print(" " + line);
 				offset -= line * horizontalPixels;
-				System.out.println(" " + offset);
+				//System.out.println(" " + offset);
 
 				int end = (int) (sl.getLocation() + sl.getSize() - firstByte - lostMemory);
 				end = (int) (((long) end) * pixelsAvailable / memorySize); // compute
@@ -247,9 +247,9 @@ public class ScrollableMemory extends JLabel implements Scrollable {
 				end -= lineEnd * horizontalPixels;
 
 				// print the slot
-				System.out.println("drawing slot " + sl.getLocation() + "+"
+				/*System.out.println("drawing slot " + sl.getLocation() + "+"
 				        + sl.getSize() + " from " + line + ":" + offset
-				        + " to " + lineEnd + ":" + end);
+				        + " to " + lineEnd + ":" + end); */
 				for (int ln = line, pos = offset; ln < lineEnd || pos <= end; pos++) {
 					if (pos == horizontalPixels) {
 						pos = 0;
