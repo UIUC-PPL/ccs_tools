@@ -49,7 +49,11 @@ author = idooley2
       <include name="charm/ccs/**"/>
       <include name="charm/util/**"/>
     </javac>
-
+    <copy todir="classes/charm/debug/">
+      <fileset dir="charm/debug" casesensitive="no">
+        <include name="**.gif"/>
+      </fileset>
+    </copy>
   </target>
 
 
