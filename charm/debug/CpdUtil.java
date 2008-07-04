@@ -1,7 +1,10 @@
 package charm.debug;
 import charm.ccs.CcsServer;
 import charm.debug.fmt.*;
+
 import java.io.IOException;
+import java.util.SortedSet;
+import java.util.Iterator;
 
 /**
    Utilities for getting and setting CpdList values.
@@ -204,5 +207,17 @@ public class CpdUtil {
 			sendCcsRequest(ccsHandlerName, parameterName, indexPE);
 		    }
 	    }
+    }
+    
+    public void bcastCcsRequest(String ccsHandlerName, String parameterName, Iterator peList) {
+    	while (peList.hasNext()) {
+    		sendCcsRequest(ccsHandlerName, parameterName, ((Processor)peList.next()).getId());
+    	}
+    }
+    
+    public void bcastCcsRequest(String ccsHandlerName, String parameterName, int npes) {
+    	for (int pe=0; pe<npes; ++pe) {
+    		sendCcsRequest(ccsHandlerName, parameterName, pe);
+    	}
     }
 };
