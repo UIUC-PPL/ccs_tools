@@ -59,6 +59,11 @@ public class InspectPanel extends JPanel implements ActionListener {
 				String strtype = result.substring(10, result.indexOf('+')).trim();
 				GenericType gt = Inspector.getTypeCreate(strtype);
 				load(new SuperClassElement(gt,0), buf);
+			} else {
+				buf.rewind();
+				for (int i=0; i<size; ++i) {
+					System.out.print("0x"+Integer.toHexString(buf.get())+" ");
+				}
 			}
 		}
 	}
