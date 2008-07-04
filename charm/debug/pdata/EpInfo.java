@@ -1,6 +1,8 @@
 package charm.debug.pdata;
 
-import javax.swing.*;
+import java.util.SortedSet;
+import java.util.TreeSet;
+
 import charm.debug.inspect.InspectPanel;
 import charm.debug.EpCheckBox;
 
@@ -11,6 +13,7 @@ public class EpInfo extends GenericInfo {
     int msgIdx;
     ChareTypeInfo chare;
     EpCheckBox checkBox;
+    SortedSet breakpoints;
 
     EpInfo(String n, int e, int m, ChareTypeInfo c) {
         name = n;
@@ -18,6 +21,7 @@ public class EpInfo extends GenericInfo {
         msgIdx = m;
         chare = c;
         checkBox = null;
+        breakpoints = new TreeSet();
     }
 
     public String toString() {
@@ -29,8 +33,20 @@ public class EpInfo extends GenericInfo {
     public int getEpIndex() {
     	return epIdx;
     }
+    public SortedSet getBPSet() {
+    	return breakpoints;
+    }
     public void setCheckBox(EpCheckBox cb) {
     	checkBox = cb;
+    }
+    public EpCheckBox getCheckBox() {
+    	return checkBox;
+    }
+    public void addBP(SortedSet bp) {
+    	breakpoints.addAll(bp);
+    }
+    public void removeBP(SortedSet bp) {
+    	breakpoints.removeAll(bp);
     }
 
     public void getDetails(InspectPanel panel) {

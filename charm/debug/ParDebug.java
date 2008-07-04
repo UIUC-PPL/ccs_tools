@@ -10,7 +10,6 @@
 */
 package charm.debug;
 
-import charm.ccs.CcsServer;
 import charm.ccs.*;
 import charm.debug.fmt.*;
 import charm.debug.pdata.*;
@@ -62,15 +61,17 @@ public class ParDebug extends JPanel
     private DefaultListModel listModel;
     private PList listItems = null;
     private boolean isRunning = false; // True if the debugged program is running
-    private boolean[] peList = null;
+    //private boolean[] peList = null;
     public static int currentListedPE;
+    
+    private Processor[] pes = null;
 
 	private CharePList groupItems;
     private MsgPList messageQueue;
     private EpPList epItems;
     private MsgTypePList msgItems;
     private ChareTypePList chareItems;
-    private HashSet breakpointSet;
+    //private SortedSet breakpointSet[];
     
     private class CpdListInfo {
        public String display; // Client name CpdList should be displayed as.
@@ -112,7 +113,8 @@ public class ParDebug extends JPanel
     private JButton freezeButton;
     private JButton startGdbButton;
     
-    private JPanel peActualPanel;
+    private DefaultListModel peListModel;
+    private JList peActualPanel;
     //private JPanel sysEpsActualPanel;
     //private JPanel userEpsActualPanel;
     
@@ -340,16 +342,77 @@ DEPRECATED!! The correct implementation is in CpdList.java
        statusArea.setText(txt);
     }
     
-    public void notifyBreakpoint () {
-    	stepButton.setEnabled(true);
-    	continueButton.setEnabled(true);
-    	freezeButton.setEnabled(false);
+    public void notifyBreakpoint (String txt) {
+    	int pe = Integer.parseInt(txt.substring(28, txt.indexOf(' ',28)));
+    	System.out.println("notifyBreakpoint: "+txt+" pe="+pe);
+    	if (pes[pe].isFrozen()) {
+    		System.err.println("Error: processor "+pe+" already frozen!");
+    		return;
+    	}
+    	pes[pe].setFrozen();
+    	enableButtons();
+    	peActualPanel.repaint();
+    	//stepButton.setEnabled(true);
+    	//continueButton.setEnabled(true);
+    	//freezeButton.setEnabled(false);
 		CpdListInfo list = cpdLists[listsbox.getSelectedIndex()];
 		if (list.list == messageQueue) {
 			int forPE=Integer.parseInt((String)pesbox.getSelectedItem());
-			populateNewList(listsbox.getSelectedIndex(),forPE, listModel);
+			if (forPE == pe)
+				populateNewList(listsbox.getSelectedIndex(),forPE, listModel);
 		}
     	//setStatusMessage(txt);
+    }
+    
+    public void notifyFreeze (String txt) {
+    	int pe = Integer.parseInt(txt.substring(17));
+    	System.out.println("notifyFreeze: "+txt+" pe="+pe);
+    	if (pes[pe].isFrozen()) {
+    		System.err.println("Error: processor "+pe+" already frozen!");
+    		return;
+    	}
+    	pes[pe].setFrozen();
+    	enableButtons();
+    	peActualPanel.repaint();
+    	//stepButton.setEnabled(true);
+    	//continueButton.setEnabled(true);
+    	//freezeButton.setEnabled(false);
+		CpdListInfo list = cpdLists[listsbox.getSelectedIndex()];
+		if (list.list == messageQueue) {
+			int forPE=Integer.parseInt((String)pesbox.getSelectedItem());
+			if (forPE == pe)
+				populateNewList(listsbox.getSelectedIndex(),forPE, listModel);
+		}
+    }
+    
+    public void notifyAbort (String txt) {
+    	int pe = Integer.parseInt(txt.substring(34));
+    	System.out.println("notifyAbort: "+txt+" pe="+pe);
+    	pes[pe].setDead();
+    	enableButtons();
+    	peActualPanel.repaint();
+		CpdListInfo list = cpdLists[listsbox.getSelectedIndex()];
+		if (list.list == messageQueue) {
+			int forPE=Integer.parseInt((String)pesbox.getSelectedItem());
+			if (forPE == pe)
+				populateNewList(listsbox.getSelectedIndex(),forPE, listModel);
+		}
+    }
+
+    public void notifySignal (String txt) {
+    	int separ = txt.indexOf(':',34);
+    	int pe = Integer.parseInt(txt.substring(34, separ));
+    	int signal = Integer.parseInt(txt.substring(separ+2));
+    	System.out.println("notifySignal: "+txt+" pe="+pe+", sigNo="+signal);
+    	pes[pe].setDead();
+    	enableButtons();
+    	peActualPanel.repaint();
+		CpdListInfo list = cpdLists[listsbox.getSelectedIndex()];
+		if (list.list == messageQueue) {
+			int forPE=Integer.parseInt((String)pesbox.getSelectedItem());
+			if (forPE == pe)
+				populateNewList(listsbox.getSelectedIndex(),forPE, listModel);
+		}
     }
 
     public Dimension getPreferredSize() {
@@ -441,7 +504,6 @@ DEPRECATED!! The correct implementation is in CpdList.java
 	   preferences = Preference.load();
 	   if (preferences == null) preferences = new Preference();
        exec = e;
-       breakpointSet = new HashSet();
 
        setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
        
@@ -620,8 +682,15 @@ DEPRECATED!! The correct implementation is in CpdList.java
        JPanel pePanel = new JPanel();
        pePanel.setLayout(new BoxLayout(pePanel, BoxLayout.Y_AXIS));
        pePanel.setPreferredSize(new Dimension(50, 380));
-       peActualPanel = new JPanel();
-       peActualPanel.setLayout(new BoxLayout(peActualPanel, BoxLayout.Y_AXIS));
+       peListModel = new DefaultListModel();
+       peActualPanel = new JList(peListModel);
+	   peActualPanel.setCellRenderer(new PeSet.CellRenderer());
+       peActualPanel.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+       peActualPanel.getSelectionModel().addListSelectionListener(new PeSetListener());
+       //peActualPanel.setPreferredSize(new Dimension(50, 1));
+       MouseListener popupListener = new PeSet.PopupListener(this, peActualPanel);
+       peActualPanel.addMouseListener(popupListener);
+       //peActualPanel.setLayout(new BoxLayout(peActualPanel, BoxLayout.Y_AXIS));
        JScrollPane pesScrollPane = new JScrollPane(peActualPanel);
        pesScrollPane.setBorder(BorderFactory.createTitledBorder("Pes"));
        pePanel.add(pesScrollPane);
@@ -825,23 +894,29 @@ DEPRECATED!! The correct implementation is in CpdList.java
     		startProgram();
     	} else if (e.getActionCommand().equals("freeze")) {
     		// stop program
-    		server.bcastCcsRequest("ccs_debug", "freeze",1, exec.npes, peList);
-    		stepButton.setEnabled(true);
-    		continueButton.setEnabled(true);
-    		freezeButton.setEnabled(false);
+    		server.bcastCcsRequest("ccs_debug", "freeze", ((PeSet)peActualPanel.getSelectedValue()).runningIterator());
+    		Iterator iter = ((PeSet)peActualPanel.getSelectedValue()).runningIterator();
+    		while (iter.hasNext()) {
+    			((Processor)iter.next()).setFreezing();
+    		}
+    		enableButtons();
     		setStatusMessage("Program is frozen on selected pes");
+    		peActualPanel.repaint();
     	}
     	else if (e.getActionCommand().equals("unfreeze")){ 
     		// start running again
-    		server.bcastCcsRequest("ccs_continue_break_point", "",0,exec.npes,peList);
-    		stepButton.setEnabled(true);
-    		continueButton.setEnabled(true);
-    		freezeButton.setEnabled(true);
-    		setStatusMessage("Program is running");
+    		server.bcastCcsRequest("ccs_continue_break_point", "", ((PeSet)peActualPanel.getSelectedValue()).frozenIterator());
+    		Iterator iter = ((PeSet)peActualPanel.getSelectedValue()).frozenIterator();
+    		while (iter.hasNext()) {
+    			((Processor)iter.next()).setRunning();
+    		}
+			enableButtons();
+			setStatusMessage("Program is running on selected pes");
+			peActualPanel.repaint();
     	}
     	else if (e.getActionCommand().equals("step")) {
     		// deliver a single message
-    		server.bcastCcsRequest("ccs_single_step", "",0,exec.npes,peList);
+    		server.bcastCcsRequest("ccs_single_step", "", ((PeSet)peActualPanel.getSelectedValue()).iterator());
     		CpdListInfo list = cpdLists[listsbox.getSelectedIndex()];
     		if (list.list == messageQueue) {
     			int forPE=Integer.parseInt((String)pesbox.getSelectedItem());
@@ -849,15 +924,16 @@ DEPRECATED!! The correct implementation is in CpdList.java
     		}    		setStatusMessage("Single message delivered");
     	}
     	else if (e.getActionCommand().equals("quit")) {
-    		server.bcastCcsRequest("ccs_debug_quit", "",0,exec.npes,peList);
+    		server.bcastCcsRequest("ccs_debug_quit", "", exec.npes);
     		quitProgram(); 
     	}
     	else if (e.getActionCommand().equals("startgdb")) 
     	{ 
-    		server.bcastCcsRequest("ccs_remove_all_break_points", "",0,exec.npes,peList);
+    		SortedSet set = ((PeSet)peActualPanel.getSelectedValue()).getList();
+    		server.bcastCcsRequest("ccs_remove_all_break_points", "", set.iterator());
     		//server.bcastCcsRequest("ccs_debug_startgdb","",1,numberPes,peList);
         	for (int i=0; i<exec.npes; ++i) {
-        		if (peList[i]){
+        		if (set.contains(pes[i])){
         			PList pl = server.getPList("hostinfo", i);
         			PList cur=(PList)pl.elementAt(0);
         			byte[] addr = ((PString)cur.elementNamed("address")).getBytes();
@@ -925,20 +1001,20 @@ DEPRECATED!! The correct implementation is in CpdList.java
     		String entryPointName = ""+breakpointIndex;
     		if (chkbox.isSelected())
     		{
-    			breakpointSet.add(new Integer(breakpointIndex));
-    			server.bcastCcsRequest("ccs_set_break_point", entryPointName,0,exec.npes,peList);
-    			stepButton.setEnabled(true);
-    			continueButton.setEnabled(true);
-    			freezeButton.setEnabled(false);
+    			chkbox.ep.addBP(((PeSet)peActualPanel.getSelectedValue()).getList());
+    			server.bcastCcsRequest("ccs_set_break_point", entryPointName,((PeSet)peActualPanel.getSelectedValue()).iterator());
+    			//stepButton.setEnabled(true);
+    			//continueButton.setEnabled(true);
+    			//freezeButton.setEnabled(false);
     			setStatusMessage ("Break Point set at entry point " +entryPointName); 
     		}
     		else
     		{
-    			breakpointSet.remove(new Integer(breakpointIndex));
-    			server.bcastCcsRequest("ccs_remove_break_point", entryPointName,0,exec.npes,peList);
-    			stepButton.setEnabled(true);
-    			continueButton.setEnabled(true);   
-    			freezeButton.setEnabled(true);
+    			chkbox.ep.removeBP(((PeSet)peActualPanel.getSelectedValue()).getList());
+    			server.bcastCcsRequest("ccs_remove_break_point", entryPointName,((PeSet)peActualPanel.getSelectedValue()).iterator());
+    			//stepButton.setEnabled(true);
+    			//continueButton.setEnabled(true);   
+    			//freezeButton.setEnabled(true);
     			setStatusMessage ("Break Point removed at entry point " +entryPointName+" on selected Pes"); 
     		}
     		CpdListInfo list = cpdLists[listsbox.getSelectedIndex()];
@@ -1026,8 +1102,42 @@ DEPRECATED!! The correct implementation is in CpdList.java
 				System.out.println("Python printed: "+new String(output));
 			}
     	}
+    	else if (e.getActionCommand().equals("newPeSet")) {
+    		PeSetDialog input = new PeSetDialog(appFrame, true, exec.npes);
+    		if (input.confirmed()) {
+    			Iterator iter = input.getPes().iterator();
+    			if (iter.hasNext()) {
+	    			TreeSet set = new TreeSet();
+	    			while (iter.hasNext()) set.add(pes[((Integer)iter.next()).intValue()]);
+	    			PeSet newset = new PeSet(input.getName(), set);
+	    			peListModel.addElement(newset);
+	    			/*
+	    			System.out.println("Name: "+input.getName());
+	    			Collection l = input.getPes();
+	    			if (l != null) {
+	    				Iterator iter = l.iterator();
+	    				while (iter.hasNext()) {
+	    					System.out.println(iter.next());
+	    				}
+	    			}
+	    			*/
+	    			}
+    		}
+    	}
+    	else if (e.getActionCommand().equals("deletePeSet")) {
+    		int idx = peActualPanel.getSelectedIndex();
+    		if (idx > 0) peListModel.remove(idx);
+    	}
+    	else if (e.getActionCommand().equals("peSetDetails")) {
+    		PeSet set = (PeSet)peActualPanel.getSelectedValue();
+    		System.out.print("Details for set "+set.getName()+": {");
+    		Iterator iter = set.getList().iterator();
+    		while (iter.hasNext()) System.out.print(" "+iter.next());
+    		System.out.println(" }");
+    	}
+    	/*
     	else if (e.getActionCommand().equals("pecheck")) 
-    	{ /* Checked or unchecked a PE box */
+    	{ // Checked or unchecked a PE box
     		JCheckBox chkbox = (JCheckBox)e.getSource();
     		String peText = chkbox.getText();
     		String peno = peText.substring(3);
@@ -1035,7 +1145,8 @@ DEPRECATED!! The correct implementation is in CpdList.java
     			peList[Integer.parseInt(peno)] = true;
     		else
     			peList[Integer.parseInt(peno)] = false;
-    	} 
+    	}
+    	*/
     	else if (e.getActionCommand().equals("lists") 
     			|| e.getActionCommand().equals("changepe")) 
     	{ /* Clicked on list or pe drop-down */
@@ -1046,7 +1157,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
     	}
     	else if (e.getActionCommand().equals("exitDebugger")) {
     		if (isRunning) {
-    			server.bcastCcsRequest("ccs_debug_quit", "",0,exec.npes,peList);
+    			server.bcastCcsRequest("ccs_debug_quit", "", exec.npes);
     			quitProgram();
     		}
             preferences.save();
@@ -1067,6 +1178,36 @@ DEPRECATED!! The correct implementation is in CpdList.java
   
     } // end of valueChanged
 
+    private void enableButtons() {
+    	PeSet set = (PeSet)peActualPanel.getSelectedValue();
+		stepButton.setEnabled(true);
+		continueButton.setEnabled(true);
+		freezeButton.setEnabled(true);
+    	if (set.isAllFrozen()) {
+    		freezeButton.setEnabled(false);
+    	}
+    	if (set.isAllRunning() || set.isSomeDead()) {
+    		stepButton.setEnabled(false);
+    		continueButton.setEnabled(false);
+    	}
+    }
+    
+    private class PeSetListener implements ListSelectionListener {
+
+    	public void valueChanged(ListSelectionEvent e) {
+    		PeSet set = (PeSet)peActualPanel.getSelectedValue();
+    		if (set != null) {
+    			enableButtons();
+    			SortedSet actualSet = set.getList();
+    			Vector data = epItems.getSystemEps();
+    			for (int i=0; i<data.size(); ++i) ((EpInfo)data.elementAt(i)).getCheckBox().setCoverageColor(actualSet);
+    			data = epItems.getUserEps();
+    			for (int i=0; i<data.size(); ++i) ((EpInfo)data.elementAt(i)).getCheckBox().setCoverageColor(actualSet);
+    			entryScrollPane.repaint();
+    		}
+    	}
+    }
+    
 /*************** Program Control ***********************/
     /// Start the program from scratch.
     public void startProgram() 
@@ -1201,19 +1342,26 @@ DEPRECATED!! The correct implementation is in CpdList.java
     		server = new CpdUtil(ccs);
 
     		/* Create the pe list */
-    		peList = new boolean[exec.npes]; 
+    		//peList = new boolean[exec.npes];
+    		pes = new Processor[exec.npes];
     		for (int i = 0; i < exec.npes; i++)
     		{
     			String peNumber = (new Integer(i)).toString();
     			pesbox.addItem( peNumber );
+    			/*
     			String chkboxlabel = "pe " + peNumber;
     			JCheckBox chkbox = new JCheckBox(chkboxlabel); 
-    			peActualPanel.add(chkbox);
+    			peListModel.addElement(chkbox);
     			chkbox.setSelected(true);
     			chkbox.addActionListener(this);
-    			chkbox.setActionCommand("pecheck");     
-    			peList[i] = true; 
+    			chkbox.setActionCommand("pecheck");
+    			*/
+    			//peList[i] = true;
+    			pes[i] = new Processor(i);
     		}
+			PeSet all = new PeSet("all", pes);
+			peListModel.addElement(all);
+			peActualPanel.setSelectedIndex(0);
 
     		peActualPanel.updateUI();
 
@@ -1347,6 +1495,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
     	pesbox.setEnabled(false);
 
     	peActualPanel.removeAll();
+    	peListModel.removeAllElements();
     	peActualPanel.updateUI();
     	//userEpsActualPanel.removeAll(); 
     	//userEpsActualPanel.updateUI(); 
@@ -1492,6 +1641,8 @@ DEPRECATED!! The correct implementation is in CpdList.java
 //    	} catch (NumberFormatException e) {
 //    		System.out.println("Could not understand the specified number of processors");
 //    	}
+
+		PeSet.CellRenderer.initIcons();
 
     	appFrame = new JFrame("Charm Parallel Debugger");
     	appFrame.setSize(1000, 1000);

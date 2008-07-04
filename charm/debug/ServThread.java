@@ -88,12 +88,33 @@ public class ServThread extends Thread {
 
 						if (outline.indexOf("Break point reached", 0) != -1)
 						{
-							Runnable doWorkRunnable = new Runnable() {
-							    public void run() { mainThread.notifyBreakpoint(); }
+							mainThread.setStatusMessage(outline);
+							Runnable doWorkRunnable = new Notify(outline) {
+							    public void run() { mainThread.notifyBreakpoint(text); }
 							};
 							SwingUtilities.invokeLater(doWorkRunnable);
 							//mainThread.notifyBreakpoint(outline);
+						}
+						else if (outline.indexOf("Frozen processor") != -1) {
 							mainThread.setStatusMessage(outline);
+							Runnable doWorkRunnable = new Notify(outline) {
+								public void run() { mainThread.notifyFreeze(text); }
+							};
+							SwingUtilities.invokeLater(doWorkRunnable);
+						}
+						else if (outline.indexOf("CPD: CmiAbort called") != -1) {
+							mainThread.setStatusMessage(outline.substring(5));
+							Runnable doWorkRunnable = new Notify(outline) {
+								public void run() { mainThread.notifyAbort(text); }
+							};
+							SwingUtilities.invokeLater(doWorkRunnable);
+						}
+						else if (outline.indexOf("CPD: Signal received") != -1) {
+							mainThread.setStatusMessage(outline.substring(5));
+							Runnable doWorkRunnable = new Notify(outline) {
+								public void run() { mainThread.notifySignal(text); }
+							};
+							SwingUtilities.invokeLater(doWorkRunnable);
 						}
 						else {
 							// User output: Print this out to a display area on the debugger
@@ -124,7 +145,10 @@ public class ServThread extends Thread {
 				e.printStackTrace();
 			}
 			System.out.println("Finished running parallel program");
-			mainThread.quitProgram();
+			Runnable doWorkRunnable = new Runnable() {
+				public void run() { mainThread.quitProgram(); }
+			};
+			SwingUtilities.invokeLater(doWorkRunnable);
 			//debugOutput.close();
 		}
 		catch (Exception e) {
@@ -132,7 +156,12 @@ public class ServThread extends Thread {
 			System.out.println("error in ServThread. Exception caught");
 		} 
 	}
-
+	
 	public int getFlag() { return flag; }
+	
+	public abstract class Notify implements Runnable {
+		public String text;
+		public Notify(String txt) {text = txt;}
+	}
 };
 
