@@ -9,18 +9,19 @@ JAVAC=javac -deprecation -d $(CLASS_PREFIX) -classpath $(CLASS_PREFIX) $(OPTS)
 JAR=jar cf 
 JAR_OPTS=-C $(CLASS_PREFIX)
 
-all: debugger liveViz setReadonly lvClient
+all: liveViz setReadonly lvClient
 
 ############# Debugger ################
-SRC_DEBUG=charm/debug/*.java charm/debug/fmt/*.java charm/debug/pdata/*.java charm/debug/inspect/*.java charm/ccs/*.java 
-CLASS_DEBUG=charm/debug -C classes charm/ccs
-DEST_DEBUG=bin/charmdebug.jar
+# The debugger now uses `ant' to compile
+#SRC_DEBUG=charm/debug/*.java charm/debug/fmt/*.java charm/debug/pdata/*.java charm/debug/inspect/*.java charm/ccs/*.java 
+#CLASS_DEBUG=charm/debug -C classes charm/ccs
+#DEST_DEBUG=bin/charmdebug.jar
 
-debugger: $(DEST_DEBUG)
+#debugger: $(DEST_DEBUG)
 
-$(DEST_DEBUG): $(SRC_DEBUG)
-	$(JAVAC) $(SRC_DEBUG)
-	$(JAR) $@ $(JAR_OPTS) $(CLASS_DEBUG)
+#$(DEST_DEBUG): $(SRC_DEBUG)
+#	$(JAVAC) $(SRC_DEBUG)
+#	$(JAR) $@ $(JAR_OPTS) $(CLASS_DEBUG)
 
 ############ lvClient ##############
 SRC_LVCLIENT=charm/lvClient/*.java charm/util/*.java charm/ccs/*.java
