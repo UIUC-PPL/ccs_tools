@@ -21,6 +21,7 @@ import charm.util.ReflectiveXML;
 import javax.swing.*;
 
 import java.io.*;
+import java.text.ParseException;
 import java.util.*;
 import java.awt.*;
 import java.awt.event.*;
@@ -51,7 +52,7 @@ public class ParDebug extends JPanel
     public static int dataPos;
     static ServThread servthread;
     private static GdbProcess gdb;
-    private boolean attachMode; 
+    private boolean attachMode;
 
     /// This variable is responsible for handling all the CCS communication with
     /// the running application
@@ -72,6 +73,8 @@ public class ParDebug extends JPanel
     private MsgTypePList msgItems;
     private ChareTypePList chareItems;
     //private SortedSet breakpointSet[];
+    private int interpreterHandle;
+    private PythonInstalledCode installedPythonScripts;
     
     private class CpdListInfo {
        public String display; // Client name CpdList should be displayed as.
@@ -147,6 +150,7 @@ public class ParDebug extends JPanel
     private JMenuItem menuActionAllocationTree;
     private JMenuItem menuActionAllocationGraph;
     private JMenuItem menuActionPython;
+    private JMenuItem menuActionPythonInstalled;
     
 
 /************** CCS (network) interface ************ /
@@ -424,6 +428,10 @@ DEPRECATED!! The correct implementation is in CpdList.java
     	return preferences.location;
     }
     
+    public Preference getPreferences() {
+    	return preferences;
+    }
+    
     /// The user has just selected the cpdListIndex'th list on forPE.
     ///  Expand a list of the contents into dest.
     private void populateNewList(int cpdListIndex,int forPE, DefaultListModel dest)
@@ -499,6 +507,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
 /************** Giant Horrible GUI Routines ************/
     public ParDebug(Execution e) {
        isRunning = false;
+       installedPythonScripts = null;
        //preferences = new Preference();
        //preferences.load();
 	   preferences = Preference.load();
@@ -544,13 +553,19 @@ DEPRECATED!! The correct implementation is in CpdList.java
        menuAction.addSeparator();
        menuAction.add(menuActionMemory = new JMenuItem("Memory",'M'));
        listenTo(menuActionMemory,"memory","Inspect the application memory"); 
+       menuActionMemory.setEnabled(false);
        menuAction.add(menuActionAllocationTree = new JMenuItem("Memory Allocation Tree",'T'));
        listenTo(menuActionAllocationTree,"allocationTree","Print the memory allocation tree");
+       menuActionAllocationTree.setEnabled(false);
        menuAction.add(menuActionAllocationGraph = new JMenuItem("Memory Allocation Graph",'G'));
        listenTo(menuActionAllocationGraph,"allocationGraph","Print the memory allocation graph");
        menuAction.add(menuActionPython = new JMenuItem("Python script", 'P'));
        listenTo(menuActionPython,"python","Run python script on application");
-
+       menuActionPython.setEnabled(false);
+       menuAction.add(menuActionPythonInstalled = new JMenuItem("View python script", 'S'));
+       listenTo(menuActionPythonInstalled,"pythoninstalled","View python scripts installed");
+       menuActionPythonInstalled.setEnabled(false);
+       
        //Creating status bar
        statusArea = new JTextField(60);
        //statusArea.setBorder(BorderFactory.createTitledBorder("Status"));
@@ -713,11 +728,14 @@ DEPRECATED!! The correct implementation is in CpdList.java
        //middlePanel.add(secondPanelWithOutput);
        middlePanel.setPreferredSize(new Dimension(600, 380));
 
-       add(middlePanel);
+       //add(middlePanel);
         
  
        // ************ BOTTOM PANEL *****************
        // Entity list on the left, details on the right
+       JPanel bottomPanel = new JPanel();
+       bottomPanel.setLayout(new BoxLayout(bottomPanel, BoxLayout.Y_AXIS));
+       
        JPanel panelForComboBoxes = new JPanel();
        panelForComboBoxes.setLayout(new BoxLayout(panelForComboBoxes, BoxLayout.X_AXIS));
        panelForComboBoxes.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createTitledBorder("View Entities on PE"), BorderFactory.createEmptyBorder(5, 5, 5, 5)));
@@ -741,7 +759,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
         panelForComboBoxes.add(Box.createRigidArea(new Dimension(50,70)));
         panelForComboBoxes.add(pesbox);
         panelForComboBoxes.setPreferredSize(new Dimension(600,70));
-        add(panelForComboBoxes);
+        bottomPanel.add(panelForComboBoxes);
 
         JPanel panelForEntities = new JPanel();
         panelForEntities.setLayout(new BoxLayout(panelForEntities, BoxLayout.X_AXIS));
@@ -777,13 +795,18 @@ DEPRECATED!! The correct implementation is in CpdList.java
         bottomSplitPane.setOneTouchExpandable(true);
         
         panelForEntities.add(bottomSplitPane);
-        add(panelForEntities);
+        
+        bottomPanel.add(panelForEntities);
+        
+        JSplitPane verticalSplitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, middlePanel, bottomPanel);
+        verticalSplitPane.setResizeWeight(0.5);
+        add(verticalSplitPane);
 
         add(statusArea);
         //add(Box.createRigidArea(new Dimension(0, 20)));
 
         gdb = new GdbProcess(this);
-	addedRunParameter();
+        addedRunParameter();
         //if (exec.executable!="")
         //  startProgram();
     }
@@ -823,7 +846,48 @@ DEPRECATED!! The correct implementation is in CpdList.java
 		preferences.addRecent(exec.locationOnDisk);
 		updateRecentConfig();
 	}
- 
+
+	public void executePython(PythonScript inputPython) {
+		Vector eps = inputPython.getSelectedEPs();
+		for (int i=0; i<eps.size(); ++i) System.out.println("Python EP: "+eps.elementAt(i));
+		if (eps.size() == 0) {
+			PythonExecute code = new PythonExecute(inputPython.getText(), inputPython.getMethod(), new PythonIteratorGroup(inputPython.getChareGroup()), false, true, 0);
+			code.setKeepPrint(true);
+			code.setWait(true);
+			code.setPersistent(true);
+			if (interpreterHandle > 0) {
+				code.setInterpreter(interpreterHandle);
+			}
+			System.out.println("Sending python request "+(code.isHighLevel()?" highlevel":"")+
+					(code.isKeepPrint()?" keepPrint":"")+(code.isKeepWait()?" keepWait":"")+
+					(code.isPersistent()?" persistent":"")+(code.isIterate()?" iterative":""));
+			byte[] reply = server.sendCcsRequestBytes("CpdPythonGroup", code.pack(), 0, true);
+			if (reply.length == 0) {
+				System.out.println("The python module was not linked in the application");
+				return;
+			}
+			interpreterHandle = CcsServer.readInt(reply, 0);
+			System.out.println("Python interpreter: "+interpreterHandle);
+			PythonPrint print = new PythonPrint(interpreterHandle, true);
+			byte[] output = server.sendCcsRequestBytes("CpdPythonGroup", print.pack(), 0, true);
+			System.out.println("Python printed: "+new String(output));
+		} else {
+			// install the python script for continuous execution
+			int[] epIdx = new int[eps.size()];
+			for (int i=0; i<eps.size(); ++i) epIdx[i] = ((EpInfo)eps.elementAt(i)).getEpIndex();
+			PythonExecute code = new PythonExecute(inputPython.getText(), inputPython.getMethod(), new PythonIteratorPersistent(inputPython.getChareGroup(), eps.size(), epIdx), true, true, 0);
+			code.setKeepPrint(false);
+			code.setWait(false);
+			byte[] reply = server.sendCcsRequestBytes("CpdPythonPersistent", code.pack(), 0, true);
+			if (reply.length == 0) {
+				System.out.println("The python module was not linked in the application");
+				return;
+			}
+			// record the information of what is installed, so it can be deleted later
+			installedPythonScripts.add(inputPython.getOriginalCode(), eps, inputPython.getChare());
+		}
+	}
+
     public void actionPerformed(ActionEvent e) {
     	//int destPE = 0;
     	if (e.getActionCommand().equals("openConf")) 
@@ -1017,6 +1081,8 @@ DEPRECATED!! The correct implementation is in CpdList.java
     			//freezeButton.setEnabled(true);
     			setStatusMessage ("Break Point removed at entry point " +entryPointName+" on selected Pes"); 
     		}
+    		PeSet set = (PeSet)peList.getSelectedValue();
+    		if (set != null) chkbox.setCoverageColor(set.getList());
     		CpdListInfo list = cpdLists[listsbox.getSelectedIndex()];
     		if (list.list == messageQueue) {
     			int forPE=Integer.parseInt((String)pesbox.getSelectedItem());
@@ -1080,13 +1146,24 @@ DEPRECATED!! The correct implementation is in CpdList.java
     	    }
     	}
     	else if (e.getActionCommand().equals("python")) {
+    		new PythonDialog(this, false, groupItems, chareItems, gdb, server);
+    		/*
 			//JDialog frame = new JDialog(appFrame, "Python script", true);
 			//frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-			PythonDialog input = new PythonDialog(appFrame, true, groupItems, chareItems, gdb, server);
-			if (input.confirmed()) {
-				PythonExecute code = new PythonExecute(input.getText(), "method", new PythonIteratorGroup(input.getChareGroup()), false, true, 0);
+    		//if (inputPython == null) {
+    		PythonDialog inputPython = new PythonDialog(appFrame, false, groupItems, chareItems, gdb, server);
+    		//} else {
+    		//	JOptionPane.showMessageDialog(this, "There is already a python instance active", "Error", JOptionPane.ERROR_MESSAGE);
+    		//}
+			//PythonDialog input = new PythonDialog(appFrame, false, groupItems, chareItems, gdb, server);
+			if (inputPython.confirmed()) {
+				PythonExecute code = new PythonExecute(inputPython.getText(), inputPython.getMethod(), new PythonIteratorGroup(inputPython.getChareGroup()), false, true, 0);
 				code.setKeepPrint(true);
 				code.setWait(true);
+				code.setPersistent(true);
+				if (interpreterHandle > 0) {
+					code.setInterpreter(interpreterHandle);
+				}
 				System.out.println("Sending python request "+(code.isHighLevel()?" highlevel":"")+
 								   (code.isKeepPrint()?" keepPrint":"")+(code.isKeepWait()?" keepWait":"")+
 								   (code.isPersistent()?" persistent":"")+(code.isIterate()?" iterative":""));
@@ -1095,12 +1172,17 @@ DEPRECATED!! The correct implementation is in CpdList.java
 					System.out.println("The python module was not linked in the application");
 					return;
 				}
-				int interpreterHandle = CcsServer.readInt(reply, 0);
+				interpreterHandle = CcsServer.readInt(reply, 0);
 				System.out.println("Python interpreter: "+interpreterHandle);
 				PythonPrint print = new PythonPrint(interpreterHandle, true);
 				byte[] output = server.sendCcsRequestBytes("CpdPythonGroup", print.pack(), 0, true);
 				System.out.println("Python printed: "+new String(output));
+				inputPython = null;
 			}
+			inputPython = null;
+			*/
+    	} else if (e.getActionCommand().equals("pythoninstalled")) {
+    		installedPythonScripts.setVisible(true);
     	}
     	else if (e.getActionCommand().equals("newPeSet")) {
     		PeSetDialog input = new PeSetDialog(appFrame, true, exec.npes);
@@ -1208,12 +1290,65 @@ DEPRECATED!! The correct implementation is in CpdList.java
     	}
     }
     
+    public void applyCommands(Vector commands) {
+    	for (int i=0; i<commands.size(); ++i) {
+    		String command = (String)commands.elementAt(i);
+    		System.out.println("applying command: "+command);
+    		if (command.equals("start")) {
+    			attachMode = false;
+    			startProgram();
+    		}
+    		else if (command.startsWith("python")) {
+    			command = command.substring(command.indexOf(' ')).trim();
+    			File f = new File(command.substring(0, command.indexOf(' ')));
+    			PythonScript script = new PythonScript(gdb);
+    			String code;
+    			try {
+	                code = script.loadPythonCode(f);
+                } catch (IOException e) {
+                	System.out.println("could not load file "+f.getAbsolutePath());
+                	break;
+                }
+                try {
+	                script.parseCode(code);
+                } catch (ParseException e) {
+                	System.out.println("could not parse python code: "+code);
+                }
+                command = command.substring(command.indexOf(' ')).trim();
+    			int boundChare = Integer.parseInt(command.substring(0, (command+" ").indexOf(' ')));
+    			script.setChare(groupItems.elementAt(boundChare));
+    			int next;
+    			while ((next = command.indexOf(' ')) != -1) {
+    				command = command.substring(next).trim();
+    				int ep = Integer.parseInt(command.substring(0, (command+" ").indexOf(' ')));
+    				script.addEP(epItems.getEntryFor(ep));
+    			}
+    			executePython(script);
+    		}
+    		else if (command.startsWith("time")) {
+    			System.out.println(command.substring(5)+new Date());
+    		}
+    		else if (command.equals("quit")) {
+        		server.bcastCcsRequest("ccs_debug_quit", "", exec.npes);
+        		quitProgram(); 
+    		}
+			else if (command.equals("continue")) {
+				server.bcastCcsRequest("ccs_continue_break_point", "", exec.npes);
+			}
+    		else {
+    			System.out.println("Command not recognized: "+command);
+    		}
+    	}
+    }
+    
 /*************** Program Control ***********************/
     /// Start the program from scratch.
     public void startProgram() 
     {
     	gdb.terminate();
     	isRunning = true;
+        interpreterHandle = 0;
+        installedPythonScripts = new PythonInstalledCode(false);
     	programOutputArea.setText("");
     	String executable = new File(exec.executable).getAbsolutePath();
     	String charmrunDir = new File(executable).getParent();
@@ -1260,7 +1395,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
 
     		// start the thread that will handle the communication with charmrun
     		// (and the program output as a consequence)
-    		servthread = (new ServThread(this, p));
+    		servthread = (new ServThread.Charmrun(this, p));
     		servthread.start();
     		while (servthread.getFlag() == 0);
     		if (servthread.getFlag() != 1) {
@@ -1269,6 +1404,8 @@ DEPRECATED!! The correct implementation is in CpdList.java
     		}
     	} else {
     		programOutputArea.setText("Attaching to running program");
+    		servthread = (new ServThread.CCS(this, exec));
+    		servthread.start();
     	}
     	try {
     		// Retrieve the initial info from charmrun regarding the program segments
@@ -1310,12 +1447,20 @@ DEPRECATED!! The correct implementation is in CpdList.java
 
     		/* Wait until the "ccs:" line comes out of the program's stdout */
     		long iter = 0;
-    		while (servthread.portno == null)
-    		{
-    			try { Thread.sleep(100); }
-    			catch(InterruptedException e1)
-    			{ /* don't care about interrupted sleep */ }
-    			if(iter++ > 60*10) abort("Timeout waiting for program to start up (and print its CCS port number)");
+    		if (! attachMode) {
+    			while (servthread.portno == null)
+    			{
+    				try { Thread.sleep(100); }
+    				catch(InterruptedException e1)
+    				{ /* don't care about interrupted sleep */ }
+    				if(iter++ > 60*10) abort("Timeout waiting for program to start up (and print its CCS port number)");
+    			}
+    		}
+    		
+    		if (attachMode && (exec.port.length() == 0 || exec.hostname.equals("localhost"))) {
+    			JOptionPane.showMessageDialog(this, "Hostname and port number must be specified in attach mode", "Error", JOptionPane.ERROR_MESSAGE);
+    			quitProgram();
+    			return;
     		}
     		if (exec.port.length() == 0) portnumber = servthread.portno;
     		else portnumber = exec.port;
@@ -1359,6 +1504,15 @@ DEPRECATED!! The correct implementation is in CpdList.java
     			//peList[i] = true;
     			pes[i] = new Processor(i);
     		}
+    		if (attachMode) {
+    			// gather the status of the processes
+    			byte[][] status = server.bcastCcsRequest("ccs_debug", "status", exec.npes);
+    			for (int i=0; i<exec.npes; ++i) {
+    				if (status[i][0] == 1) {
+    					pes[i].setRunning();
+    				}
+    			}
+    		}
 			PeSet all = new PeSet("all", pes);
 			peListModel.addElement(all);
 			peList.setSelectedIndex(0);
@@ -1371,7 +1525,12 @@ DEPRECATED!! The correct implementation is in CpdList.java
     		quitButton.setEnabled(false);
     		freezeButton.setEnabled(false);
     		startGdbButton.setEnabled(true); 
-
+    		menuActionPython.setEnabled(true);
+    		menuActionPythonInstalled.setEnabled(true);
+    		menuActionMemory.setEnabled(true);
+    		menuActionAllocationTree.setEnabled(true);
+    		enableButtons();
+    		
     		int nItems;
 
     		/* Reset the type information stored */
@@ -1493,6 +1652,10 @@ DEPRECATED!! The correct implementation is in CpdList.java
     	listsbox.setEnabled(false);
     	pesbox.removeAllItems(); 
     	pesbox.setEnabled(false);
+    	menuActionPython.setEnabled(false);
+    	menuActionPythonInstalled.setEnabled(false);
+    	menuActionMemory.setEnabled(false);
+    	menuActionAllocationTree.setEnabled(false);
 
     	peList.removeAll();
     	peListModel.removeAllElements();
@@ -1501,6 +1664,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
     	//userEpsActualPanel.updateUI(); 
     	//sysEpsActualPanel.removeAll(); 
     	//sysEpsActualPanel.updateUI();
+        if (installedPythonScripts != null) installedPythonScripts.dispose();
     	entryScrollPane.setViewportView(new JLabel());
     	setStatusMessage(new String("Ready to start new program"));
     }
@@ -1542,6 +1706,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
     String getFilename() { return exec.executable; }
     String getHostname() { return exec.hostname; }
     String getUsername() { return exec.username; }
+    EpPList getEpItems() { return (EpPList)epItems.clone(); }
     
     public static int numberPesGlobal;
     public static void main(String[] args) {
@@ -1557,6 +1722,8 @@ DEPRECATED!! The correct implementation is in CpdList.java
     	envDisplay = "";
     	exec.sshTunnel = false;
     	sshTunnel = null;
+    	boolean noWindow = false;
+    	Vector commands = null;
 
     	// parsing command-line parameters
     	int i = 0;
@@ -1589,6 +1756,10 @@ DEPRECATED!! The correct implementation is in CpdList.java
     			exec.sshTunnel = true;
     			i--;
     		}
+    		else if (args[i].equals("-noWindow")) {
+    			noWindow = true;
+    			i--;
+    		}
     		else if (args[i].equals("-config")) {
     			try {
     				File config = new File(args[i+1]);
@@ -1602,6 +1773,18 @@ DEPRECATED!! The correct implementation is in CpdList.java
     			} catch (SAXException se) {
 					System.out.println("Configuration file corrupted");
 				}
+    		}
+    		else if (args[i].equals("-commands")) {
+    			try {
+    				BufferedReader com = new BufferedReader(new FileReader(args[i+1]));
+    				System.out.println("Loading commands: "+new File(args[i+1]).getAbsolutePath());
+    				commands = new Vector();
+    				String str = null;
+    				while ((str = com.readLine()) != null) commands.add(str); 
+    			} catch (IOException ioe) {
+    				System.out.println("Could not open command file ");
+    				ioe.printStackTrace();
+    			}
     		}
     		else
     		{ /* Just a 1-argument */
@@ -1662,12 +1845,15 @@ DEPRECATED!! The correct implementation is in CpdList.java
 
     	appFrame.getContentPane().add(debugger, BorderLayout.CENTER);
 
-    	Rectangle bounds = (appFrame.getGraphicsConfiguration()).getBounds(); 
-    	appFrame.setLocation(50 +bounds.x, 50 + bounds.y);
-    	appFrame.setJMenuBar(debugger.menuBar);
-    	appFrame.pack();
-    	if (debugger.getPreferredSize() != null) appFrame.setSize(debugger.getPreferredSize());
-    	if (debugger.getPreferredLocation() != null) appFrame.setLocation(debugger.getPreferredLocation());
-    	appFrame.setVisible(true);
+    	if (! noWindow) {
+    		Rectangle bounds = (appFrame.getGraphicsConfiguration()).getBounds(); 
+    		appFrame.setLocation(50 +bounds.x, 50 + bounds.y);
+    		appFrame.setJMenuBar(debugger.menuBar);
+    		appFrame.pack();
+    		if (debugger.getPreferredSize() != null) appFrame.setSize(debugger.getPreferredSize());
+    		if (debugger.getPreferredLocation() != null) appFrame.setLocation(debugger.getPreferredLocation());
+    		appFrame.setVisible(true);
+    	}
+    	if (commands != null) debugger.applyCommands(commands);
     }
 }
