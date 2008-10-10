@@ -215,9 +215,11 @@ public class CpdUtil {
     	}
     }
     
-    public void bcastCcsRequest(String ccsHandlerName, String parameterName, int npes) {
+    public byte[][] bcastCcsRequest(String ccsHandlerName, String parameterName, int npes) {
+    	byte[][] ret = new byte[npes][];
     	for (int pe=0; pe<npes; ++pe) {
-    		sendCcsRequest(ccsHandlerName, parameterName, pe);
+    		ret[pe] = sendCcsRequestBytes(ccsHandlerName, parameterName, pe);
     	}
+    	return ret;
     }
 };
