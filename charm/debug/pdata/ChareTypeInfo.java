@@ -37,10 +37,10 @@ public class ChareTypeInfo extends GenericInfo {
 		return system;
 	}
     public void getDetails(InspectPanel panel) {
-        System.out.println(Inspector.getTypeCreate(name));
+        System.out.println(Inspector.getTypeCreate(name)+"\n\n"+description);
         String str = "<html>Type "+index+": "+name+", size "+size+" bytes"+
 			(system?" SYSTEM":"")+"<br>"+
-            ((description!=null)?("Description:<br>"+description):"Description not available")+"</html>";
+            ((description!=null)?("Description:<br><pre>"+/*description*/Inspector.getTypeCreate(name).toString()+"</pre>"):"Description not available")+"</html>";
         panel.load(str);
     }
 }

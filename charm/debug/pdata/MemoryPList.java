@@ -181,8 +181,10 @@ public class MemoryPList {
 		    sl.setSize(((PNative)llcur.elementNamed("size")).getIntValue(0));
 		    int flags = ((PNative)llcur.elementNamed("flags")).getIntValue(0);
 		    sl.setChareID(((PNative)llcur.elementNamed("chare")).getIntValue(0));
-		    System.out.println("Found "+sl);
 		    if ((flags & Slot.LEAK_FLAG) != 0) sl.setLeak(true);
+		    if ((flags & Slot.NEW_BLOCK) != 0) sl.setNewBlock(true);
+		    if ((flags & Slot.MODIFIED) != 0) sl.setModified(true);
+		    //System.out.println("Found "+sl);
 		    PNative st = (PNative)llcur.elementNamed("stack");
 		    for (int i=0; i<st.length(); ++i) {
 		    	long location;

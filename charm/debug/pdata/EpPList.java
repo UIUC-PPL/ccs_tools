@@ -5,7 +5,7 @@ import javax.swing.DefaultListModel;
 import java.util.Vector;
 
 // Extract entry-point information from the entry point PList
-public class EpPList extends GenericPList {
+public class EpPList extends GenericPList implements Cloneable {
     protected Vector systemEps;
     protected Vector userEps;
     private ChareTypePList chareList;
@@ -64,6 +64,16 @@ public class EpPList extends GenericPList {
             else 
                 userEps.add(new EpInfo(name.getString(), index.getIntValue(0), msgIdx.getIntValue(0), chareList.elementAt(chareIdx.getIntValue(0))));
         }
+    }
+    
+    public Object clone() {
+    	EpPList ret = new EpPList();
+    	ret.chareList = this.chareList;
+    	ret.systemEps = new Vector();
+    	for (int i=0; i<systemEps.size(); ++i) ret.systemEps.add(((EpInfo)systemEps.elementAt(i)).clone());
+    	ret.userEps = new Vector();
+    	for (int i=0; i<userEps.size(); ++i) ret.userEps.add(((EpInfo)userEps.elementAt(i)).clone());    	
+    	return ret;
     }
  
 };

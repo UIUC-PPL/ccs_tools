@@ -7,7 +7,7 @@ import charm.debug.inspect.InspectPanel;
 import charm.debug.EpCheckBox;
 
 // Information regarding an entry method
-public class EpInfo extends GenericInfo {
+public class EpInfo extends GenericInfo implements Cloneable {
     String name;
     int epIdx;
     int msgIdx;
@@ -50,9 +50,13 @@ public class EpInfo extends GenericInfo {
     }
 
     public void getDetails(InspectPanel panel) {
-        panel.load("<html>chare type "+chare.getIndex()+": "+chare.getType()+"\n"+
+        panel.load("<html>chare type "+chare.getIndex()+": "+chare.getType()+"<br>"+
             "entry point "+epIdx+": "+name+"</html>");//+"\n"+
         //"message type: "+msgIdx;
+    }
+    
+    public Object clone() {
+    	return new EpInfo(name, epIdx, msgIdx, chare);
     }
 }
 

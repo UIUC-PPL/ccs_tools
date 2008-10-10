@@ -24,8 +24,8 @@ public class MsgTypeInfo extends GenericInfo {
         return description;
     }
     public void getDetails(InspectPanel panel) {
-        panel.load("Type "+index+": "+name+", size "+size+"\n"+
-            ((description!=null)?("Description:\n"+description):"Description not available"));
+        panel.load("<html>Type "+index+": "+name+", size "+size+"<br>"+
+            ((description!=null)?("Description:<br><pre>"+description+"</pre>"):"Description not available")+"</html>");
     }
 }
 

@@ -11,10 +11,14 @@ public class Slot implements Comparable {
 	private long location;
 	private int size;
 	private boolean isLeak;
+	private boolean isNewBlock;
+	private boolean isModified;
 	private int type;
 	private int chareID;
 	private Vector backtrace;
 
+	public static final int MODIFIED = 0x20;
+	public static final int NEW_BLOCK = 0x10;
 	public static final int LEAK_FLAG = 0x8;
 	public static final int TYPE_MASK = 0x7;
 	public static final int UNKNOWN_TYPE = 0x0;
@@ -26,6 +30,8 @@ public class Slot implements Comparable {
 	public Slot(long loc) {
 		location = loc;
 		isLeak = false;
+		isNewBlock = false;
+		isModified = false;
 		type = 0;
 		chareID = 0;
 		backtrace = new Vector();
@@ -39,6 +45,14 @@ public class Slot implements Comparable {
 		isLeak = l;
 	}
 
+	public void setNewBlock(boolean l) {
+		isNewBlock = l;
+	}
+	
+	public void setModified(boolean l) {
+		isModified = l;
+	}
+	
 	public void setType(int t) {
 		type = t;
 	}
@@ -54,6 +68,8 @@ public class Slot implements Comparable {
 	public long getLocation () {return location;}
 	public int getSize () {return size;}
 	public boolean isLeak() {return isLeak;}
+	public boolean isNewBlock() {return isNewBlock;}
+	public boolean isModified() {return isModified;}
 	public int getType() {return type;}
 	public int getChareID() {return chareID;}
 	public int getTraceSize() {return backtrace.size();}
@@ -62,6 +78,8 @@ public class Slot implements Comparable {
 	public String toString() {
 		StringBuffer tmp = new StringBuffer();
 		if (isLeak()) tmp.append("*** LEAKING ***\n");
+		if (isNewBlock()) tmp.append("*** NEW ALLOCATION ***\n");
+		if (isModified()) tmp.append("*** BLOCK MODIFIED ***\n");
 		tmp.append("Memory type: ");
 		switch (type) {
 		case 1:
