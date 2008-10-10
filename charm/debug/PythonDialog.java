@@ -9,11 +9,13 @@ import java.awt.Dimension;
 import java.awt.Frame;
 import java.awt.event.*;
 import java.io.*;
+import java.text.ParseException;
 import java.util.Vector;
 
 import charm.debug.inspect.DataType;
 import charm.debug.inspect.GenericType;
 import charm.debug.inspect.Inspector;
+import charm.debug.inspect.VariableElement;
 import charm.debug.pdata.CharePList;
 import charm.debug.pdata.ChareInfo;
 import charm.debug.pdata.ChareTypePList;
@@ -24,29 +26,26 @@ import charm.debug.preference.PyFilter;
 public class PythonDialog extends JDialog
 	implements ActionListener {
 
-	private static final String beginning = "def method(self):";
-
+	private ParDebug parent;
 	private JMenuBar menuBar;
 	private JMenu menuFile;
 	private JMenuItem menuOpen;
 	private JMenuItem menuSave;
+	private JMenu menuRecent;
 	private JComboBox chare;
 	private JTextArea input;
 	private JScrollPane inputScrollPane;
 	private JScrollPane entryScrollPane;
 	private JButton confirm;
 	private JButton cancel;
-	private boolean confirmed;
-	private String parsedString;
-	private GdbProcess info;
-
-	public PythonDialog(Frame parent, boolean modal, CharePList chareItems, ChareTypePList chareTypeItems, GdbProcess gdb, CpdUtil server) {
-		super(parent, "Python script", modal);
+	PythonScript script;
+	
+	public PythonDialog(ParDebug parent, boolean modal, CharePList chareItems, ChareTypePList chareTypeItems, GdbProcess gdb, CpdUtil server) {
+		super((Frame)null, "Python script", modal);
+		this.parent = parent;
 		getContentPane().setLayout(new BoxLayout(getContentPane(), BoxLayout.Y_AXIS));
-		confirmed = false;
-		parsedString = null;
-		info = gdb;
-
+		script = new PythonScript(gdb);
+		
 		getContentPane().setLayout(new BorderLayout());
 
 		JSplitPane top = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT);
@@ -70,7 +69,7 @@ public class PythonDialog extends JDialog
 		topLeft.add(chare, BorderLayout.NORTH);
 
 		input = new JTextArea("", 20, 40);
-		input.setText(beginning+"\n\t");
+		input.setText(PythonScript.beginning+"\n\t");
 		input.setTabSize(4);
 		input.setToolTipText("Write your python code here");
 		inputScrollPane = new JScrollPane(input);
@@ -82,10 +81,11 @@ public class PythonDialog extends JDialog
 		entryScrollPane = new JScrollPane();
 		
 		/* Create the entities lists */
-		int nItems=server.getListLength("charm/entries",0);
-		EpPList epItems = new EpPList();
-		epItems.setLookups(chareTypeItems);
-		epItems.load(server.getPList("charm/entries",0,0,nItems));
+		//int nItems=server.getListLength("charm/entries",0);
+		EpPList epItems = parent.getEpItems();
+		//epItems.setLookups(chareTypeItems);
+		//epItems.load(server.getPList("charm/entries",0,0,nItems));
+		
 		
 		DefaultMutableTreeNode[] chareRoots = new DefaultMutableTreeNode[chareTypeItems.size()];
 		Vector items;
@@ -122,7 +122,7 @@ public class PythonDialog extends JDialog
 			//JCheckBox chkbox = new JCheckBox(tmp);
 			EpCheckBox chkbox = new EpCheckBox((EpInfo)items.elementAt(i));
 			chkbox.addActionListener(this);
-			chkbox.setActionCommand("breakpoints"); 
+			chkbox.setActionCommand("entry"); 
 			//sysEpsActualPanel.add(chkbox);
 			//sysRoot.add(new EpTreeCheckBox(chkbox));
 			int chareType =((EpInfo)items.elementAt(i)).getChareType(); 
@@ -170,29 +170,38 @@ public class PythonDialog extends JDialog
 		menuBar = new JMenuBar();
 		menuBar.add(menuFile = new JMenu("File"));
 		menuFile.setMnemonic('F');
-		menuFile.add(menuOpen = new JMenuItem("Open"));
+		menuFile.add(menuOpen = new JMenuItem("Open",'O'));
 		menuOpen.setActionCommand("open");
 		menuOpen.addActionListener(this);
-		menuFile.add(menuSave = new JMenuItem("Save..."));
+		menuFile.add(menuSave = new JMenuItem("Save...",'S'));
 		menuSave.setActionCommand("save");
 		menuSave.addActionListener(this);
+		menuFile.add(menuRecent = new JMenu("Recent codes"));
+		updateRecentConfig();
 
 		setJMenuBar(menuBar);
 		pack();
 		setVisible(true);
 	}
 
-	public boolean confirmed() {
-		return confirmed;
-	}
-
-	public String getText() {
-		return parsedString;
-	}
-
-	public int getChareGroup() {
-		return ((ChareInfo)chare.getSelectedItem()).getGroupID();
-	}
+	private void updateRecentConfig() {
+		Object []files = parent.getPreferences().getRecentPython();
+		menuRecent.removeAll();
+		//System.out.println("updateRecentConfig: "+files.length);
+		if (files.length > 0) {
+			menuRecent.setEnabled(true);
+			JMenuItem item;
+			for (int i=0; i<files.length; ++i) {
+				//System.out.println("updateRecentConfig: "+files[i]);
+				item = new JMenuItem((String)files[i]);
+			    item.setActionCommand("openRecent");
+			    item.addActionListener(this);
+				menuRecent.add(item);
+			}
+		} else {
+			menuRecent.setEnabled(false);
+		}
+    }
 
 	public void actionPerformed(ActionEvent e) {
 		if (e.getActionCommand().equals("ok")) {
@@ -200,104 +209,28 @@ public class PythonDialog extends JDialog
 				JOptionPane.showMessageDialog(this, "Must select an object on which to execute the script", "Error", JOptionPane.ERROR_MESSAGE);
 				return;
 			}
-			parsedString = input.getText();
-			if (!parsedString.startsWith(beginning)) {
-				JOptionPane.showMessageDialog(this, "The code must start with '"+beginning+"'", "Error", JOptionPane.ERROR_MESSAGE);
-				return;
+			script.setChare((ChareInfo)chare.getSelectedItem());
+			
+			try {
+				script.parseCode(input.getText());
+			} catch (ParseException ex) {
+				JOptionPane.showMessageDialog(this, ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
 			}
-			// parse the code, and make the appropriate corrections
-			int first = 0, last = 0;
-			while ((first = parsedString.indexOf("charm.get", first)) != -1) {
-				first += 9;
-				int startArgs = parsedString.indexOf('(', first);
-				if (parsedString.startsWith("Static",first)) {
-					int splitPoint = parsedString.indexOf(")",startArgs);
-					String name = parsedString.substring(startArgs+1,splitPoint).trim();
-					System.out.println("Static name = "+name);
-					String address = info.infoCommand("print &"+name.substring(1,name.length()-1)+"\n");
-					int startAddress = address.indexOf("0x");
-					if (startAddress == -1) {
-						JOptionPane.showMessageDialog(this, "Static variable "+name+" not found", "Error", JOptionPane.ERROR_MESSAGE);
-						return;
-					}
-					System.out.println("Reply: "+address);
-					char retType = 'p';
-					if (address.indexOf("(int *)") != -1) retType = 'i';
-					else if (address.indexOf("(char *)") != -1) retType = 'b';
-					else if (address.indexOf("(short *)") != -1) retType = 'h';
-					else if (address.indexOf("(long *)") != -1) retType = 'l';
-					else if (address.indexOf("(float *)") != -1) retType = 'f';
-					else if (address.indexOf("(double *)") != -1) retType = 'd';
-					else if (address.indexOf("(char **)") != -1) retType = 's';
-					parsedString = parsedString.substring(0,splitPoint)+
-						","+address.substring(startAddress).trim()+",'"+retType+"'"+
-						parsedString.substring(splitPoint);
-				} else {
-					last = parsedString.indexOf(',', startArgs);
-					String type = parsedString.substring(last+1,parsedString.indexOf(',',last+1)).trim();
-					GenericType t = Inspector.getTypeCreate(type);
-					System.out.println("get type "+type+" (last="+last+")");
-					last = parsedString.indexOf(',',last+1);
-					int splitPoint = parsedString.indexOf(')',last+1);
-					if (parsedString.startsWith("Array",first)) {
-						//int num;
-						//try {
-						//num = Integer.parseInt(parsedString.substring(last+1,parsedString.indexOf(')',last+1)).trim());
-						//}
-						int size = t.getSize();
-						parsedString = parsedString.substring(0,splitPoint)+
-							","+(size)+ parsedString.substring(splitPoint);
-					} else if (parsedString.startsWith("Value",first)) {
-						String name = parsedString.substring(last+1,parsedString.indexOf(')',last+1)).trim();
-						if (! (t instanceof DataType)) {
-							JOptionPane.showMessageDialog(this, "Invalid parameter '"+type+"' to function getValue", "Error", JOptionPane.ERROR_MESSAGE);
-							return;
-						}
-						DataType dt = (DataType)t;
-						int offset = dt.getVariableOffset(name);
-						if (offset < 0) {
-							JOptionPane.showMessageDialog(this, "Invalid variable '"+name+"' in type '"+type+"' to function getValue", "Error", JOptionPane.ERROR_MESSAGE);
-							return;
-						}
-						GenericType resultType = dt.getVariableType(name);
-						parsedString = parsedString.substring(0,splitPoint)+
-							","+offset+","+resultType.getType().getName()+
-							parsedString.substring(splitPoint);
-					} else if (parsedString.startsWith("Cast",first)) {
-						String newtype = parsedString.substring(last+1,parsedString.indexOf(')',last+1)).trim();
-						GenericType nt = Inspector.getTypeCreate(newtype);
-						if (! (t instanceof DataType)) {
-							JOptionPane.showMessageDialog(this, "Invalid parameter '"+type+"' to function getCast", "Error", JOptionPane.ERROR_MESSAGE);
-							return;
-						}
-						if (! (nt instanceof DataType)) {
-							JOptionPane.showMessageDialog(this, "Invalid parameter '"+newtype+"' to function getCast", "Error", JOptionPane.ERROR_MESSAGE);
-							return;
-						}
-						DataType dt = (DataType)t;
-						DataType ndt = (DataType)nt;
-						int offset = 0;
-						if (dt.hasSuperclass(ndt)) offset = dt.getSuperclassOffset(ndt);
-						else if (ndt.hasSuperclass(dt)) offset = ndt.getSuperclassOffset(dt);
-						else {
-							JOptionPane.showMessageDialog(this, "Could not cast between '"+type+"' and '"+newtype+"'", "Error", JOptionPane.ERROR_MESSAGE);
-							return;
-						}
-						parsedString = parsedString.substring(0,splitPoint)+
-							","+offset+parsedString.substring(splitPoint);
-					}
-				}
-			}
-
-			confirmed = true;
+			
+			parent.getPreferences().addRecentPython(input.getText());
 			setVisible(false);
+			parent.executePython(script);
 		}
 		else if (e.getActionCommand().equals("cancel")) {
-			confirmed = false;
-			parsedString = null;
 			setVisible(false);
-		}
-		else if (e.getActionCommand().equals("open")) {
+		} else if (e.getActionCommand().equals("entry")) {
+			EpCheckBox chkbox = (EpCheckBox)e.getSource();
+			if (chkbox.isSelected()) script.addEP(chkbox.ep);
+			else script.removeEP(chkbox.ep);
+		} else if (e.getActionCommand().equals("openRecent")) {
+	   		JMenuItem item = (JMenuItem)e.getSource();
+    		input.setText(item.getText());
+		} else if (e.getActionCommand().equals("open")) {
     		JFileChooser chooser = new JFileChooser(System.getProperty("user.dir"));
     		chooser.addChoosableFileFilter(new PyFilter());
     		chooser.setAcceptAllFileFilterUsed(false);
@@ -330,15 +263,7 @@ public class PythonDialog extends JDialog
 
 	boolean loadPythonCode(File f) {
 		try {
-			StringBuffer fileData = new StringBuffer(1000);
-			BufferedReader reader = new BufferedReader(new FileReader(f));
-			char[] buf = new char[1024];
-			int numRead=0;
-			while((numRead=reader.read(buf)) != -1){
-				fileData.append(buf, 0, numRead);
-			}
-			reader.close();
-			input.setText(fileData.toString());
+			input.setText(script.loadPythonCode(f));
 		} catch (IOException ex) {
 			JOptionPane.showMessageDialog(this, "Unable to load file '"+f.getName()+"'", "Error", JOptionPane.ERROR_MESSAGE);
 			return false;
@@ -348,9 +273,7 @@ public class PythonDialog extends JDialog
 	
 	boolean savePythonCode(File f) {
 		try {
-			BufferedWriter writer = new BufferedWriter(new FileWriter(f));
-			writer.write(input.getText());
-			writer.close();
+			script.savePythonCode(f, input.getText());
 		} catch (IOException ex) {
 			JOptionPane.showMessageDialog(this, "Unable to save file '"+f.getName()+"'", "Error", JOptionPane.ERROR_MESSAGE);
 			return false;
