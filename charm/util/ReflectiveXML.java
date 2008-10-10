@@ -172,10 +172,12 @@ public class ReflectiveXML {
 								else if (arrPos != null)
 									Array.setShort(container, Integer.parseInt(arrPos), Short.parseShort(attrs.getValue("value")));
 							} else if (localName.equals("java.lang.String")) {
+								String str = attrs.getValue("value");
+								if (str != null) str = str.replace("#$%", "\"").replace("#%$", "\n").replace("$#%", "\t");
 								if (fieldName != null)
-									fld.set(container, attrs.getValue("value"));
+									fld.set(container, str);
 								else if (arrPos != null)
-									Array.set(container, Integer.parseInt(arrPos), attrs.getValue("value"));
+									Array.set(container, Integer.parseInt(arrPos), str);
 							} else {
 								System.err.println("Found attribute with name '"+fld+"'!");
 							}
@@ -265,7 +267,9 @@ public class ReflectiveXML {
 			} else if (realcls.equals(Class.forName("java.lang.String"))) {
 				f.write(prefix+"<"+realcls.getName());
 				if (name != null) f.write(" name=\""+name+"\"");
-				if (o != null) f.write(" value=\""+o+"\"");
+				if (o != null) {
+					f.write(" value=\""+((String)o).replace("\"", "#$%").replace("\n", "#%$").replace("\t", "$#%")+"\"");
+				}
 				if (arrPos >= 0) f.write(" position=\""+arrPos+"\"");
 				f.write(" />\n");
 			} else {
