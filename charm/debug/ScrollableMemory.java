@@ -37,6 +37,8 @@ public class ScrollableMemory extends JLabel implements Scrollable {
 	private Slot[] crossReference;
 	private int rgbnormal[][];
 	private int rgbleak[][];
+	private int rgbmod[][];
+	private int rgbnew[][];
 	private int rgbdim[][];
 	private int rgbdimleak[][];
 	private int rgbselected[];
@@ -154,6 +156,23 @@ public class ScrollableMemory extends JLabel implements Scrollable {
 			for (int i = (int) (0.75 * lineWidth); i < lineWidth; ++i)
 				rgbleak[j][i] = rgbnormal[j][i];
 		}
+
+		rgbmod = new int[5][lineWidth];
+		color = (255 << 24) + (255 << 16) + (255 << 8) + 0;
+		for (int j = 0; j < 5; ++j) {
+			for (int i = 0; i < (int) (0.75 * lineWidth); ++i)
+				rgbmod[j][i] = color;
+			for (int i = (int) (0.75 * lineWidth); i < lineWidth; ++i)
+				rgbmod[j][i] = rgbnormal[j][i];
+		}
+		rgbnew = new int[5][lineWidth];
+		color = (165 << 24) + (180 << 16) + (255 << 8) + 0;
+		for (int j = 0; j < 5; ++j) {
+			for (int i = 0; i < (int) (0.75 * lineWidth); ++i)
+				rgbnew[j][i] = color;
+			for (int i = (int) (0.75 * lineWidth); i < lineWidth; ++i)
+				rgbnew[j][i] = rgbnormal[j][i];
+		}
 		
 		rgbdim = new int[5][lineWidth];
 		rgbdimleak = new int[5][lineWidth];
@@ -259,6 +278,8 @@ public class ScrollableMemory extends JLabel implements Scrollable {
 					// print the pixels
 					// System.out.println("position: "+pos+" "+(ln*lineScan+1));
 					if (sl.isLeak()) tmp.setRGB(pos, ln * lineScan + lineStart, 1, lineWidth, rgbleak[sl.getType()], 0, 1);
+					else if (sl.isModified()) tmp.setRGB(pos, ln * lineScan + lineStart, 1, lineWidth, rgbmod[sl.getType()], 0, 1);
+					else if (sl.isNewBlock()) tmp.setRGB(pos, ln * lineScan + lineStart, 1, lineWidth, rgbnew[sl.getType()], 0, 1);
 					else tmp.setRGB(pos, ln * lineScan + lineStart, 1, lineWidth, rgbnormal[sl.getType()], 0, 1);
 					crossReference[ln * horizontalPixels + pos] = sl;
 				}
