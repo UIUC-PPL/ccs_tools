@@ -15,6 +15,8 @@ public class MemoryPanel extends JPanel
     private JMenu menuAction;
     private JMenuItem menuLeak;
     private JMenuItem menuLeakFast;
+    private JMenuItem menuComputeCRC;
+    private JMenuItem menuCheckCRC;
     private JMenu menuInfo;
     private JMenuItem menuStat;
     private JMenuItem menuInspect;
@@ -49,6 +51,9 @@ public class MemoryPanel extends JPanel
 	menuLeak.addActionListener(this);
 	menuAction.add(menuLeakFast = new JMenuItem("Quick Search Leaks",'Q'));
 	menuLeakFast.addActionListener(this);
+	menuAction.add(menuComputeCRC = new JMenuItem("Compute CRC",'C'));
+	menuComputeCRC.addActionListener(this);
+	menuAction.add(menuCheckCRC = new JMenuItem("Check CRC",'V'));
 	menuBar.add(menuInfo = new JMenu("Info"));
 	menuInfo.setMnemonic('I');
 	menuInfo.add(menuStat = new JMenuItem("Show Statistics",'L'));
@@ -307,10 +312,13 @@ public class MemoryPanel extends JPanel
             InspectPanel inspect = new InspectPanel();
             JComponent newContentPane = inspect;
             newContentPane.setOpaque(true);
-            inspect.load(memoryData.getPe(), sl.getLocation(), null);
-            frame.setContentPane(newContentPane);
-            frame.pack();
-            frame.setVisible(true);
+            boolean success = inspect.load(memoryData.getPe(), sl.getLocation(), null);
+            if (success) {
+            	frame.setContentPane(newContentPane);
+            	newContentPane.setMinimumSize(new Dimension(100,100));
+            	frame.pack();
+            	frame.setVisible(true);
+            }
 		}
 	} else if (e.getActionCommand().equals("update")) {
 	    memoryData.loadImage(false, 0);
