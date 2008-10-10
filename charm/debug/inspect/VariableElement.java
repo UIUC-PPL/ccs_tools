@@ -18,7 +18,18 @@ public class VariableElement extends GenericElement {
 
     public String getName() { return name; }
     public int getPointer() { return pointer; }
+    public int getArray() { return size; }
 
+    public GenericElement castNewType(GenericType t, int p) {
+    	return new VariableElement(t, name, size, p, offset);
+    }
+    
+    public boolean equals(GenericElement e) {
+    	if (! (e instanceof VariableElement)) return false;
+    	VariableElement ve = (VariableElement)e;
+    	return pointer == ve.pointer && type == ve.type;
+    }
+    
     public String toString(String indent) {
         StringBuffer buf = new StringBuffer();
         if (pointer > 0) {
@@ -56,11 +67,15 @@ public class VariableElement extends GenericElement {
     }
 
     public void visit(TypeVisitor v) {
-        v.seek(offset);
         v.addType(type.getName());
         v.addName(name);
-        type.visit(v);
-        v.revertSeek();
+        int i = size;
+        if (i==0) i++;
+        for (int j=0; j<i; ++j) {
+        	v.seek(offset+j*type.getSize());
+        	type.visit(v);
+        	v.revertSeek();
+        }
         if (pointer>0) v.setPointer(pointer);
     }
 }

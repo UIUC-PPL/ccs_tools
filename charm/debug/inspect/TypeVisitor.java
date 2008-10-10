@@ -37,14 +37,25 @@ public abstract class TypeVisitor {
         //String type = t.getName();
         //String name = e.getName();
         String value = null;
-        if (valid) value = t.getValue(this);
         int pointer = e.getPointer() + t.getPointer();
-        if (pointer > 0 && valid) {
-            if (value != null) value += " " + GenericType.printPointer(buf, offset);
-            else value = GenericType.printPointer(buf, offset);
+        int size = 1;
+        if (e instanceof VariableElement && ((VariableElement)e).getArray() > 0) size = ((VariableElement)e).getArray();
+        if (size > 1) {
+        	addElement(e, "[]");
+        	push();
         }
-        addElement(e, value);
-        if (pointer == 0) visit(t);
+        for (int i=0; i<size; ++i) {
+        	if (i>0) reseek(e.getOffset()+i*t.getSize());
+            if (valid) value = t.getValue(this);
+            else value = null;
+        	if (pointer > 0 && valid) {
+        		if (value != null) value += " " + GenericType.printPointer(buf, offset);
+        		else value = GenericType.printPointer(buf, offset);
+        	}
+        	addElement(e, value);
+        	if (pointer == 0) visit(t);
+        }
+        if (size > 1) pop();
         revertSeek();
     }
 
@@ -78,6 +89,11 @@ public abstract class TypeVisitor {
         } else {
             seeks.push(new Integer(0));
         }
+    }
+    
+    public void reseek(int size) {
+    	revertSeek();
+    	seek(size);
     }
 
     public void revertSeek() {

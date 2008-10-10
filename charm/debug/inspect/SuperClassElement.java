@@ -23,6 +23,12 @@ public class SuperClassElement extends GenericElement {
         return type.getName()+" = "+type.memoryToString(indent, mem, (offset>=0&&start>=0)?start+offset:-1);
     }
 
+    public boolean equals(GenericElement e) {
+    	if (! (e instanceof SuperClassElement)) return false;
+    	SuperClassElement ge = (SuperClassElement)e;
+    	return type == ge.type;
+    }
+    
     public void visit(TypeVisitor v) {
         v.seek(offset);
         v.addType(type.getName());

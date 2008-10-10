@@ -55,7 +55,7 @@ public abstract class GenericType extends VisitableType {
 
     static String getDescription(String type) {
         String desc = ParDebug.infoCommand("ptype class "+type+"\n");
-        System.out.println("info1:ptype "+type+" = "+desc);
+        System.out.println("info1:ptype class "+type+" = "+desc);
         if (desc.length()==0) {
             // trying without "class" keyword
             desc = ParDebug.infoCommand("ptype "+type+"\n");

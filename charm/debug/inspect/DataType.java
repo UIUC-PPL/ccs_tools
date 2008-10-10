@@ -15,9 +15,13 @@ public class DataType extends GenericType {
     boolean isUnion;
     boolean isEnum;
     int size;
+    String thisType;
 
-    static final Matcher functionMatcher = Pattern.compile("[^()]+ \\Q(*)(\\E.*\\)").matcher("");
+    //static final Matcher functionMatcher = Pattern.compile("[^()]+ \\Q(*)(\\E.*\\)").matcher("");
+    static final Matcher functionMatcher = Pattern.compile(".*\\Q(*)(\\E.*\\)").matcher("");
 
+    public void setGdbType(String s) { thisType = s; }
+    
     public GenericType build(String n, String d) {
         name = n;
         if (n == null) name = "";
@@ -25,6 +29,7 @@ public class DataType extends GenericType {
         isVirtual = false;
         isUnion = false;
         isEnum = false;
+        size = 0;
         superclasses = new Vector();
         variables = new Vector();
         if (desc == null) desc = getDescription(name);
@@ -56,6 +61,8 @@ public class DataType extends GenericType {
             name = firstLine[0].trim().substring(nameStart+1);
             Inspector.putType(name, this);
             resultType = dt;
+            // if we are dealing with a pointer typedef, we cannot dereference anymore, so we null the thisType string
+            if (pointers > 0) thisType = null;
             //System.out.println("|"+name+"|"+firstLine[1].trim().substring(nameStart+1));
             //System.out.println(desc);
             //System.out.println("The returned info does not match the requested type");
@@ -125,7 +132,7 @@ public class DataType extends GenericType {
         //for (int i=0; i<superclasses.size(); ++i) {
         //    System.out.println("superclass: |"+superclasses.elementAt(i)+"|");
         //}
-        String[] piece = desc.substring(opening).split("[:;][\n\r]");
+        String[] piece = desc.substring(opening).split("[{:;][\n\r]");
         for (int i=1; i<piece.length-1; ++i) {
             line = piece[i].trim();
             System.out.println("|"+line+"|");
@@ -142,8 +149,12 @@ public class DataType extends GenericType {
             int arrayStart = line.indexOf("[");
             boolean isArray = (arrayStart != -1);
             int pointerCount = 0;
+            
             while (line.charAt(variableStart+1+pointerCount) == '*') pointerCount++;
             String varType = line.substring(0, variableStart).trim();
+            if (varType.startsWith("const")) {
+            	varType = varType.substring(varType.indexOf(" ")+1);
+            }
             if (varType.startsWith("class") || varType.startsWith("struct")) {
                 varType = varType.substring(varType.indexOf(" ")+1);
             }
@@ -186,36 +197,65 @@ public class DataType extends GenericType {
             } else {
                 dt = Inspector.getType(varType);
                 if (dt == null) {
-                    // this type is not yet built, build it
-                    String varTypeDesc = getDescription(varType);
-		    if (varTypeDesc == null) {
-			dt = new UnknownType();
-		    } else if (varTypeDesc.indexOf("{") != -1) {
-			// normal class/struct/union definition
-			dt = new DataType();
-		    } else if (functionMatcher.reset(varTypeDesc).matches()) {
-			// function pointer style
-			dt = new FunctionType();
-		    } else {
-			// the only thing remaining should be a typedef...
-			dt = new TypedefType();
-		    }
-		    Inspector.putType(varType, dt);
-		    dt = dt.build(varType, varTypeDesc);
+                	// this type is not yet built, build it
+                	String varTypeDesc;
+                	if (varType.startsWith("._") || varType.contains("::._")) varTypeDesc = getDescription("(("+name+"*)0)->"+varName);
+                	else varTypeDesc = getDescription(varType);
+                	if (varTypeDesc == null) {
+                		dt = new UnknownType();
+                	} else {
+                    	int lastLine = varTypeDesc.lastIndexOf('\n');
+                    	if (lastLine < 0) lastLine = 0;
+                		if (functionMatcher.reset(varTypeDesc.substring(lastLine+1)).matches()) {
+                			// function pointer style
+                			dt = new FunctionType();
+                		} else if (varTypeDesc.indexOf("{") != -1) {
+                			// normal class/struct/union definition
+                			dt = new DataType();
+                			String tmp;
+                			if (thisType == null) {
+                				tmp = "(("+name+"*)"+ParDebug.dataPos+")";
+                				String without = ParDebug.infoCommand("print "+tmp+"\n");
+                				if (without.indexOf(" 0x") == -1) tmp = "((struct "+name+"*)"+ParDebug.dataPos+")";  
+                			} else {
+                				tmp = thisType;
+                			}
+                			if (pointerCount == 0) ((DataType)dt).setGdbType(tmp+"->"+varName);
+                		} else {
+                			// the only thing remaining should be a typedef...
+                			dt = new TypedefType();
+                		}
+                	}
+                	Inspector.putType(varType, dt);
+                	dt = dt.build(varType, varTypeDesc);
                 }
             }
+            int baseOffset = ParDebug.dataPos;
             String offsetValue = ParDebug.infoCommand("print &((class "+name+"*)"+ParDebug.dataPos+")->"+varName+"\n");
             System.out.println("info:print &((class "+name+"*)"+ParDebug.dataPos+")->"+varName+" = "+offsetValue);
             if (offsetValue.indexOf(" 0x") == -1) {
                 offsetValue = ParDebug.infoCommand("print &(("+name+"*)"+ParDebug.dataPos+")->"+varName+"\n");
                 System.out.println("info:print &(("+name+"*)"+ParDebug.dataPos+")->"+varName+" = "+offsetValue);
             }
+            if (offsetValue.indexOf(" 0x") == -1 && thisType != null) {
+            	String bo = ParDebug.infoCommand("print &"+thisType+"\n");
+            	int start = bo.indexOf(" 0x")+1;
+            	if (start > 0) {
+            		int end = bo.indexOf(" ",start);
+            		if (end == -1) end = bo.length()-1;
+            		baseOffset = Integer.decode(bo.substring(start,end)).intValue();
+                	offsetValue = ParDebug.infoCommand("print &"+thisType+"->"+varName+"\n");
+                	System.out.println("info:print &"+thisType+"->"+varName+" = "+offsetValue);
+            	} else {
+            		System.out.println("WARNING: Could not get base offset for data!!!!!");
+            	}
+            }
             int offset;
             if (offsetValue.indexOf(" 0x") != -1) {
                 int start = offsetValue.indexOf(" 0x")+1;
                 int end = offsetValue.indexOf(" ", start);
                 if (end == -1) end = offsetValue.length()-1;
-                offset = Integer.decode(offsetValue.substring(start,end)).intValue() - ParDebug.dataPos;
+                offset = Integer.decode(offsetValue.substring(start,end)).intValue() - baseOffset;
             } else {
                 offset = -1;
             }
@@ -225,7 +265,7 @@ public class DataType extends GenericType {
     }
 
     public int getSize() {
-        return 0;
+        return size;
     }
 
     public int getChildren() {
@@ -295,16 +335,16 @@ public class DataType extends GenericType {
     	return -1;
     }
     
-    public GenericType getVariableType(String name) {
+    public VariableElement getVariable(String name) {
     	for (int i=0; i<variables.size(); ++i) {
     		VariableElement el = (VariableElement)variables.elementAt(i);
-    		if (el.getName().equals(name)) return el.getType();
+    		if (el.getName().equals(name)) return el;
     	}
     	for (int i=0; i<superclasses.size(); ++i) {
     		SuperClassElement sup = (SuperClassElement)superclasses.elementAt(i);
     		GenericType gt = sup.getType().getType();
     		if (gt instanceof DataType) {
-    			GenericType result = ((DataType)gt).getVariableType(name);
+    			VariableElement result = ((DataType)gt).getVariable(name);
     			if (result != null) return result;
     		}
     	}

@@ -45,8 +45,8 @@ public class TypedefType extends GenericType {
     public int getChildren() { return real.getChildren(); }
     public GenericElement getChild(int i) { return real.getChild(i); }
     public String getValue(TypeVisitor v) { 
-        StringBuffer buf = new StringBuffer(real.getName());
-        for (int i=0; i<pointer; ++i) buf.append('*');
+        StringBuffer buf = new StringBuffer();//real.getName());
+        //for (int i=0; i<pointer; ++i) buf.append('*');
         if (real.getChildren() == 0) buf.append(' ').append(real.getValue(v));
         return buf.toString();
     }
@@ -79,12 +79,15 @@ public class TypedefType extends GenericType {
     public String toString (String indent) {
         System.out.println("typedef: |"+name+"| to |"+real.getName()+"|");
         StringBuffer buf = new StringBuffer();
-        buf.append(name).append(" (");
-        buf.append(real.toString(indent)).append(")");
+        buf.append(name);
+        buf.append(" (");
         if (pointer > 0) {
-            buf.append(" ");
+            buf.append(real.getName()).append(" ");
             for (int i=0; i<pointer; ++i) buf.append("*");
+        } else {
+        	buf.append(real.toString(indent));
         }
+        buf.append(")");
         return buf.toString();
     }
 

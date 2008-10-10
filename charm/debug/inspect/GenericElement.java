@@ -16,5 +16,9 @@ public abstract class GenericElement extends VisitableType {
     /** Returns the data type associated with this element */
     public GenericType getType() { return type; }
 
+    public GenericElement castNewType(GenericType t, int p) { return null; }
+    
+    public boolean equals(GenericElement e) { return false; }
+    
     public int getPointer() { return 0; }
 }
