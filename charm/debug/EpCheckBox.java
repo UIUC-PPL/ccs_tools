@@ -18,17 +18,23 @@ public class EpCheckBox extends JCheckBox {
 	}
 	
 	void setCoverageColor(SortedSet activePes) {
-		if (!ep.getBPSet().isEmpty()) {
+		if (ep.getBPSet().isEmpty()) {
+			setForeground(Color.BLACK);
+			setSelected(false);
+		} else {
 			if (ep.getBPSet().containsAll(activePes)) {
 				setForeground(Color.BLACK);
+				setSelected(true);
 			} else {
 				SortedSet tmp = new TreeSet();
 				tmp.addAll(ep.getBPSet());
 				tmp.retainAll(activePes);
 				if (tmp.isEmpty()) {
 					setForeground(Color.BLACK);
+					setSelected(false);
 				} else {
 					setForeground(Color.GRAY);
+					setSelected(true);
 				}
 			}
 		}
