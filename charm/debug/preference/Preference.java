@@ -3,6 +3,7 @@ package charm.debug.preference;
 import charm.util.ReflectiveXML;
 
 import java.io.*;
+import java.util.Vector;
 import java.awt.*;
 import javax.swing.*;
 import org.xml.sax.SAXException;
@@ -11,11 +12,13 @@ public class Preference extends JPanel {
 	public Dimension size;
 	public Point location;
 	public Recent recentConfig;
+	public Recent recentPython;
 	
 	public Preference() {
 		size = null;
 		location = null;
 		recentConfig = new Recent();
+		recentPython = new Recent();
 	}
 	
 	public Object[] getRecent() {
@@ -24,6 +27,14 @@ public class Preference extends JPanel {
 	public void addRecent(String file) {
 		recentConfig.add(file);
 		//System.out.println("Adding recent file: "+file);
+	}
+	public Object[] getRecentPython() {
+		if (recentPython == null) recentPython = new Recent();
+		return recentPython.getList();
+	}
+	public void addRecentPython(String str) {
+		if (recentPython == null) recentPython = new Recent();
+		recentPython.add(str);
 	}
 	
 	public static Preference load() {
