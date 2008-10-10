@@ -83,6 +83,15 @@ author = idooley2
     <delete file="bin/charmdebug.jar"/>
   </target>
 
+  <target name="doc" description="build the documentation" >
+    <javadoc destdir="javadoc" private="true">
+      <packageset dir="." defaultexcludes="yes">
+        <include name="charm/debug/**"/>
+        <include name="charm/ccs/**"/>
+        <include name="charm/util/**"/>
+      </packageset>
+    </javadoc>
+  </target>
 
 </project>
 
