@@ -1,7 +1,5 @@
 package charm.debug.pdata;
 
-import javax.swing.JLabel;
-import javax.swing.JComponent;
 import charm.debug.inspect.Inspector;
 import charm.debug.inspect.InspectPanel;
 

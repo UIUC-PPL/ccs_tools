@@ -1,11 +1,7 @@
 package charm.debug.pdata;
 
-import charm.debug.fmt.*;
 import charm.debug.inspect.*;
-import charm.debug.ParDebug;
 import java.nio.ByteBuffer;
-
-import javax.swing.*;
 
 // Information regarding a message type
 public class ReadonlyInfo extends GenericInfo {

@@ -4,7 +4,6 @@ import charm.debug.fmt.*;
 import charm.debug.ParDebug;
 import charm.debug.inspect.*;
 import java.nio.ByteBuffer;
-import javax.swing.*;
 
 // Information regarding a message in the queue
 public class ChareInfo extends GenericInfo {

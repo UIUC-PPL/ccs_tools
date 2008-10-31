@@ -1,6 +1,5 @@
 package charm.debug.pdata;
 
-import javax.swing.JComponent;
 import charm.debug.inspect.InspectPanel;
 
 /**

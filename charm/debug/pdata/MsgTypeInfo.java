@@ -1,6 +1,5 @@
 package charm.debug.pdata;
 
-import javax.swing.*;
 import charm.debug.inspect.InspectPanel;
 
 // Information regarding a message type
