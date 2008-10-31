@@ -294,7 +294,7 @@ public class MemoryPanel extends JPanel
 	    bytesPixel.setText("Bytes per pixel: "+bytes+"."+decimal1+decimal2);
 	}
     }
-
+    
     public void actionPerformed(ActionEvent e) {
 	if (e.getSource() == menuLeak || e.getSource() == menuLeakFast) {
 	    System.out.println("Leak search");
@@ -303,7 +303,7 @@ public class MemoryPanel extends JPanel
 	    displayBytes();
 	    repaint();
 	} else if (e.getSource() == menuStat) {
-	    JOptionPane.showMessageDialog(this, "Memory Usage: "+NumberFormat.getInstance().format(memoryData.getAllocatedMemory())+" bytes\nAllocated blocks: "+NumberFormat.getInstance().format(memoryData.getNumAllocations()), "Memory Statistics", JOptionPane.INFORMATION_MESSAGE);
+	    JOptionPane.showMessageDialog(this, memoryData.memoryStatString(), "Memory Statistics", JOptionPane.INFORMATION_MESSAGE);
 	} else if (e.getSource() == menuInspect) {
 		Slot sl = memoryData.getSelectedSlot();
 		if (sl!=null) {

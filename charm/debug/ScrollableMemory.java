@@ -2,6 +2,7 @@ package charm.debug;
 
 import java.awt.*;
 import java.awt.image.*;
+import java.text.NumberFormat;
 import java.util.Vector;
 
 import javax.swing.*;
@@ -30,7 +31,8 @@ public class ScrollableMemory extends JLabel implements Scrollable {
 	private int numLines;
 	private int pixelsAvailable;
 	private int memorySize;
-	private int allocatedMemory;
+	private int allocatedMemory[];
+	private int numAllocations[];
 	private long firstByte;
 	private long lastByte;
 	private MemoryPList.Hole holes[];
@@ -100,7 +102,9 @@ public class ScrollableMemory extends JLabel implements Scrollable {
 		// System.out.println("holes detected "+(new Date()).toString());
 
 		memorySize = (int) (lastByte - firstByte + 1 - holes[0].getSize());
-		allocatedMemory = 0;
+		allocatedMemory = new int[6];
+		allocatedMemory[0] = allocatedMemory[1] = allocatedMemory[2] = 0;
+		allocatedMemory[3] = allocatedMemory[4] = allocatedMemory[5] = 0;
 
 		// System.out.println("data size = "+memorySize);
 		selectedSlot = null;
@@ -368,6 +372,21 @@ public class ScrollableMemory extends JLabel implements Scrollable {
 		if (sl != null) drawSlot(sl, rgbselected, lineWidth>>1);
 	}
 
+    public String memoryStatString() {
+    	NumberFormat f = NumberFormat.getInstance();
+    	StringBuffer buf = new StringBuffer("<html>Memory Usage: <table><tr><td>Type</td><td>Num. alloc</td><td>Total size</td></tr>");
+    	String names[] = {"Total", "Unknown", "System", "User", "Chare", "Message"};
+    	int alloc[] = getAllocatedMemory();
+    	int num[] = getNumAllocations();
+    	for (int i=0; i<6; ++i) {
+    		buf.append("<tr><td>").append(names[i]).append("</td><td>")
+    		   .append(f.format(num[i])).append("</td><td>")
+    		   .append(f.format(alloc[i])).append("</td></tr>");
+    	}
+    	buf.append("</table></html>");
+    	return buf.toString();
+    }
+
 	public void dimByChareID(boolean dim) {
 		if (dim && chareLists == null) {
 			// construct the lists
@@ -489,15 +508,23 @@ public class ScrollableMemory extends JLabel implements Scrollable {
 		return crossReference[line * horizontalPixels + x];
 	}
 
-	public int getAllocatedMemory() {
-		if (allocatedMemory == 0) {
-			for (int i = 0; i < data.size(0); ++i)
-				allocatedMemory += data.elementAt(0, i).getSize();
+	public int[] getAllocatedMemory() {
+		if (allocatedMemory[0] == 0) {
+			numAllocations = new int[6];
+			numAllocations[0] = numAllocations[1] = numAllocations[2] = 0;
+			numAllocations[3] = numAllocations[4] = numAllocations[5] = 0;
+			numAllocations[0] = data.size(0);
+			for (int i = 0; i < data.size(0); ++i) {
+				Slot sl = data.elementAt(0, i);
+				allocatedMemory[0] += sl.getSize();
+				numAllocations[sl.getType()+1] ++;
+				allocatedMemory[sl.getType()+1] += sl.getSize();
+			}
 		}
 		return allocatedMemory;
 	}
 
-	public int getNumAllocations() {
-		return data.size(0);
+	public int[] getNumAllocations() {
+		return numAllocations;
 	}
 }
