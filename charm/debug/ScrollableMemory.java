@@ -33,6 +33,8 @@ public class ScrollableMemory extends JLabel implements Scrollable {
 	private int memorySize;
 	private int allocatedMemory[];
 	private int numAllocations[];
+	private int allocatedLeak[];
+	private int numLeaks[];
 	private long firstByte;
 	private long lastByte;
 	private MemoryPList.Hole holes[];
@@ -103,8 +105,12 @@ public class ScrollableMemory extends JLabel implements Scrollable {
 
 		memorySize = (int) (lastByte - firstByte + 1 - holes[0].getSize());
 		allocatedMemory = new int[6];
-		allocatedMemory[0] = allocatedMemory[1] = allocatedMemory[2] = 0;
-		allocatedMemory[3] = allocatedMemory[4] = allocatedMemory[5] = 0;
+		numAllocations = new int[6];
+		allocatedLeak = new int[6];
+		numLeaks = new int[6];
+		for (int i=0; i<6; ++i) {
+			allocatedMemory[i] = numAllocations[i] = allocatedLeak[i] = numLeaks[i] = 0;
+		}
 
 		// System.out.println("data size = "+memorySize);
 		selectedSlot = null;
@@ -374,14 +380,15 @@ public class ScrollableMemory extends JLabel implements Scrollable {
 
     public String memoryStatString() {
     	NumberFormat f = NumberFormat.getInstance();
-    	StringBuffer buf = new StringBuffer("<html>Memory Usage: <table><tr><td>Type</td><td>Num. alloc</td><td>Total size</td></tr>");
+    	StringBuffer buf = new StringBuffer("<html>Memory Usage: <table><tr><td>Type</td><td>Num. alloc</td><td>Total size</td><td>Num. leaks</td><td>Leak size</td></tr>");
     	String names[] = {"Total", "Unknown", "System", "User", "Chare", "Message"};
-    	int alloc[] = getAllocatedMemory();
-    	int num[] = getNumAllocations();
+    	computeStatistics();
     	for (int i=0; i<6; ++i) {
     		buf.append("<tr><td>").append(names[i]).append("</td><td>")
-    		   .append(f.format(num[i])).append("</td><td>")
-    		   .append(f.format(alloc[i])).append("</td></tr>");
+    		   .append(f.format(numAllocations[i])).append("</td><td>")
+    		   .append(f.format(allocatedMemory[i])).append("</td><td>")
+    		   .append(f.format(numLeaks[i])).append("</td><td>")
+    		   .append(f.format(allocatedLeak[i])).append("</td></tr>");
     	}
     	buf.append("</table></html>");
     	return buf.toString();
@@ -508,23 +515,24 @@ public class ScrollableMemory extends JLabel implements Scrollable {
 		return crossReference[line * horizontalPixels + x];
 	}
 
-	public int[] getAllocatedMemory() {
+	public void computeStatistics() {
 		if (allocatedMemory[0] == 0) {
-			numAllocations = new int[6];
-			numAllocations[0] = numAllocations[1] = numAllocations[2] = 0;
-			numAllocations[3] = numAllocations[4] = numAllocations[5] = 0;
 			numAllocations[0] = data.size(0);
 			for (int i = 0; i < data.size(0); ++i) {
 				Slot sl = data.elementAt(0, i);
-				allocatedMemory[0] += sl.getSize();
 				numAllocations[sl.getType()+1] ++;
 				allocatedMemory[sl.getType()+1] += sl.getSize();
+				if (sl.isLeak()) {
+					allocatedLeak[sl.getType()+1] += sl.getSize();
+					numLeaks[sl.getType()+1] ++;
+				}
+			}
+			for (int i=0; i<6; ++i) {
+				numAllocations[0] += numAllocations[i];
+				allocatedLeak[0] += allocatedLeak[i];
+				numLeaks[0] += numLeaks[i];
 			}
 		}
-		return allocatedMemory;
 	}
 
-	public int[] getNumAllocations() {
-		return numAllocations;
-	}
 }
