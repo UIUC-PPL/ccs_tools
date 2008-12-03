@@ -72,7 +72,7 @@ public class PythonInstalledCode extends JDialog {
 		super((Frame)null, "Python script", modal);
 		installed = new Vector();
 		getContentPane().setLayout(new BoxLayout(getContentPane(), BoxLayout.Y_AXIS));
-		setMinimumSize(new Dimension(200, 100));
+		setMinimumSize(new Dimension(400, 300));
 		
 		tableModel = new PythonTableModel();
 		table = new JTable(tableModel);
