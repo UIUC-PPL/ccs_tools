@@ -7,6 +7,7 @@ import java.util.Vector;
 
 import javax.swing.*;
 
+import charm.ccs.CcsServer;
 import charm.debug.fmt.*;
 import charm.debug.pdata.MemoryPList;
 import charm.debug.pdata.Slot;
@@ -78,8 +79,12 @@ public class ScrollableMemory extends JLabel implements Scrollable {
 		// Date()).toString());
 		PList list;
 		if (isLeak) {
-			list = ParDebug.server.getPList("converse/memory/leak", pe, low, 1, ParDebug.globals);
-		} else list = ParDebug.server.getPList("converse/memory", pe);
+			//list = ParDebug.server.getPList("converse/memory/leak", pe, low, 1, ParDebug.globals);
+			CcsServer.writeInt(ParDebug.globals, ParDebug.globals.length-8, low);
+			CcsServer.writeInt(ParDebug.globals, ParDebug.globals.length-4, pe);
+			ParDebug.server.sendCcsRequestBytes("converse_memory_leak", ParDebug.globals, pe, true);
+		}
+		list = ParDebug.server.getPList("converse/memory", pe);
 		// System.out.println("received data from server ("+list.size()+")
 		// "+(new Date()).toString());
 		data = new MemoryPList();
@@ -380,14 +385,14 @@ public class ScrollableMemory extends JLabel implements Scrollable {
 
     public String memoryStatString() {
     	NumberFormat f = NumberFormat.getInstance();
-    	StringBuffer buf = new StringBuffer("<html>Memory Usage: <table><tr><td>Type</td><td>Num. alloc</td><td>Total size</td><td>Num. leaks</td><td>Leak size</td></tr>");
+    	StringBuffer buf = new StringBuffer("<html>Memory Usage: <table border=1><th><td>Num. alloc</td><td>Total size</td><td>Num. leaks</td><td>Leak size</td></th>");
     	String names[] = {"Total", "Unknown", "System", "User", "Chare", "Message"};
     	computeStatistics();
     	for (int i=0; i<6; ++i) {
-    		buf.append("<tr><td>").append(names[i]).append("</td><td>")
-    		   .append(f.format(numAllocations[i])).append("</td><td>")
-    		   .append(f.format(allocatedMemory[i])).append("</td><td>")
-    		   .append(f.format(numLeaks[i])).append("</td><td>")
+    		buf.append("<tr><td>").append(names[i]).append("</td><td align=right>")
+    		   .append(f.format(numAllocations[i])).append("</td><td align=right>")
+    		   .append(f.format(allocatedMemory[i])).append("</td><td align=right>")
+    		   .append(f.format(numLeaks[i])).append("</td><td align=right>")
     		   .append(f.format(allocatedLeak[i])).append("</td></tr>");
     	}
     	buf.append("</table></html>");

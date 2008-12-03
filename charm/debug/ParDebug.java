@@ -146,11 +146,15 @@ public class ParDebug extends JPanel
     private JMenuItem menuActionContinue;
     private JMenuItem menuActionQuit;
     private JMenuItem menuActionFreeze;
-    private JMenuItem menuActionMemory;
-    private JMenuItem menuActionAllocationTree;
-    private JMenuItem menuActionAllocationGraph;
     private JMenuItem menuActionPython;
     private JMenuItem menuActionPythonInstalled;
+    private JMenu menuMemory;
+    private JMenuItem menuMemoryView;
+    private JMenuItem menuMemoryAllocationTree;
+    private JMenuItem menuMemoryAllocationGraph;
+    private JMenuItem menuMemoryLeak;
+    private JMenuItem menuMemoryQuickLeak;
+    private JMenuItem menuMemoryStatistics;
     
 
 /************** CCS (network) interface ************ /
@@ -390,7 +394,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
     }
     
     public void notifyAbort (String txt) {
-    	int pe = Integer.parseInt(txt.substring(34));
+    	int pe = Integer.parseInt(txt.substring(29));
     	System.out.println("notifyAbort: "+txt+" pe="+pe);
     	pes[pe].setDead();
     	enableButtons();
@@ -404,8 +408,9 @@ DEPRECATED!! The correct implementation is in CpdList.java
     }
 
     public void notifySignal (String txt) {
-    	int separ = txt.indexOf(':',34);
-    	int pe = Integer.parseInt(txt.substring(34, separ));
+    	//System.out.println("signal string: "+txt);
+    	int separ = txt.indexOf(':',29);
+    	int pe = Integer.parseInt(txt.substring(29, separ));
     	int signal = Integer.parseInt(txt.substring(separ+2));
     	System.out.println("notifySignal: "+txt+" pe="+pe+", sigNo="+signal);
     	pes[pe].setDead();
@@ -551,20 +556,33 @@ DEPRECATED!! The correct implementation is in CpdList.java
        menuAction.add(menuActionQuit = new JMenuItem("Quit",'Q'));
        listenTo(menuActionQuit,"quit","Quit the parallel program"); 
        menuAction.addSeparator();
-       menuAction.add(menuActionMemory = new JMenuItem("Memory",'M'));
-       listenTo(menuActionMemory,"memory","Inspect the application memory"); 
-       menuActionMemory.setEnabled(false);
-       menuAction.add(menuActionAllocationTree = new JMenuItem("Memory Allocation Tree",'T'));
-       listenTo(menuActionAllocationTree,"allocationTree","Print the memory allocation tree");
-       menuActionAllocationTree.setEnabled(false);
-       menuAction.add(menuActionAllocationGraph = new JMenuItem("Memory Allocation Graph",'G'));
-       listenTo(menuActionAllocationGraph,"allocationGraph","Print the memory allocation graph");
        menuAction.add(menuActionPython = new JMenuItem("Python script", 'P'));
        listenTo(menuActionPython,"python","Run python script on application");
        menuActionPython.setEnabled(false);
-       menuAction.add(menuActionPythonInstalled = new JMenuItem("View python script", 'S'));
+       menuAction.add(menuActionPythonInstalled = new JMenuItem("View python scripts", 'S'));
        listenTo(menuActionPythonInstalled,"pythoninstalled","View python scripts installed");
        menuActionPythonInstalled.setEnabled(false);
+       
+       menuBar.add(menuMemory = new JMenu("Memory"));
+       menuMemory.setMnemonic('M');
+       menuMemory.add(menuMemoryView = new JMenuItem("Memory View",'M'));
+       listenTo(menuMemoryView,"memory","Inspect the application memory"); 
+       menuMemoryView.setEnabled(false);
+       menuMemory.add(menuMemoryAllocationTree = new JMenuItem("Memory Allocation Tree",'T'));
+       listenTo(menuMemoryAllocationTree,"allocationTree","Print the memory allocation tree");
+       menuMemoryAllocationTree.setEnabled(false);
+       menuMemory.add(menuMemoryAllocationGraph = new JMenuItem("Memory Allocation Graph",'G'));
+       listenTo(menuMemoryAllocationGraph,"allocationGraph","Print the memory allocation graph");
+       menuMemory.addSeparator();
+       menuMemory.add(menuMemoryQuickLeak = new JMenuItem("Quick Leak Search"));
+       listenTo(menuMemoryQuickLeak,"leakquick","Quick search for memory leacks");
+       menuMemoryQuickLeak.setEnabled(false);
+       menuMemory.add(menuMemoryLeak = new JMenuItem("Leak Search"));
+       listenTo(menuMemoryLeak,"leaksearch","Search for memory leacks");
+       menuMemoryLeak.setEnabled(false);
+       menuMemory.add(menuMemoryStatistics = new JMenuItem("Statistics"));
+       listenTo(menuMemoryStatistics,"memstat","Display memory statistics");
+       menuMemoryStatistics.setEnabled(false);
        
        //Creating status bar
        statusArea = new JTextField(60);
@@ -1145,6 +1163,54 @@ DEPRECATED!! The correct implementation is in CpdList.java
     		frame.setVisible(true);
     	    }
     	}
+    	else if (e.getActionCommand().equals("leaksearch") || e.getActionCommand().equals("leakquick")) {
+    		String input = JOptionPane.showInputDialog("Processor to load (-1 for all)");
+    		int inputValue;
+    		int pe;
+    		try {
+    			inputValue = Integer.parseInt(input);
+    		} catch (NumberFormatException ex) {
+    			return;
+    		}
+    		pe = inputValue;
+    		if (pe >= numberPesGlobal) {
+    			JOptionPane.showMessageDialog(this, "There are only "+numberPesGlobal+" processors.", "Error", JOptionPane.ERROR_MESSAGE);
+    			return;
+    		}
+    		if (inputValue == -1) pe = 0;
+    		CcsServer.writeInt(ParDebug.globals, ParDebug.globals.length-8, e.getActionCommand().equals("leakquick") ? 1 : 0);
+    		CcsServer.writeInt(ParDebug.globals, ParDebug.globals.length-4, inputValue);
+    		ParDebug.server.sendCcsRequestBytes("converse_memory_leak", ParDebug.globals, pe, true);
+
+    		/*
+    		if (inputValue == -1) frame.setTitle("Combined Allocation Tree");
+    		else frame.setTitle("Allocation Tree Processor "+input);
+    		if (inputValue == -1) inputValue = 0; /* Send request to 0 */
+    		
+    	}
+    	else if (e.getActionCommand().equals("memstat")) {
+    		String input = JOptionPane.showInputDialog("Processor to load (-1 for all)");
+    		int pe;
+    		try {
+    			pe = Integer.parseInt(input);
+    		} catch (NumberFormatException ex) {
+    			return;
+    		}
+    		if (pe >= numberPesGlobal) {
+    			JOptionPane.showMessageDialog(this, "There are only "+numberPesGlobal+" processors.", "Error", JOptionPane.ERROR_MESSAGE);
+    			return;
+    		}
+    		if (pe == -1) pe = 0;
+    		byte[] buf = ParDebug.server.sendCcsRequestBytes("ccs_debug_memStat", input, pe);
+    		PConsumer cons=new PConsumer();
+    		cons.decode(buf);
+    		PList stat = cons.getList();
+    		System.out.println(stat);
+    		MemStat m = new MemStat();
+    		m.load(stat);
+    		System.out.println(m.toString());
+    		JOptionPane.showMessageDialog(this, m.display(), "Memory Statistics", JOptionPane.INFORMATION_MESSAGE);
+    	}
     	else if (e.getActionCommand().equals("python")) {
     		new PythonDialog(this, false, groupItems, chareItems, gdb, server);
     		/*
@@ -1212,10 +1278,12 @@ DEPRECATED!! The correct implementation is in CpdList.java
     	}
     	else if (e.getActionCommand().equals("peSetDetails")) {
     		PeSet set = (PeSet)peList.getSelectedValue();
-    		System.out.print("Details for set "+set.getName()+": {");
+    		String bufTitle = new String("Details for set \""+set.getName()+"\"");
+    		StringBuffer buf = new StringBuffer();
     		Iterator iter = set.getList().iterator();
-    		while (iter.hasNext()) System.out.print(" "+iter.next());
-    		System.out.println(" }");
+    		while (iter.hasNext()) buf.append(" "+iter.next());
+    		System.out.println(bufTitle+": {"+buf.toString()+" }");
+    		JOptionPane.showMessageDialog(this, buf.toString(), bufTitle, JOptionPane.INFORMATION_MESSAGE);
     	}
     	/*
     	else if (e.getActionCommand().equals("pecheck")) 
@@ -1404,50 +1472,14 @@ DEPRECATED!! The correct implementation is in CpdList.java
     		}
     	} else {
     		programOutputArea.setText("Attaching to running program");
-    		servthread = (new ServThread.CCS(this, exec));
+    		if (! exec.inputFile.equals("")) servthread = (new ServThread.File(this, new File(exec.inputFile)));
+    		else servthread = (new ServThread.CCS(this, exec));
     		servthread.start();
     	}
     	try {
-    		// Retrieve the initial info from charmrun regarding the program segments
-    		//StringBuffer initialInfoBuf = new StringBuffer();
-    		String initialInfo = getInitialInfo(); //servthread.infoCommand(" ");
-    		//while ((initialInfo = servthread.infoCommand(" ")).indexOf("\n(gdb)") == -1) {
-    		//    initialInfoBuf.append(initialInfo);
-    		//    System.out.println("++|"+initialInfo+"|");
-    		//}
-    		//System.out.println("|"+initialInfo+"|");
-    		//initialInfoBuf.append(initialInfo);
-    		//initialInfo = initialInfoBuf.toString();
-    		//System.out.println("|"+initialInfo+"|");
-    		int dataInitial = initialInfo.indexOf("\n.data ");
-    		int dataFinal = initialInfo.indexOf("\n",dataInitial+1);
-    		String dataValues = initialInfo.substring(dataInitial+6,dataFinal).trim();
-    		int endSize = dataValues.indexOf(' ');
-    		int startPos = dataValues.lastIndexOf(' ');
-    		int dataSize = Integer.parseInt(dataValues.substring(0,endSize));
-    		dataPos = Integer.parseInt(dataValues.substring(startPos+1));
-    		//System.out.println("string1: |"+initialInfo.substring(dataInitial+6,dataFinal).trim()+"| "+dataSize+" "+dataPos);
-    		int bssInitial = initialInfo.indexOf("\n.bss");
-    		int bssFinal = initialInfo.indexOf("\n",bssInitial+1);
-    		String bssValues = initialInfo.substring(bssInitial+6,bssFinal).trim();
-    		endSize = bssValues.indexOf(' ');
-    		startPos = bssValues.lastIndexOf(' ');
-    		int bssSize = Integer.parseInt(bssValues.substring(0,endSize));
-    		int bssPos = Integer.parseInt(bssValues.substring(startPos+1));
-    		//System.out.println("string1: |"+initialInfo.substring(bssInitial+5,bssFinal).trim()+"| "+bssSize+" "+bssPos);
-    		// FIXME: here we assume the program is 32 bit, or if 64 bit all the addresses are small
-    		globals = new byte[16]; // 4 integers of 4 bytes each
-    		CcsServer.writeInt(globals, 0, dataPos);
-    		CcsServer.writeInt(globals, 4, dataPos+dataSize);
-    		CcsServer.writeInt(globals, 8, bssPos);
-    		CcsServer.writeInt(globals, 12, bssPos+bssSize);
-
-    		// Delete the first print made by gdb at startup
-    		//System.out.println(servthread.infoCommand(" "));
-
     		/* Wait until the "ccs:" line comes out of the program's stdout */
     		long iter = 0;
-    		if (! attachMode) {
+    		if (! attachMode || ! exec.inputFile.equals("")) {
     			while (servthread.portno == null)
     			{
     				try { Thread.sleep(100); }
@@ -1457,7 +1489,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
     			}
     		}
     		
-    		if (attachMode && (exec.port.length() == 0 || exec.hostname.equals("localhost"))) {
+    		if (attachMode && exec.inputFile.equals("") && (exec.port.length() == 0 || exec.hostname.equals("localhost"))) {
     			JOptionPane.showMessageDialog(this, "Hostname and port number must be specified in attach mode", "Error", JOptionPane.ERROR_MESSAGE);
     			quitProgram();
     			return;
@@ -1485,6 +1517,56 @@ DEPRECATED!! The correct implementation is in CpdList.java
     		System.out.println("Connecting to: "+exec.username+(exec.username.length()>0?"@":"")+(exec.hostname.equals("localhost")?hostnumber:exec.hostname)+":"+portnumber);
     		CcsServer ccs = CcsServer.create(ccsArgs,false);
     		server = new CpdUtil(ccs);
+
+    		/* Reset the type information stored */
+    		Inspector.initialize(server);
+
+    		// Retrieve the initial info from charmrun regarding the program segments
+    		//StringBuffer initialInfoBuf = new StringBuffer();
+    		String initialInfo = getInitialInfo(); //servthread.infoCommand(" ");
+    		//while ((initialInfo = servthread.infoCommand(" ")).indexOf("\n(gdb)") == -1) {
+    		//    initialInfoBuf.append(initialInfo);
+    		//    System.out.println("++|"+initialInfo+"|");
+    		//}
+    		//System.out.println("|"+initialInfo+"|");
+    		//initialInfoBuf.append(initialInfo);
+    		//initialInfo = initialInfoBuf.toString();
+    		//System.out.println("|"+initialInfo+"|");
+    		int dataInitial = initialInfo.indexOf("\n.data ");
+    		int dataFinal = initialInfo.indexOf("\n",dataInitial+1);
+    		String dataValues = initialInfo.substring(dataInitial+6,dataFinal).trim();
+    		int endSize = dataValues.indexOf(' ');
+    		int startPos = dataValues.lastIndexOf(' ');
+    		int dataSize = Integer.parseInt(dataValues.substring(0,endSize));
+    		dataPos = Integer.parseInt(dataValues.substring(startPos+1));
+    		System.out.println("string1: |"+initialInfo.substring(dataInitial+6,dataFinal).trim()+"| "+dataSize+" "+dataPos);
+    		int bssInitial = initialInfo.indexOf("\n.bss");
+    		int bssFinal = initialInfo.indexOf("\n",bssInitial+1);
+    		String bssValues = initialInfo.substring(bssInitial+6,bssFinal).trim();
+    		endSize = bssValues.indexOf(' ');
+    		startPos = bssValues.lastIndexOf(' ');
+    		int bssSize = Integer.parseInt(bssValues.substring(0,endSize));
+    		int bssPos = Integer.parseInt(bssValues.substring(startPos+1));
+    		System.out.println("string1: |"+initialInfo.substring(bssInitial+5,bssFinal).trim()+"| "+bssSize+" "+bssPos);
+    		// FIXME: here we assume the program is 32 bit, or if 64 bit all the addresses are small
+    		
+    		int zero = 0;
+    		// HACK!
+    		if (Inspector.is64bit()) {
+    			globals = new byte[40]; // 4 pointers of 8 bytes each + 8 extra bytes
+       			CcsServer.writeLong(globals, 0, dataPos);
+    			CcsServer.writeLong(globals, 8, dataPos+dataSize);
+    			CcsServer.writeLong(globals, 16, bssPos);
+    			CcsServer.writeLong(globals, 24, bssPos+bssSize);
+    		} else {
+    			globals = new byte[20]; // 4 pointers of 4 bytes each + 8 extra bytes
+    			CcsServer.writeInt(globals, 0, dataPos);
+    			CcsServer.writeInt(globals, 4, dataPos+dataSize);
+    			CcsServer.writeInt(globals, 8, bssPos);
+    			CcsServer.writeInt(globals, 12, bssPos+bssSize);
+    		}
+    		// Delete the first print made by gdb at startup
+    		//System.out.println(servthread.infoCommand(" "));
 
     		/* Create the pe list */
     		//peList = new boolean[exec.npes];
@@ -1527,14 +1609,14 @@ DEPRECATED!! The correct implementation is in CpdList.java
     		startGdbButton.setEnabled(true); 
     		menuActionPython.setEnabled(true);
     		menuActionPythonInstalled.setEnabled(true);
-    		menuActionMemory.setEnabled(true);
-    		menuActionAllocationTree.setEnabled(true);
+    		menuMemoryView.setEnabled(true);
+    		menuMemoryAllocationTree.setEnabled(true);
+    		menuMemoryLeak.setEnabled(true);
+    		menuMemoryQuickLeak.setEnabled(true);
+    		menuMemoryStatistics.setEnabled(true);
     		enableButtons();
     		
     		int nItems;
-
-    		/* Reset the type information stored */
-    		Inspector.initialize(server);
 
     		/* Load the information regarding all chares */
     		nItems = server.getListLength("charm/chares",0);
@@ -1654,8 +1736,11 @@ DEPRECATED!! The correct implementation is in CpdList.java
     	pesbox.setEnabled(false);
     	menuActionPython.setEnabled(false);
     	menuActionPythonInstalled.setEnabled(false);
-    	menuActionMemory.setEnabled(false);
-    	menuActionAllocationTree.setEnabled(false);
+    	menuMemoryView.setEnabled(false);
+    	menuMemoryAllocationTree.setEnabled(false);
+    	menuMemoryLeak.setEnabled(false);
+    	menuMemoryQuickLeak.setEnabled(false);
+    	menuMemoryStatistics.setEnabled(false);
 
     	peList.removeAll();
     	peListModel.removeAllElements();
@@ -1719,6 +1804,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
     	exec.npes = 1;
     	String numberPesString="1";
     	exec.parameters = "";
+    	exec.inputFile = "";
     	envDisplay = "";
     	exec.sshTunnel = false;
     	sshTunnel = null;
@@ -1752,6 +1838,8 @@ DEPRECATED!! The correct implementation is in CpdList.java
     			envDisplay = args[i+1];
     		else if (args[i].equals("-dir"))
     			exec.workingDir = args[i+1];
+    		else if (args[i].equals("-outputfile"))
+    			exec.inputFile = args[i+1];
     		else if (args[i].equals("-sshtunnel")) {
     			exec.sshTunnel = true;
     			i--;

@@ -12,7 +12,7 @@ public class ParamsDialog extends JDialog implements ActionListener {
 	//ParDebug mainObject = null;
 	Execution exec = null;
 
-	private JTextField  clParams, numPes, portno, hostname, username, filename, dir;
+	private JTextField  clParams, numPes, portno, hostname, username, filename, dir, inputFile;
 	private JCheckBox sshTunnel;
 	private JButton chooser, dirchooser;
 
@@ -39,13 +39,14 @@ public class ParamsDialog extends JDialog implements ActionListener {
 		getContentPane().setLayout(new BoxLayout(getContentPane(), BoxLayout.Y_AXIS));
 		
 		JPanel contents = new JPanel();
+		int nextLine=0;
 
 		GridBagLayout grid = new GridBagLayout();
 		GridBagConstraints c = new GridBagConstraints();
 		contents.setLayout(grid);
 
 		c.gridx = 0;
-		c.gridy = 0;
+		c.gridy = nextLine;
 		c.gridwidth = 1;
 		c.anchor = GridBagConstraints.WEST;
 		c.insets = new Insets(12,12,0,0);
@@ -55,8 +56,10 @@ public class ParamsDialog extends JDialog implements ActionListener {
 		contents.add(filenamelabel);
 		
 		filename = new JTextField(35);
+		filename.setActionCommand("cmd.ok");
+		filename.addActionListener(this);
 		c.gridx = 1;
-		c.gridy = 0;
+		c.gridy = nextLine;
 		c.gridwidth = 2;
 		c.fill = GridBagConstraints.HORIZONTAL;
 		c.weightx = 1.0;
@@ -67,14 +70,14 @@ public class ParamsDialog extends JDialog implements ActionListener {
 		chooser.setActionCommand("browse");
 		chooser.addActionListener(this);
 		c.gridx = 3;
-		c.gridy = 0;
+		c.gridy = nextLine;
 		c.gridwidth = 1;
 		c.fill = GridBagConstraints.EAST;
 		c.insets = new Insets(12,5,0,10);
 		grid.setConstraints(chooser, c);
 		
 		c.gridx = 0;
-		c.gridy = 1;
+		c.gridy = ++nextLine;
 		c.gridwidth = 1;
 		c.anchor = GridBagConstraints.WEST;
 		c.insets = new Insets(12,12,0,0);
@@ -84,8 +87,10 @@ public class ParamsDialog extends JDialog implements ActionListener {
 		contents.add(dirlabel);
 		
 		dir = new JTextField(35);
+		dir.setActionCommand("cmd.ok");
+		dir.addActionListener(this);
 		c.gridx = 1;
-		c.gridy = 1;
+		c.gridy = nextLine;
 		c.gridwidth = 2;
 		c.fill = GridBagConstraints.HORIZONTAL;
 		c.weightx = 1.0;
@@ -96,14 +101,14 @@ public class ParamsDialog extends JDialog implements ActionListener {
 		dirchooser.setActionCommand("browsedir");
 		dirchooser.addActionListener(this);
 		c.gridx = 3;
-		c.gridy = 1;
+		c.gridy = nextLine;
 		c.gridwidth = 1;
 		c.fill = GridBagConstraints.EAST;
 		c.insets = new Insets(12,5,0,10);
 		grid.setConstraints(dirchooser, c);
 		
 		c.gridx = 0;
-		c.gridy = 2;
+		c.gridy = ++nextLine;
 		c.gridwidth = 1;
 		c.anchor = GridBagConstraints.WEST;
 		c.insets = new Insets(12,12,0,0);
@@ -114,8 +119,10 @@ public class ParamsDialog extends JDialog implements ActionListener {
 		contents.add(paramlabel);
 
 		clParams = new JTextField(35);
+		clParams.setActionCommand("cmd.ok");
+		clParams.addActionListener(this);
 		c.gridx = 1;
-		c.gridy = 2;
+		c.gridy = nextLine;
 		c.gridwidth = 3;
 		c.fill = GridBagConstraints.HORIZONTAL;
 		c.weightx = 1.0;
@@ -123,7 +130,7 @@ public class ParamsDialog extends JDialog implements ActionListener {
 		grid.setConstraints(clParams,c); 
 
 		c.gridx = 0;
-		c.gridy = 3;
+		c.gridy = ++nextLine;
 		c.gridwidth = 1;
 		c.anchor = GridBagConstraints.WEST;
 		c.insets = new Insets(12,12,0,0);
@@ -134,8 +141,10 @@ public class ParamsDialog extends JDialog implements ActionListener {
 		contents.add(peslabel);
 
 		numPes = new JTextField(5);
+		numPes.setActionCommand("cmd.ok");
+		numPes.addActionListener(this);
 		c.gridx = 1;
-		c.gridy = 3;
+		c.gridy = nextLine;
 		c.gridwidth = 1;
 		c.fill = GridBagConstraints.NONE;
 		c.anchor = GridBagConstraints.WEST;
@@ -144,7 +153,7 @@ public class ParamsDialog extends JDialog implements ActionListener {
 
 
 		c.gridx = 0;
-		c.gridy = 4;
+		c.gridy = ++nextLine;
 		c.anchor = GridBagConstraints.WEST;
 		c.insets = new Insets(12,12,0,0);
 		JLabel portNumberLabel = new JLabel();
@@ -154,17 +163,19 @@ public class ParamsDialog extends JDialog implements ActionListener {
 		contents.add(portNumberLabel);
 
 		c.gridx = 1;
-		c.gridy = 4;
+		c.gridy = nextLine;
 		c.gridwidth = 1;
 		c.fill = GridBagConstraints.NONE;
 		c.anchor = GridBagConstraints.WEST;
 		c.insets = new Insets(12,8,0,0);
 		portno = new JTextField(5);
+		portno.setActionCommand("cmd.ok");
+		portno.addActionListener(this);
 		grid.setConstraints(portno, c);
 		//contents.add(portno);
 
 		c.gridx = 0;
-		c.gridy = 5;
+		c.gridy = ++nextLine;
 		c.anchor = GridBagConstraints.WEST;
 		c.insets = new Insets(12,12,0,0);
 		JLabel hostNameLabel = new JLabel();
@@ -174,16 +185,18 @@ public class ParamsDialog extends JDialog implements ActionListener {
 		contents.add(hostNameLabel);
 
 		c.gridx = 1;
-		c.gridy = 5;
+		c.gridy = nextLine;
 		c.gridwidth = 1;
 		c.fill = GridBagConstraints.NONE;
 		c.anchor = GridBagConstraints.WEST;
 		c.insets = new Insets(12,8,0,0);
 		hostname = new JTextField(20);
+		hostname.setActionCommand("cmd.ok");
+		hostname.addActionListener(this);
 		grid.setConstraints(hostname, c);
 
 		c.gridx = 0;
-		c.gridy = 6;
+		c.gridy = ++nextLine;
 		c.anchor = GridBagConstraints.WEST;
 		c.insets = new Insets(6,12,0,0);
 		JLabel userNameLabel = new JLabel();
@@ -193,16 +206,39 @@ public class ParamsDialog extends JDialog implements ActionListener {
 		contents.add(userNameLabel);
 
 		c.gridx = 1;
-		c.gridy = 6;
+		c.gridy = nextLine;
 		c.gridwidth = 1;
 		c.fill = GridBagConstraints.NONE;
 		c.anchor = GridBagConstraints.WEST;
 		c.insets = new Insets(6,8,0,0);
 		username = new JTextField(15);
+		username.setActionCommand("cmd.ok");
+		username.addActionListener(this);
 		grid.setConstraints(username, c);
 
+		c.gridx = 0;
+		c.gridy = ++nextLine;
+		c.anchor = GridBagConstraints.WEST;
+		c.insets = new Insets(6,12,0,0);
+		JLabel inputFileLabel = new JLabel();
+		inputFileLabel.setText("Input file:");
+		inputFileLabel.setLabelFor(inputFile);
+		grid.setConstraints(inputFileLabel, c);
+		contents.add(inputFileLabel);
+
 		c.gridx = 1;
-		c.gridy = 7;
+		c.gridy = nextLine;
+		c.gridwidth = 1;
+		c.fill = GridBagConstraints.NONE;
+		c.anchor = GridBagConstraints.WEST;
+		c.insets = new Insets(6,8,0,0);
+		inputFile = new JTextField(15);
+		inputFile.setActionCommand("cmd.ok");
+		inputFile.addActionListener(this);
+		grid.setConstraints(inputFile, c);
+		
+		c.gridx = 1;
+		c.gridy = ++nextLine;
 		c.gridwidth = 1;
 		c.fill = GridBagConstraints.NONE;
 		c.anchor = GridBagConstraints.WEST;
@@ -219,6 +255,7 @@ public class ParamsDialog extends JDialog implements ActionListener {
 		contents.add(portno);
 		contents.add(hostname);
 		contents.add(username);
+		contents.add(inputFile);
 		contents.add(sshTunnel);
 
 		JPanel buttonPanel = new JPanel();
@@ -226,11 +263,7 @@ public class ParamsDialog extends JDialog implements ActionListener {
 		JButton okButton = new JButton();
 		okButton.setText("OK");
 		okButton.setActionCommand("cmd.ok");
-		okButton.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent event) {
-				windowAction(event);
-			}
-		});
+		okButton.addActionListener(this);
 		buttonPanel.add(okButton);
 
 		// space
@@ -240,15 +273,11 @@ public class ParamsDialog extends JDialog implements ActionListener {
 		JButton cancelButton = new JButton();
 		cancelButton.setText("CANCEL");
 		cancelButton.setActionCommand("cmd.cancel");
-		cancelButton.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent event) {
-				windowAction(event);
-			}
-		});
+		cancelButton.addActionListener(this);
 		buttonPanel.add(cancelButton);
 
 		c.gridx = 1;
-		c.gridy = 7;
+		c.gridy = nextLine;
 		c.gridwidth = 7;
 		c.weightx = 0.0;
 		c.weighty = 0.0;
@@ -266,11 +295,13 @@ public class ParamsDialog extends JDialog implements ActionListener {
 		portno.setText(""+exec.port);
 		hostname.setText(exec.hostname);
 		username.setText(exec.username);
+		inputFile.setText(exec.inputFile);
 		sshTunnel.setSelected(exec.sshTunnel);
 		dir.setText(exec.workingDir);
 	}
 
     public void actionPerformed(ActionEvent e) {
+		boolean closeWindow = false;
     	//int destPE = 0;
     	if (e.getActionCommand().equals("browse")) 
     	{ /* Bring up file dialog box to select a new executable */
@@ -287,9 +318,40 @@ public class ParamsDialog extends JDialog implements ActionListener {
     		if(returnVal == JFileChooser.APPROVE_OPTION) {
     			dir.setText(chooser.getSelectedFile().getAbsolutePath());
     		}
-    	}
+    	} else if (e.getActionCommand().equals("cmd.cancel")) {
+			//System.out.println("your 'cancel' code here...");
+			closeWindow = true;
+		} else if (e.getActionCommand().equals("cmd.ok")) {
+			//System.out.println("your 'OK' code here...");
+			//mainObject.setParametersForProgram(clParams.getText(), numPes.getText(), portno.getText(),
+			//		hostname.getText(), username.getText(), sshTunnel.isSelected());
+			int numberPes;
+			int portNumber;
+			try {
+				numberPes = Integer.parseInt(numPes.getText());
+				if (!portno.getText().equals("")) portNumber = Integer.parseInt(portno.getText());
+			} catch (NumberFormatException nfe) {
+				JOptionPane.showMessageDialog(this, "All values must be positive integers", "Error", JOptionPane.ERROR_MESSAGE);
+				return;
+			}
+			exec.executable = filename.getText();
+			exec.parameters = clParams.getText();
+			exec.npes = numberPes;
+			exec.port = portno.getText();
+			exec.hostname = hostname.getText();
+			exec.username = username.getText();
+			exec.inputFile = inputFile.getText();
+			exec.sshTunnel = sshTunnel.isSelected();
+			exec.workingDir = dir.getText();
+			closeWindow = true;
+		} 
+		if (closeWindow) {
+			setVisible(false);
+			dispose();
+		}
     }
-    
+
+    /*
     private void windowAction(Object actionCommand) {
 		boolean closeWindow = false;
 		String cmd = null;
@@ -333,7 +395,7 @@ public class ParamsDialog extends JDialog implements ActionListener {
 			dispose();
 		}
 	} // windowAction()
-
+    */
 
 //	for debugging purposes
 	public static void main (String args[])

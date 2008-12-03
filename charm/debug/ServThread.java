@@ -141,7 +141,9 @@ public abstract class ServThread extends Thread {
 			do
 			{ /* Fetch a line of output and handle it */
 				outline = prout.readLine();
-				if (outline == null) break;
+				if (outline == null) {
+					continue;
+				}
 				if(!foundPort)
 				{
 					int portStart, portEnd;
@@ -181,7 +183,7 @@ public abstract class ServThread extends Thread {
 				//}
 
 			}
-			while (prout.ready() && (outlinechunk.length()<maxChunk));
+			while ((prout.ready() && (outlinechunk.length()<maxChunk)) || (outlinechunk.length()==0));
 			return outline;
 		}
 	}
