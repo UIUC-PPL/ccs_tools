@@ -34,7 +34,7 @@ public class Inspector {
         allTypes.put("bool", new PrimitiveType("bool"));
 
         /* Gather the information about the machine from the running application */
-        byte[] machineType = server.sendCcsRequest("ccs_machine_architecture", "", 0).getBytes();
+        byte[] machineType = server.sendCcsRequestBytes("ccs_machine_architecture", "", 0);
         System.out.print("Machine is ");
         if (machineType[0] == 1) {
             System.out.print("32 bit, ");

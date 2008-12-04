@@ -16,6 +16,7 @@ public class TinyClient
 
     public TinyClient(CcsServer ccs_,String listName,int forPE, int lo, int hi) {
     	cpd=new CpdUtil(ccs_);
+	charm.debug.inspect.Inspector.initialize(cpd);
 	if (listName==null) listName="converse/lists";
 	int nItems=cpd.getListLength(listName,forPE);
 	System.out.println("Cpd list "+listName+" contains "+nItems+" items");
@@ -28,6 +29,8 @@ public class TinyClient
 	byte[] bitems=cpd.byteList(listName,"fmt",forPE,lo,hi,null);
 	System.out.println("\n------ Binary version ("+
 	      bitems.length+" bytes)");
+	for (int i=0;i<bitems.length;++i) System.out.println(bitems[i]+" "+(char)bitems[i]);
+	System.out.println("}");
 	decodeList(bitems);
 	System.out.println("string={"+listName+"}"+listName.equals("converse/memory"));
     }
