@@ -15,6 +15,7 @@ public class Execution implements Serializable {
 	public boolean sshTunnel;
 	public String locationOnDisk;
 	public String workingDir;
+	public String inputFile;
 	
 	public static Execution load(File filename) throws IOException, ClassNotFoundException, SAXException {
 		//try {
