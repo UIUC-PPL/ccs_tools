@@ -124,9 +124,11 @@ public abstract class ServThread extends Thread {
 	
 	public static class File extends ServThread {
 		BufferedReader prout;
+		boolean terminating;
 
 		public File(ParDebug d, java.io.File f) {
 			super(d);
+			terminating = false;
 			try {
 				prout = new BufferedReader(new FileReader(f));
 			} catch (FileNotFoundException e) {
@@ -134,6 +136,10 @@ public abstract class ServThread extends Thread {
 			}
 		}
 
+		public void terminate() {
+			terminating = true;
+		}
+		
 		String getNextOutput(StringBuffer outlinechunk) throws Exception {
 			boolean foundPort = false;
 			String outline;
@@ -183,7 +189,7 @@ public abstract class ServThread extends Thread {
 				//}
 
 			}
-			while ((prout.ready() && (outlinechunk.length()<maxChunk)) || (outlinechunk.length()==0));
+			while (!terminating && ((prout.ready() && (outlinechunk.length()<maxChunk)) || (outlinechunk.length()==0)));
 			return outline;
 		}
 	}
@@ -202,6 +208,7 @@ public abstract class ServThread extends Thread {
 	}
 
 	// debub output file
+	
 	public FileWriter debugOutput;
 
 	// string used to pass the output back from the info gdb
@@ -212,6 +219,8 @@ public abstract class ServThread extends Thread {
 	 * CCS for programs attached.
 	 */
 	abstract String getNextOutput(StringBuffer outlinechunk) throws Exception;
+	
+	public void terminate() { }
 	
 	public void run() {
 		//runtime = Runtime.getRuntime();
