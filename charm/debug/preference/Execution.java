@@ -16,6 +16,7 @@ public class Execution implements Serializable {
 	public String locationOnDisk;
 	public String workingDir;
 	public String inputFile;
+	public boolean waitFile;
 	
 	public static Execution load(File filename) throws IOException, ClassNotFoundException, SAXException {
 		//try {

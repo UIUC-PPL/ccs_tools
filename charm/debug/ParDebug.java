@@ -1482,10 +1482,17 @@ DEPRECATED!! The correct implementation is in CpdList.java
     		if (! attachMode || ! exec.inputFile.equals("")) {
     			while (servthread.portno == null)
     			{
-    				try { Thread.sleep(100); }
-    				catch(InterruptedException e1)
-    				{ /* don't care about interrupted sleep */ }
-    				if(iter++ > 60*10) abort("Timeout waiting for program to start up (and print its CCS port number)");
+    				if (! exec.waitFile) {
+    					try { Thread.sleep(100); }
+    					catch(InterruptedException e1)
+    					{ /* don't care about interrupted sleep */ }
+    					if(iter++ > 60*10) abort("Timeout waiting for program to start up (and print its CCS port number)");
+    				}
+    				else {
+    					/* We are attaching to a file, which might take a while to appear */
+    					try { Thread.sleep(5000); }
+    					catch(InterruptedException e1) { }
+    				}
     			}
     		}
     		
@@ -1805,6 +1812,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
     	String numberPesString="1";
     	exec.parameters = "";
     	exec.inputFile = "";
+    	exec.waitFile = false;
     	envDisplay = "";
     	exec.sshTunnel = false;
     	sshTunnel = null;
@@ -1840,6 +1848,10 @@ DEPRECATED!! The correct implementation is in CpdList.java
     			exec.workingDir = args[i+1];
     		else if (args[i].equals("-outputfile"))
     			exec.inputFile = args[i+1];
+    		else if (args[i].equals("-waitfile")) {
+    			exec.waitFile = true;
+    			i--;
+    		}
     		else if (args[i].equals("-sshtunnel")) {
     			exec.sshTunnel = true;
     			i--;

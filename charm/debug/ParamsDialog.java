@@ -13,7 +13,7 @@ public class ParamsDialog extends JDialog implements ActionListener {
 	Execution exec = null;
 
 	private JTextField  clParams, numPes, portno, hostname, username, filename, dir, inputFile;
-	private JCheckBox sshTunnel;
+	private JCheckBox sshTunnel, waitFile;
 	private JButton chooser, dirchooser;
 
 	public ParamsDialog(Frame parent, boolean modal, Execution obj) {
@@ -225,7 +225,7 @@ public class ParamsDialog extends JDialog implements ActionListener {
 		inputFileLabel.setLabelFor(inputFile);
 		grid.setConstraints(inputFileLabel, c);
 		contents.add(inputFileLabel);
-
+		
 		c.gridx = 1;
 		c.gridy = nextLine;
 		c.gridwidth = 1;
@@ -236,6 +236,15 @@ public class ParamsDialog extends JDialog implements ActionListener {
 		inputFile.setActionCommand("cmd.ok");
 		inputFile.addActionListener(this);
 		grid.setConstraints(inputFile, c);
+		
+		c.gridx = 1;
+		c.gridy = ++nextLine;
+		c.gridwidth = 1;
+		c.fill = GridBagConstraints.NONE;
+		c.anchor = GridBagConstraints.WEST;
+		c.insets = new Insets(0,4,0,0);
+		waitFile = new JCheckBox("Wait for file to be created");
+		grid.setConstraints(waitFile, c);
 		
 		c.gridx = 1;
 		c.gridy = ++nextLine;
@@ -256,6 +265,7 @@ public class ParamsDialog extends JDialog implements ActionListener {
 		contents.add(hostname);
 		contents.add(username);
 		contents.add(inputFile);
+		contents.add(waitFile);
 		contents.add(sshTunnel);
 
 		JPanel buttonPanel = new JPanel();
@@ -296,6 +306,7 @@ public class ParamsDialog extends JDialog implements ActionListener {
 		hostname.setText(exec.hostname);
 		username.setText(exec.username);
 		inputFile.setText(exec.inputFile);
+		waitFile.setSelected(exec.waitFile);
 		sshTunnel.setSelected(exec.sshTunnel);
 		dir.setText(exec.workingDir);
 	}
@@ -341,6 +352,7 @@ public class ParamsDialog extends JDialog implements ActionListener {
 			exec.hostname = hostname.getText();
 			exec.username = username.getText();
 			exec.inputFile = inputFile.getText();
+			exec.waitFile = waitFile.isSelected();
 			exec.sshTunnel = sshTunnel.isSelected();
 			exec.workingDir = dir.getText();
 			closeWindow = true;
