@@ -126,13 +126,20 @@ public abstract class ServThread extends Thread {
 		BufferedReader prout;
 		boolean terminating;
 
-		public File(ParDebug d, java.io.File f) {
+		public File(ParDebug d, java.io.File f, boolean wait) {
 			super(d);
 			terminating = false;
-			try {
-				prout = new BufferedReader(new FileReader(f));
-			} catch (FileNotFoundException e) {
-				System.out.println("Could not open file "+f);
+			while (wait) {
+				try {
+					prout = new BufferedReader(new FileReader(f));
+					wait = false;
+				} catch (FileNotFoundException e) {
+					if (wait) {
+						try { Thread.sleep(5000); }
+						catch(InterruptedException e1) { }
+					}
+					else System.out.println("Could not open file \""+f+"\"");
+				}
 			}
 		}
 

@@ -1490,7 +1490,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
     		}
     	} else {
     		programOutputArea.setText("Attaching to running program");
-    		if (! exec.inputFile.equals("")) servthread = (new ServThread.File(this, new File(exec.inputFile)));
+    		if (! exec.inputFile.equals("")) servthread = (new ServThread.File(this, new File(exec.inputFile), exec.waitFile));
     		else servthread = (new ServThread.CCS(this, exec));
     		servthread.start();
     	}
