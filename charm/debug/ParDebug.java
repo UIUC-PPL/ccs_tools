@@ -1413,6 +1413,10 @@ DEPRECATED!! The correct implementation is in CpdList.java
 				int pe = Integer.parseInt(input);;
 				if (pe == -1) pe = 0;
 	    		byte[] buf = ParDebug.server.sendCcsRequestBytes("ccs_debug_memStat", input, pe);
+	    		PConsumer cons=new PConsumer();
+	    		cons.decode(buf);
+	    		PList stat = cons.getList();
+	    		System.out.println(stat);
 			}
 			else if (command.equals("allocation")) {
 				
