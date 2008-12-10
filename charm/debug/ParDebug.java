@@ -1366,6 +1366,10 @@ DEPRECATED!! The correct implementation is in CpdList.java
     			attachMode = false;
     			startProgram();
     		}
+    		else if (command.equals("attach")) {
+    			attachMode = true;
+    			startProgram();
+    		}
     		else if (command.startsWith("python")) {
     			command = command.substring(command.indexOf(' ')).trim();
     			File f = new File(command.substring(0, command.indexOf(' ')));
