@@ -1394,7 +1394,8 @@ DEPRECATED!! The correct implementation is in CpdList.java
     			executePython(script);
     		}
     		else if (command.startsWith("time")) {
-    			System.out.println(command.substring(5)+new Date());
+    			Date now = new Date();
+    			System.out.println(command.substring(5)+" "+now+" ("+now.getTime()+")");
     		}
     		else if (command.equals("quit")) {
         		server.bcastCcsRequest("ccs_debug_quit", "", exec.npes);
@@ -1402,6 +1403,15 @@ DEPRECATED!! The correct implementation is in CpdList.java
     		}
 			else if (command.equals("continue")) {
 				server.bcastCcsRequest("ccs_continue_break_point", "", exec.npes);
+			}
+			else if (command.startsWith("memstat")) {
+				String input = command.substring(command.indexOf(' ')).trim();
+				int pe = Integer.parseInt(input);;
+				if (pe == -1) pe = 0;
+	    		byte[] buf = ParDebug.server.sendCcsRequestBytes("ccs_debug_memStat", input, pe);
+			}
+			else if (command.equals("allocation")) {
+				
 			}
     		else {
     			System.out.println("Command not recognized: "+command);
