@@ -61,6 +61,7 @@ public class AllocationGraphPanel extends JPanel implements ActionListener,
 			logs = log.readLogs(input.getPe(), input.getFirstEvent(), input.getLastEvent());
 		} catch (IOException e) {
 			System.out.println("An error occured while trying to load the memory logs");
+			e.printStackTrace();
 			return;
 		}
 		allocationData = new ScrollableAllocationGraph(logs, input.getEventsPerBar(), input.getBarWidth(), input.getHeight());
