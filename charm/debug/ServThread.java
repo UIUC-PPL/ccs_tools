@@ -92,6 +92,7 @@ public abstract class ServThread extends Thread {
 			super(d);
 			String[] args = new String[2];
 			args[0] = e.hostname;
+			if (e.ccshost != null && e.ccshost.length() > 0) args[0] = e.ccshost; 
 			args[1] = e.port;
 			server = CcsServer.create(args, false);
 			System.out.println("Created CCSserver");
@@ -132,6 +133,7 @@ public abstract class ServThread extends Thread {
 			while (wait) {
 				try {
 					prout = new BufferedReader(new FileReader(f));
+					System.out.println(prout);
 					wait = false;
 				} catch (FileNotFoundException e) {
 					if (wait) {
