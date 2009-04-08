@@ -1848,6 +1848,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
     	exec.ccshost = "";
     	exec.npes = 1;
     	String numberPesString="1";
+    	String sshportString = null;
     	exec.parameters = "";
     	exec.inputFile = "";
     	exec.waitFile = false;
@@ -1866,8 +1867,14 @@ DEPRECATED!! The correct implementation is in CpdList.java
     			exec.hostname = args[i+1];
     		else if (args[i].equals("-user"))
     			exec.username = args[i+1];
-    		else if (args[i].equals("-sshport"))
-    			exec.sshport = args[i+1];
+    		else if (args[i].equals("-sshport")) {
+    			sshportString = args[i+1];
+    			try {
+    				exec.sshport = Integer.parseInt(sshportString);
+    			} catch (NumberFormatException e) {
+    				System.out.println("Could not understand the specified ssh port number");
+    			}
+    		}
     		else if (args[i].equals("-ccshost"))
     			exec.ccshost = args[i+1];
     		else if (args[i].equals("-port"))
