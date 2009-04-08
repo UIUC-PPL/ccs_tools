@@ -132,6 +132,21 @@ public class DataType extends GenericType {
         //for (int i=0; i<superclasses.size(); ++i) {
         //    System.out.println("superclass: |"+superclasses.elementAt(i)+"|");
         //}
+        
+        // set size of this type
+        String typeSize = ParDebug.infoCommand("print/x sizeof(class "+name+")\n");
+        System.out.println("info:print/x sizeof(class "+name+") = "+typeSize);
+        if (typeSize.indexOf("=") == -1) {
+            typeSize = ParDebug.infoCommand("print/x sizeof("+name+")\n");
+            System.out.println("info:print/x sizeof("+name+") = "+typeSize);
+        }
+        if (typeSize.indexOf("=") != -1) {
+            int start = typeSize.indexOf(" 0x")+1;
+            int end = typeSize.indexOf(" ", start);
+            if (end == -1) end = typeSize.length() - 1;
+            size = Integer.decode(typeSize.substring(start,end)).intValue();
+        }
+        
         String[] piece = desc.substring(opening).split("[{:;][\n\r]");
         for (int i=1; i<piece.length-1; ++i) {
             line = piece[i].trim();
