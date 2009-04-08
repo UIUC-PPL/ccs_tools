@@ -1036,7 +1036,8 @@ DEPRECATED!! The correct implementation is in CpdList.java
         			String sshCommand = null;
         			String[] str = null;
         			String ipAddress = address[0]+"."+address[1]+"."+address[2]+"."+address[3];
-        			String script = "ssh "+ipAddress+" \"cat > /tmp/start_gdb."+pid+" << END_OF_SCRIPT\n"
+        			String script = "ssh "+(exec.sshport>0?("-p "+exec.sshport):"")+ipAddress
+        							+" \"cat > /tmp/start_gdb."+pid+" << END_OF_SCRIPT\n"
         							+"shell /bin/rm -f /tmp/start_gdb."+pid+"\n"
         							+"handle SIGWINCH nostop noprint\n"
         							+"handle SIGWAITING nostop noprint\n"
@@ -1044,7 +1045,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
         							+"END_OF_SCRIPT\n"
         							+"gdb "+new File(exec.executable).getAbsolutePath()
         							+" -x /tmp/start_gdb."+pid+"\"";
-        			if (!exec.hostname.equals("localhost") && exec.sshTunnel) {
+        			if (!exec.hostname.equals("localhost") && exec.sshTunnel) { // TODO: This part does not work!!!!
         				sshCommand = "ssh -T "+exec.hostname+" ssh -T";
         				str = new String[9];
         				str[5] = exec.hostname;
@@ -1052,10 +1053,10 @@ DEPRECATED!! The correct implementation is in CpdList.java
         				//str[8] = "-T";
         				str[7] = ipAddress;
         				str[8] = script;
-        			} else {
+        			} else { // TODO: Fix when exec.sshport is set!
         				sshCommand = "ssh -T";
         				str = new String[7];
-        				str[5] = ipAddress;
+        				//str[5] = ipAddress;
         				str[6] = script;
         			}
         			//String str[] = {"xterm ", "-title", "Node "+i, "-e", "ssh", hostname};
@@ -1461,9 +1462,12 @@ DEPRECATED!! The correct implementation is in CpdList.java
     	//totCommandLine = "(cd /expand/home/bohm/work/leanCP/binary/water_32M_10Ry_cpmd_correct; "+totCommandLine+")";
     	if (exec.workingDir != null && exec.workingDir.length() != 0)
     		totCommandLine = "cd "+exec.workingDir+"; "+totCommandLine;
-    	if (!exec.hostname.equals("localhost")) {
+    	if (!exec.hostname.equals("localhost") || exec.sshport != 0) {
     		if (exec.username.length()>0) {
     			totCommandLine = "-l " + exec.username + " " + totCommandLine;
+    		}
+    		if (exec.sshport>0) {
+    			totCommandLine = "-p " + exec.sshport + " " + totCommandLine;
     		}
     		totCommandLine = "ssh " + exec.hostname + " " + totCommandLine;
     	}
@@ -1541,7 +1545,10 @@ DEPRECATED!! The correct implementation is in CpdList.java
     		if (exec.sshTunnel) {
     			System.out.println("ParDebug> Tunneling connection through ssh");
     			try {
-    				sshTunnel = runtime.exec("ssh -2 -c blowfish -L "+portnumber+":localhost:"+portnumber+" "+exec.hostname);
+    				String str = "ssh"+(exec.sshport>0?(" -p "+exec.sshport):"")+" -2 -c blowfish -L "
+    							 +portnumber+":localhost:"+portnumber+" "+exec.hostname;
+    				System.out.println("> "+str);
+    				sshTunnel = runtime.exec(str);
     			} catch (Exception exc) {
     				System.out.println("ParDebug> Could not create ssh tunnel");
     			}
@@ -1826,6 +1833,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
     String getFilename() { return exec.executable; }
     String getHostname() { return exec.hostname; }
     String getUsername() { return exec.username; }
+    int getSshPort() { return exec.sshport; }
     EpPList getEpItems() { return (EpPList)epItems.clone(); }
     
     public static int numberPesGlobal;
@@ -1858,6 +1866,8 @@ DEPRECATED!! The correct implementation is in CpdList.java
     			exec.hostname = args[i+1];
     		else if (args[i].equals("-user"))
     			exec.username = args[i+1];
+    		else if (args[i].equals("-sshport"))
+    			exec.sshport = args[i+1];
     		else if (args[i].equals("-ccshost"))
     			exec.ccshost = args[i+1];
     		else if (args[i].equals("-port"))

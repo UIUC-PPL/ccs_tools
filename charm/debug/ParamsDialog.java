@@ -12,7 +12,7 @@ public class ParamsDialog extends JDialog implements ActionListener {
 	//ParDebug mainObject = null;
 	Execution exec = null;
 
-	private JTextField  clParams, numPes, portno, hostname, username, filename, dir, inputFile;
+	private JTextField  clParams, numPes, portno, sshport, hostname, username, filename, dir, inputFile;
 	private JCheckBox sshTunnel, waitFile;
 	private JButton chooser, dirchooser;
 
@@ -24,6 +24,7 @@ public class ParamsDialog extends JDialog implements ActionListener {
 		setResizable(false);
 	}
 
+	/*
 	public void setFields(String params, String pes, String pno, String host, String user, boolean ssh) {
 		clParams.setText(params);
 		numPes.setText(pes);
@@ -32,6 +33,7 @@ public class ParamsDialog extends JDialog implements ActionListener {
 		username.setText(user);
 		sshTunnel.setSelected(ssh);
 	}
+	*/
 
 	private void initComponents() {
 
@@ -178,6 +180,27 @@ public class ParamsDialog extends JDialog implements ActionListener {
 		c.gridy = ++nextLine;
 		c.anchor = GridBagConstraints.WEST;
 		c.insets = new Insets(12,12,0,0);
+		JLabel sshportNameLabel = new JLabel();
+		sshportNameLabel.setText("SSH port number:");
+		sshportNameLabel.setLabelFor(sshport);
+		grid.setConstraints(sshportNameLabel, c);
+		contents.add(sshportNameLabel);
+
+		c.gridx = 1;
+		c.gridy = nextLine;
+		c.gridwidth = 1;
+		c.fill = GridBagConstraints.NONE;
+		c.anchor = GridBagConstraints.WEST;
+		c.insets = new Insets(12,8,0,0);
+		sshport = new JTextField(5);
+		sshport.setActionCommand("cmd.ok");
+		sshport.addActionListener(this);
+		grid.setConstraints(sshport, c);
+
+		c.gridx = 0;
+		c.gridy = ++nextLine;
+		c.anchor = GridBagConstraints.WEST;
+		c.insets = new Insets(12,12,0,0);
 		JLabel hostNameLabel = new JLabel();
 		hostNameLabel.setText("Host name:");
 		hostNameLabel.setLabelFor(hostname);
@@ -262,6 +285,7 @@ public class ParamsDialog extends JDialog implements ActionListener {
 		contents.add(clParams);
 		contents.add(numPes);
 		contents.add(portno);
+		contents.add(sshport);
 		contents.add(hostname);
 		contents.add(username);
 		contents.add(inputFile);
@@ -303,6 +327,7 @@ public class ParamsDialog extends JDialog implements ActionListener {
 		clParams.setText(exec.parameters);
 		numPes.setText(""+exec.npes);
 		portno.setText(""+exec.port);
+		sshport.setText(""+exec.sshport);
 		hostname.setText(exec.hostname);
 		username.setText(exec.username);
 		inputFile.setText(exec.inputFile);
@@ -338,9 +363,11 @@ public class ParamsDialog extends JDialog implements ActionListener {
 			//		hostname.getText(), username.getText(), sshTunnel.isSelected());
 			int numberPes;
 			int portNumber;
+			int sshportNumber=0;
 			try {
 				numberPes = Integer.parseInt(numPes.getText());
 				if (!portno.getText().equals("")) portNumber = Integer.parseInt(portno.getText());
+				if (!sshport.getText().equals("")) sshportNumber = Integer.parseInt(sshport.getText());
 			} catch (NumberFormatException nfe) {
 				JOptionPane.showMessageDialog(this, "All values must be positive integers", "Error", JOptionPane.ERROR_MESSAGE);
 				return;
@@ -349,6 +376,7 @@ public class ParamsDialog extends JDialog implements ActionListener {
 			exec.parameters = clParams.getText();
 			exec.npes = numberPes;
 			exec.port = portno.getText();
+			exec.sshport = sshportNumber;
 			exec.hostname = hostname.getText();
 			exec.username = username.getText();
 			exec.inputFile = inputFile.getText();

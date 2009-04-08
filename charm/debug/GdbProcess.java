@@ -24,12 +24,16 @@ public class GdbProcess {
 			String executable = new File(mainThread.getFilename()).getAbsolutePath();
 			String totCommandLine = "gdb " + executable;
 			String hostname = mainThread.getHostname();
-			if (!hostname.equals("localhost")) {
+			int sshport = mainThread.getSshPort();
+			if (!hostname.equals("localhost") || sshport != 0) {
 				totCommandLine = hostname + " " + totCommandLine;
 				String username = mainThread.getUsername();
 				if (!username.equals("")) {
 					totCommandLine = "-l " + username + " " + totCommandLine;
 				}
+	    		if (sshport>0) {
+	    			totCommandLine = "-p " + sshport + " " + totCommandLine;
+	    		}
 				totCommandLine = "ssh " + totCommandLine;
 			}
 			try {

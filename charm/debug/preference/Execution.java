@@ -11,6 +11,7 @@ public class Execution implements Serializable {
 	public int npes;
 	public String ccshost;
 	public String port;
+	public int sshport;
 	public String hostname;
 	public String username;
 	public boolean sshTunnel;
