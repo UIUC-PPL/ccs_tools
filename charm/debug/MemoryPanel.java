@@ -6,7 +6,9 @@ import javax.swing.*;
 import java.text.NumberFormat;
 
 import charm.debug.pdata.Slot;
+import charm.debug.inspect.GenericType;
 import charm.debug.inspect.InspectPanel;
+import charm.debug.inspect.Inspector;
 
 public class MemoryPanel extends JPanel
     implements ActionListener, MouseListener, MouseMotionListener, ItemListener {
@@ -20,6 +22,7 @@ public class MemoryPanel extends JPanel
     private JMenu menuInfo;
     private JMenuItem menuStat;
     private JMenuItem menuInspect;
+    private JMenuItem menuInspectAs;
     private JCheckBoxMenuItem menuDim;
     //private JSlider verticalZoom;
     //private JSlider horizontalZoom;
@@ -60,6 +63,8 @@ public class MemoryPanel extends JPanel
 	menuStat.addActionListener(this);
 	menuInfo.add(menuInspect = new JMenuItem("Inspect",'I'));
 	menuInspect.addActionListener(this);
+	menuInfo.add(menuInspectAs = new JMenuItem("Inspect As...",'A'));
+	menuInspectAs.addActionListener(this);
 	menuInfo.add(menuDim = new JCheckBoxMenuItem("Dim by chare ID"));
 	menuDim.addItemListener(this);
 	
@@ -304,7 +309,7 @@ public class MemoryPanel extends JPanel
 	    repaint();
 	} else if (e.getSource() == menuStat) {
 	    JOptionPane.showMessageDialog(this, memoryData.memoryStatString(), "Memory Statistics", JOptionPane.INFORMATION_MESSAGE);
-	} else if (e.getSource() == menuInspect) {
+	} else if (e.getSource() == menuInspect || e.getSource() == menuInspectAs) {
 		Slot sl = memoryData.getSelectedSlot();
 		if (sl!=null) {
             JFrame frame = new JFrame("Memory inspector");
@@ -312,7 +317,12 @@ public class MemoryPanel extends JPanel
             InspectPanel inspect = new InspectPanel();
             JComponent newContentPane = inspect;
             newContentPane.setOpaque(true);
-            boolean success = inspect.load(memoryData.getPe(), sl.getLocation(), null);
+            GenericType type = null;
+            if (e.getSource() == menuInspectAs) {
+            	String input = JOptionPane.showInputDialog("Class type of the memory");
+            	type = Inspector.getTypeCreate(input);
+            }
+            boolean success = inspect.load(memoryData.getPe(), sl, type);
             if (success) {
             	frame.setContentPane(newContentPane);
             	newContentPane.setMinimumSize(new Dimension(100,100));
