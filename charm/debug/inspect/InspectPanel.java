@@ -7,6 +7,8 @@ import java.awt.event.*;
 import charm.debug.ParDebug;
 import charm.debug.fmt.*;
 import charm.debug.inspect.JTreeVisitor;
+import charm.debug.pdata.Slot;
+
 import java.nio.ByteBuffer;
 
 
@@ -41,8 +43,9 @@ public class InspectPanel extends JPanel implements ActionListener {
 		scroll.setViewportView(new JLabel(s));
 	}
 	
-	public boolean load(int pe, long location, GenericType type) {
+	public boolean load(int pe, Slot slot, GenericType type) {
 		this.pe = pe;
+		long location = slot.getLocation();
 		System.out.println("location = "+(int)location+", "+(int)(location>>>32));
 		PList list = ParDebug.server.getPList("converse/memory/data",pe,(int)location,(int)(location>>>32));
 		if (list==null) System.out.println("list is null!");
@@ -51,8 +54,16 @@ public class InspectPanel extends JPanel implements ActionListener {
 		System.out.println("Got memory data size = "+size);
 		if (size > 0) {
 			ByteBuffer buf = null;
+			int startingPoint = 0;
 			PAbstract info = cur.elementNamed("value");
 			if (info != null) buf = ByteBuffer.wrap(((PString)info).getBytes()).order(Inspector.getByteOrder());
+			// Messages have the envelope at the beginning, need to take it out
+			if (slot.getType() == Slot.MESSAGE_TYPE) {
+				System.out.println("size = "+Inspector.getTypeCreate("envelope").getSize());
+				startingPoint = 8+Inspector.getTypeCreate("envelope").getSize();
+				buf.position(startingPoint);
+			}
+			if (type == null) {
 			String request = "info symbol 0x";
 			if (Inspector.is64bit()) request += Long.toHexString(buf.getLong());
 			else request += Integer.toHexString(buf.getInt());
@@ -61,9 +72,14 @@ public class InspectPanel extends JPanel implements ActionListener {
 			if (result.startsWith("vtable for")) {
 				String strtype = result.substring(10, result.indexOf('+')).trim();
 				GenericType gt = Inspector.getTypeCreate(strtype);
-				load(new SuperClassElement(gt,0), buf);
+				load(new SuperClassElement(gt,0), buf, 0);
 				return true;
-			} else {
+			} else if (slot.getType() == Slot.MESSAGE_TYPE){
+				GenericType gt = Inspector.getTypeCreate("envelope");
+				load(new SuperClassElement(gt,0), buf, 8);
+				return true;
+			}
+			else {
 				buf.rewind();
 				for (int i=0; i<size; ++i) {
 					System.out.print("0x"+Integer.toHexString(buf.get())+" ");
@@ -71,13 +87,17 @@ public class InspectPanel extends JPanel implements ActionListener {
 				JOptionPane.showMessageDialog(this, "The selected memory block does not contain enough information to be displayed.", "Unknown data", JOptionPane.INFORMATION_MESSAGE);
 				return false;
 			}
+			} else {
+				load(new SuperClassElement(type,0), buf, startingPoint);
+				return true;
+			}
 		}
 		JOptionPane.showMessageDialog(this, "The selected memory block does not contain any data.", "No data", JOptionPane.INFORMATION_MESSAGE);
 		return false;
 	}
 	
-	public void load(GenericElement type, ByteBuffer buf) {
-		JTreeVisitor jtv = new JTreeVisitor(buf, type.getName());
+	public void load(GenericElement type, ByteBuffer buf, int starting) {
+		JTreeVisitor jtv = new JTreeVisitor(buf, starting, type.getName());
 		jtv.visit(type);
 		tree = (JTree)jtv.getResult();
 		tree.getSelectionModel().setSelectionMode(TreeSelectionModel.SINGLE_TREE_SELECTION);
@@ -117,7 +137,7 @@ public class InspectPanel extends JPanel implements ActionListener {
 					ByteBuffer buf = null;
 					PAbstract info = cur.elementNamed("value");
 					if (info != null) buf = ByteBuffer.wrap(((PString)info).getBytes()).order(Inspector.getByteOrder());
-					JTreeVisitor jtv = new JTreeVisitor(buf, el.e.getType().getName());
+					JTreeVisitor jtv = new JTreeVisitor(buf, 0, el.e.getType().getName());
 					if (el.e.getPointer() > 1) {
 						VariableElement vel = new VariableElement(el.e.getType(), null, el.e.getType().pointerSize(), el.e.getPointer()+el.e.getType().getPointer()-1, 0);
 						obj.add(new DefaultMutableTreeNode(new InspectedElement(vel, "0x0"))); // FIXME: retrieve the correct value

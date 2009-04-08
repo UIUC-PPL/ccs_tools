@@ -32,7 +32,7 @@ public class ReadonlyInfo extends GenericInfo {
             JTreeVisitor jtv = new JTreeVisitor(memory, null);
             jtv.visit(el);
             return (JTree)jtv.getResult();*/
-        	panel.load(el, memory);
+        	panel.load(el, memory, 0);
         }
         /*else if (id != null) {
         	int nItems = ParDebug.server.getListLength("charm/object",ParDebug.currentListedPE);

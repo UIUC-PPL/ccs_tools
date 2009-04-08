@@ -33,7 +33,7 @@ public class ChareInfo extends GenericInfo {
     public void getDetails(InspectPanel panel) {
         if (type != null) {
         	SuperClassElement el = new SuperClassElement(type, 0);
-        	panel.load(el, memory);
+        	panel.load(el, memory, 0);
         	//return panel;
             /*StringVisitor st = new StringVisitor(memory);
             st.visit(el);
@@ -63,7 +63,7 @@ public class ChareInfo extends GenericInfo {
             
             System.out.println("Loaded type "+name);
         	SuperClassElement el = new SuperClassElement(type, 0);
-        	panel.load(el, memory);
+        	panel.load(el, memory, 0);
         	//return panel;
             /*StringVisitor st = new StringVisitor(memory);
             st.visit(el);

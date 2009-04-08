@@ -10,8 +10,8 @@ public class JTreeVisitor extends TypeVisitor {
     DefaultMutableTreeNode last;
     JTree tree;
     
-    public JTreeVisitor(ByteBuffer b, String title) {
-        super(b);
+    public JTreeVisitor(ByteBuffer b, int start, String title) {
+        super(b, start);
         current = last = top = new DefaultMutableTreeNode(title);
         tree = null;//new JTree(top);
     }

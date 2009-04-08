@@ -10,9 +10,9 @@ public abstract class TypeVisitor {
     Stack seeks;
     boolean valid;
 
-    public TypeVisitor(ByteBuffer b) {
+    public TypeVisitor(ByteBuffer b, int start) {
         buf = b;
-        offset = 0;
+        offset = start;
         status = 0;
         valid = true;
         seeks = new Stack();

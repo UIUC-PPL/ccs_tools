@@ -6,8 +6,8 @@ public class StringVisitor extends TypeVisitor {
     int spacing;
     StringBuffer result;
 
-    public StringVisitor(ByteBuffer b) {
-        super(b);
+    public StringVisitor(ByteBuffer b, int start) {
+        super(b, start);
         spacing = 0;
         result = new StringBuffer();
     }
