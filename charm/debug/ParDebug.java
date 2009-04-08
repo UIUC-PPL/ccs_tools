@@ -99,6 +99,7 @@ public class ParDebug extends JPanel
 	new CpdListInfo("Messages in Queue","converse/localqueue",null,messageQueue=new MsgPList()),
 	new CpdListInfo("Readonly Variables","charm/readonly",null,new ReadonlyPList()),
 	new CpdListInfo("Readonly Messages","charm/readonlyMsg",null,null),
+	new CpdListInfo("Messages delivered stack","charm/messageStack", null, new MsgStackPList()),
 	new CpdListInfo("Entry Points","charm/entries",null,epItems=new EpPList()),
 	new CpdListInfo("Chare Types","charm/chares",null,chareItems=new ChareTypePList()),
 	new CpdListInfo("Message Types","charm/messages",null,msgItems=new MsgTypePList()),
@@ -334,7 +335,9 @@ DEPRECATED!! The correct implementation is in CpdList.java
        addedRunParameter();
     }
 */
-    
+    public int getSelectedPe() {
+    	return Integer.parseInt((String)pesbox.getSelectedItem());
+    }
     private void addedRunParameter() {
        setStatusMessage("Executable: " +exec.executable+ "        number of pes: "+exec.npes);
     }
@@ -866,9 +869,10 @@ DEPRECATED!! The correct implementation is in CpdList.java
 	}
 
 	public void executePython(PythonScript inputPython) {
-		Vector eps = inputPython.getSelectedEPs();
-		for (int i=0; i<eps.size(); ++i) System.out.println("Python EP: "+eps.elementAt(i));
-		if (eps.size() == 0) {
+		Vector[] eps = inputPython.getSelectedEPs();
+		for (int i=0; i<eps[0].size(); ++i) System.out.println("Python EP before: "+eps[0].elementAt(i));
+		for (int i=0; i<eps[1].size(); ++i) System.out.println("Python EP after: "+eps[1].elementAt(i));
+		if (eps[0].size() == 0 && eps[1].size() == 0) {
 			PythonExecute code = new PythonExecute(inputPython.getText(), inputPython.getMethod(), new PythonIteratorGroup(inputPython.getChareGroup()), false, true, 0);
 			code.setKeepPrint(true);
 			code.setWait(true);
@@ -886,14 +890,18 @@ DEPRECATED!! The correct implementation is in CpdList.java
 			}
 			interpreterHandle = CcsServer.readInt(reply, 0);
 			System.out.println("Python interpreter: "+interpreterHandle);
-			PythonPrint print = new PythonPrint(interpreterHandle, true);
+			PythonFinished finished = new PythonFinished(interpreterHandle, true);
+			byte[] finishReply = server.sendCcsRequestBytes("CpdPythonGroup", finished.pack(), 0, true);
+			PythonPrint print = new PythonPrint(interpreterHandle, false);
 			byte[] output = server.sendCcsRequestBytes("CpdPythonGroup", print.pack(), 0, true);
 			System.out.println("Python printed: "+new String(output));
 		} else {
 			// install the python script for continuous execution
-			int[] epIdx = new int[eps.size()];
-			for (int i=0; i<eps.size(); ++i) epIdx[i] = ((EpInfo)eps.elementAt(i)).getEpIndex();
-			PythonExecute code = new PythonExecute(inputPython.getText(), inputPython.getMethod(), new PythonIteratorPersistent(inputPython.getChareGroup(), eps.size(), epIdx), true, true, 0);
+			int[] epIdx = new int[eps[0].size() + eps[1].size()];
+			int count = 0;
+			for (int i=0; i<eps[0].size(); ++i) epIdx[count++] = - ((EpInfo)eps[0].elementAt(i)).getEpIndex();
+			for (int i=0; i<eps[1].size(); ++i) epIdx[count++] = ((EpInfo)eps[1].elementAt(i)).getEpIndex();
+			PythonExecute code = new PythonExecute(inputPython.getText(), inputPython.getMethod(), new PythonIteratorPersistent(inputPython.getChareGroup(), eps[0].size()+eps[1].size(), epIdx), true, true, 0);
 			code.setKeepPrint(false);
 			code.setWait(false);
 			byte[] reply = server.sendCcsRequestBytes("CpdPythonPersistent", code.pack(), 0, true);
@@ -1012,7 +1020,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
     	else if (e.getActionCommand().equals("startgdb")) 
     	{ 
     		SortedSet set = ((PeSet)peList.getSelectedValue()).getList();
-    		server.bcastCcsRequest("ccs_remove_all_break_points", "", set.iterator());
+    		//server.bcastCcsRequest("ccs_remove_all_break_points", "", set.iterator());
     		//server.bcastCcsRequest("ccs_debug_startgdb","",1,numberPes,peList);
         	for (int i=0; i<exec.npes; ++i) {
         		if (set.contains(pes[i])){
@@ -1036,7 +1044,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
         							+"END_OF_SCRIPT\n"
         							+"gdb "+new File(exec.executable).getAbsolutePath()
         							+" -x /tmp/start_gdb."+pid+"\"";
-        			if (!exec.hostname.equals("localhost")) {
+        			if (!exec.hostname.equals("localhost") && exec.sshTunnel) {
         				sshCommand = "ssh -T "+exec.hostname+" ssh -T";
         				str = new String[9];
         				str[5] = exec.hostname;
@@ -1393,7 +1401,9 @@ DEPRECATED!! The correct implementation is in CpdList.java
     			while ((next = command.indexOf(' ')) != -1) {
     				command = command.substring(next).trim();
     				int ep = Integer.parseInt(command.substring(0, (command+" ").indexOf(' ')));
-    				script.addEP(epItems.getEntryFor(ep));
+    				int where = ep>0 ? 1 : 0;
+    				ep = ep>0 ? ep : -ep;
+    				script.addEP(where, epItems.getEntryFor(ep));
     			}
     			executePython(script);
     		}
@@ -1514,7 +1524,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
     			}
     		}
     		
-    		if (attachMode && exec.inputFile.equals("") && (exec.port.length() == 0 || exec.hostname.equals("localhost"))) {
+    		if (attachMode && exec.inputFile.equals("") && (exec.port.length() == 0 || exec.ccshost.equals("localhost"))) {
     			JOptionPane.showMessageDialog(this, "Hostname and port number must be specified in attach mode", "Error", JOptionPane.ERROR_MESSAGE);
     			quitProgram();
     			return;
@@ -1819,6 +1829,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
     EpPList getEpItems() { return (EpPList)epItems.clone(); }
     
     public static int numberPesGlobal;
+    public static ParDebug debugger;
     public static void main(String[] args) {
     	Execution exec = new Execution();
     	exec.hostname = "localhost";
@@ -1826,6 +1837,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
     	exec.executable = "";
     	exec.workingDir = System.getProperty("user.dir");
     	exec.port = "";
+    	exec.ccshost = "";
     	exec.npes = 1;
     	String numberPesString="1";
     	exec.parameters = "";
@@ -1846,6 +1858,8 @@ DEPRECATED!! The correct implementation is in CpdList.java
     			exec.hostname = args[i+1];
     		else if (args[i].equals("-user"))
     			exec.username = args[i+1];
+    		else if (args[i].equals("-ccshost"))
+    			exec.ccshost = args[i+1];
     		else if (args[i].equals("-port"))
     			exec.port = args[i+1];
     		else if (args[i].equals("-file"))
@@ -1947,7 +1961,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
 
     	appFrame = new JFrame("Charm Parallel Debugger");
     	appFrame.setSize(1000, 1000);
-    	final ParDebug debugger = new ParDebug(exec);
+    	debugger = new ParDebug(exec);
 
     	appFrame.addWindowListener(new WindowAdapter() {
     		public void windowClosing(WindowEvent e) {

@@ -21,13 +21,15 @@ public class PythonScript {
 	private String code;
 	private String parsedString;
 	private ChareInfo chare;
-	private Vector selectedEPs;
+	private Vector selectedEPs[];
 
 	public PythonScript(GdbProcess gdb) {
 		info = gdb;
 		chare = null;
 		code = null;
-		selectedEPs = new Vector();
+		selectedEPs = new Vector[2];
+		selectedEPs[0] = new Vector();
+		selectedEPs[1] = new Vector();
 	}
 	
 	public String parseCode(String str) throws ParseException {
@@ -45,7 +47,8 @@ public class PythonScript {
 		while ((first = parsedString.indexOf("charm.get", first)) != -1) {
 			first += 9;
 			int startArgs = parsedString.indexOf('(', first);
-			if (parsedString.startsWith("Static",first)) {
+			if (parsedString.startsWith("Message", first)); /*nothing to do */
+			else if (parsedString.startsWith("Static",first)) {
 				int splitPoint = parsedString.indexOf(")",startArgs);
 				String name = parsedString.substring(startArgs+1,splitPoint).trim();
 				System.out.println("Static name = "+name);
@@ -171,19 +174,19 @@ public class PythonScript {
 		chare = c;
 	}
 	public int getChareGroup() {
-		return chare.getGroupID();
+		return chare!=null?chare.getGroupID():0;
 	}
 	public ChareInfo getChare() {
 		return chare;
 	}
 	
-	public void addEP(EpInfo e) {
-		selectedEPs.add(e);
+	public void addEP(int where, EpInfo e) {
+		selectedEPs[where].add(e);
 	}
-	public void removeEP(EpInfo e) {
-		selectedEPs.remove(e);
+	public void removeEP(int where, EpInfo e) {
+		selectedEPs[where].remove(e);
 	}
-  	public Vector getSelectedEPs() {
+  	public Vector[] getSelectedEPs() {
 		return selectedEPs;
 	}
 }

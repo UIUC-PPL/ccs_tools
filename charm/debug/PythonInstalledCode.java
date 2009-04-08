@@ -14,24 +14,29 @@ public class PythonInstalledCode extends JDialog {
 	
 	JTable table;
 	PythonTableModel tableModel;
-
+	
+	public static final int BEFORE = 0;
+	public static final int AFTER = 1;
+	
 	class InstalledCode {
 		String code;
 		EpInfo ep;
 		ChareInfo chare;
+		int where;
 		
-		InstalledCode(String s, EpInfo e, ChareInfo c) {
+		InstalledCode(String s, EpInfo e, ChareInfo c, int w) {
 			code = s;
 			ep = e;
 			chare = c;
+			where = w;
 		}
 	}
 	
-	public static final String[] colNames = {"Entry Point", "Associated Chare", "Code"};
+	public static final String[] colNames = {"Entry Point", "Where", "Associated Chare", "Code"};
 	class PythonTableModel extends AbstractTableModel {
 		
 		public int getColumnCount() {
-			return 3;
+			return 4;
 		}
 
 		public int getRowCount() {
@@ -44,8 +49,10 @@ public class PythonInstalledCode extends JDialog {
 			case 0:
 				return line.ep;
 			case 1:
-				return line.chare;
+				return (line.where==BEFORE?"BEFORE":"") + (line.where==AFTER?"AFTER":"");
 			case 2:
+				return line.chare;
+			case 3:
 				return "<html><pre>"+line.code+"</pre></html>";
 			default:
 				return null;
@@ -76,7 +83,7 @@ public class PythonInstalledCode extends JDialog {
 		
 		tableModel = new PythonTableModel();
 		table = new JTable(tableModel);
-		table.getColumnModel().getColumn(2).setCellRenderer(new PythonCodeRenderer());
+		table.getColumnModel().getColumn(3).setCellRenderer(new PythonCodeRenderer());
 		//table.setDefaultRenderer(String.class, new PythonCodeRenderer());
 		JScrollPane tableScroll = new JScrollPane(table);
 		table.setFillsViewportHeight(true);
@@ -85,9 +92,10 @@ public class PythonInstalledCode extends JDialog {
 		//add(tmp);
 	}
 
-	public void add(String code, Vector eps, ChareInfo chare) {
+	public void add(String code, Vector[] eps, ChareInfo chare) {
 		int firstRow = tableModel.getRowCount();
-		for (int i=0; i<eps.size(); ++i) installed.add(new InstalledCode(code, (EpInfo)eps.elementAt(i), chare));
+		for (int i=0; i<eps[BEFORE].size(); ++i) installed.add(new InstalledCode(code, (EpInfo)eps[0].elementAt(i), chare, BEFORE));
+		for (int i=0; i<eps[AFTER].size(); ++i) installed.add(new InstalledCode(code, (EpInfo)eps[1].elementAt(i), chare, AFTER));
 		int lastRow = tableModel.getRowCount()-1;
 		tableModel.fireTableRowsInserted(firstRow, lastRow);
 		//add(new JLabel("new code"));

@@ -205,11 +205,13 @@ public class PythonDialog extends JDialog
 
 	public void actionPerformed(ActionEvent e) {
 		if (e.getActionCommand().equals("ok")) {
-			if (chare.getSelectedIndex() == 0) {
-				JOptionPane.showMessageDialog(this, "Must select an object on which to execute the script", "Error", JOptionPane.ERROR_MESSAGE);
+			if (chare.getSelectedIndex() == 0 && script.getSelectedEPs()[0].size() == 0 && script.getSelectedEPs()[1].size() == 0) {
+				JOptionPane.showMessageDialog(this, "Must either select an object on which to execute the script, or select entry methods on which to install the script", "Error", JOptionPane.ERROR_MESSAGE);
 				return;
 			}
-			script.setChare((ChareInfo)chare.getSelectedItem());
+			if (chare.getSelectedIndex() != 0) {
+				script.setChare((ChareInfo)chare.getSelectedItem());
+			}
 			
 			try {
 				script.parseCode(input.getText());
@@ -225,8 +227,9 @@ public class PythonDialog extends JDialog
 			setVisible(false);
 		} else if (e.getActionCommand().equals("entry")) {
 			EpCheckBox chkbox = (EpCheckBox)e.getSource();
-			if (chkbox.isSelected()) script.addEP(chkbox.ep);
-			else script.removeEP(chkbox.ep);
+			int click = chkbox.click();
+			if (click > 0) script.addEP(click-1, chkbox.ep);
+			else script.removeEP(-click-1, chkbox.ep);
 		} else if (e.getActionCommand().equals("openRecent")) {
 	   		JMenuItem item = (JMenuItem)e.getSource();
     		input.setText(item.getText());
