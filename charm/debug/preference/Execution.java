@@ -9,6 +9,7 @@ public class Execution implements Serializable {
 	public String executable;
 	public String parameters;
 	public int npes;
+	public String ccshost;
 	public String port;
 	public String hostname;
 	public String username;
