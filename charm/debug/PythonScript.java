@@ -52,7 +52,7 @@ public class PythonScript {
 				int splitPoint = parsedString.indexOf(")",startArgs);
 				String name = parsedString.substring(startArgs+1,splitPoint).trim();
 				System.out.println("Static name = "+name);
-				String address = info.infoCommand("print &"+name.substring(1,name.length()-1)+"\n");
+				String address = info.infoCommand("print &"+name+"\n");
 				int startAddress = address.indexOf("0x");
 				if (startAddress == -1) {
 					//JOptionPane.showMessageDialog(this, "Static variable "+name+" not found", "Error", JOptionPane.ERROR_MESSAGE);
@@ -68,7 +68,7 @@ public class PythonScript {
 				else if (address.indexOf("(double *)") != -1) retType = 'd';
 				else if (address.indexOf("(char **)") != -1) retType = 's';
 				parsedString = parsedString.substring(0,startArgs+1)+
-					","+address.substring(startAddress).trim()+",'"+retType+"'"+
+					address.substring(startAddress).trim()+",'"+retType+"'"+
 					parsedString.substring(splitPoint);
 			} else {
 				int typeEnd = parsedString.indexOf(',', startArgs);
@@ -84,8 +84,21 @@ public class PythonScript {
 					//num = Integer.parseInt(parsedString.substring(last+1,parsedString.indexOf(')',last+1)).trim());
 					//}
 					int size = t.getSize();
+					char charType;
+					System.out.println("Array Resulting type: "+t.getName()+", ptr="+t.getPointer()+" ,size="+t.getSize());
+					if (t.getPointer() == 0) { 
+						if (t.getName().equals("int")) charType = 'i';
+						else if (t.getName().equals("char")) charType = 'b';
+						else if (t.getName().equals("short")) charType = 'h';
+						else if (t.getName().equals("long")) charType = 'l';
+						else if (t.getName().equals("float")) charType = 'f';
+						else if (t.getName().equals("double")) charType = 'd';
+						else if (t.getName().equals("bool")) charType = 'i';
+						else charType = 'c';
+					}
+					else charType = 'p';
 					parsedString = parsedString.substring(0,typeEnd+1)+
-						(size)+ parsedString.substring(last);
+						(size)+",'"+charType+"'"+ parsedString.substring(last);
 				} else if (parsedString.startsWith("Value",first)) {
 					String name = parsedString.substring(last+1,parsedString.indexOf(')',last+1)).trim();
 					if (! (t instanceof DataType)) {
@@ -110,7 +123,7 @@ public class PythonScript {
 					else if (resultType.getName().equals("float")) charType = 'f';
 					else if (resultType.getName().equals("double")) charType = 'd';
 					else if (resultType.getName().equals("bool")) charType = 'i';
-					else charType = 'p';
+					else charType = 'c';
 					parsedString = parsedString.substring(0,typeEnd+1)+
 						offset+",'"+charType+"'"+
 						parsedString.substring(splitPoint);
@@ -139,6 +152,7 @@ public class PythonScript {
 				}
 			}
 		}
+		System.out.println("Final python script: {"+parsedString+"}");
 		return parsedString;
   	}
 
