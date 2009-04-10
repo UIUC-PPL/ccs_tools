@@ -62,14 +62,22 @@ public class Inspector {
     public static int getLongSize() {return sizeLong;}
     public static int getLongLongSize() {return sizeLongLong;}
     public static int getBoolSize() {return sizeBool;}
+    public static int getPointerSize() {return is64bit()?8:4;}
 
     public static GenericType getTypeCreate(String type) {
         GenericType result = (GenericType)allTypes.get(type);
         if (result==null) {
-            DataType res = new DataType();
-            allTypes.put(type, res);
-            res.build(type);
-            result = res;
+        	if (type.endsWith("*")) {
+        		TypedefType res = new TypedefType();
+        		allTypes.put(type, res);
+        		res.build(type, type);
+        		result = res;
+        	} else {
+        		DataType res = new DataType();
+        		allTypes.put(type, res);
+        		res.build(type);
+        		result = res;
+        	}
         }
         return result;
     }
