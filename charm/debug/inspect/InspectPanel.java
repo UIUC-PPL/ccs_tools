@@ -138,14 +138,19 @@ public class InspectPanel extends JPanel implements ActionListener {
 					PAbstract info = cur.elementNamed("value");
 					if (info != null) buf = ByteBuffer.wrap(((PString)info).getBytes()).order(Inspector.getByteOrder());
 					JTreeVisitor jtv = new JTreeVisitor(buf, 0, el.e.getType().getName());
+					int arraySize = 0;
 					if (el.e.getPointer() > 1) {
-						VariableElement vel = new VariableElement(el.e.getType(), null, el.e.getType().pointerSize(), el.e.getPointer()+el.e.getType().getPointer()-1, 0);
-						obj.add(new DefaultMutableTreeNode(new InspectedElement(vel, "0x0"))); // FIXME: retrieve the correct value
+						arraySize = size / Inspector.getPointerSize();
 					} else {
-						jtv.visit(el.e.getType());
-						obj.add(jtv.top);
-					}
+						arraySize = size / el.e.getType().getSize();
+					}					
+					if (arraySize == 1) arraySize = 0;
+					VariableElement vel = new VariableElement(el.e.getType(), null, arraySize, el.e.getPointer()+el.e.getType().getPointer()-1, 0);
+					jtv.visit(vel);
+					obj.add((DefaultMutableTreeNode)jtv.top.getFirstChild());
 					//JTree t = (JTree)jtv.getResult();
+				} else {
+					JOptionPane.showMessageDialog(this, "No data found", "Missing data", JOptionPane.ERROR_MESSAGE);
 				}
 			}
 		} else if (e.getActionCommand().equals("cast")) {

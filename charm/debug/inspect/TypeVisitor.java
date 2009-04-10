@@ -49,9 +49,11 @@ public abstract class TypeVisitor {
             if (valid) value = t.getValue(this);
             else value = null;
         	if (pointer > 0 && valid) {
-        		if (value != null) value += " " + GenericType.printPointer(buf, offset);
-        		else value = GenericType.printPointer(buf, offset);
+        		//if (value != null) value += " " + GenericType.printPointer(buf, offset);
+        		//else
+        		value = GenericType.printPointer(buf, offset);
         	}
+        	if (size > 1) value = "[" + i + "] " + value;
         	addElement(e, value);
         	if (pointer == 0) visit(t);
         }
