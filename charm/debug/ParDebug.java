@@ -1772,7 +1772,8 @@ DEPRECATED!! The correct implementation is in CpdList.java
     	freezeButton.setEnabled(false);
     	startGdbButton.setEnabled(false);
     	listModel.removeAllElements();
-    	outputArea.setList(null); 
+    	outputArea.setList(null);
+        newOutputArea.setText("");
     	listsbox.setEnabled(false);
     	pesbox.removeAllItems(); 
     	pesbox.setEnabled(false);
@@ -1827,7 +1828,23 @@ DEPRECATED!! The correct implementation is in CpdList.java
     
     public static void printUsage()
     {
-        System.out.println("Usage: java ParDebug [[-file <charm program name>] [[-param \"<charm program parameters>\"][-pes <number of pes>]] [-host <hostname>] [-user <username>] [-port <port>] [-sshtunnel] [-display <display>]]");
+        System.out.println("Usage: charmdebug [options] [<executable> [<arguments>] ]");
+        System.out.println("  -host <name>        remote host where to start the application");
+        System.out.println("  -user <name>        username to use for ssh");
+        System.out.println("  -sshport <num>      port to use for ssh");
+        System.out.println("  -port <num>         use specific CCS port");
+        System.out.println("  -pes <num> (or +p<num>)");
+        System.out.println("                      number of processors to use");
+        System.out.println("  -dir <dir>          specify working directory");
+        System.out.println("  -outputfile <file>  file where to read program output (for attach)");
+        System.out.println("  -waitfile           wait for output file to be created (for attach)");
+        System.out.println("  -sshtunnel          tunnel CCS requests though ssh");
+        System.out.println("  -config <file>      read configuration parameters from file");
+        System.out.println("  -commands <file>    execute commands read from file at startup");
+        //System.out.println("  -host    ");
+        //System.out.println("  -host    ");
+        //		" [[-file <charm program name>] [[-param \"<charm program parameters>\"][-pes <number of pes>]] [-host <hostname>] " +
+        //		"[-user <username>] [-port <port>] [-sshtunnel] [-display <display>]]");
     }
     
     String getFilename() { return exec.executable; }
