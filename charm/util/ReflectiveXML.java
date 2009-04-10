@@ -173,7 +173,7 @@ public class ReflectiveXML {
 									Array.setShort(container, Integer.parseInt(arrPos), Short.parseShort(attrs.getValue("value")));
 							} else if (localName.equals("java.lang.String")) {
 								String str = attrs.getValue("value");
-								if (str != null) str = str.replace("#$%", "\"").replace("#%$", "\n").replace("$#%", "\t");
+								if (str != null) str = str.replace("#$%", "\"").replace("#%$", "\n").replace("##%", "\t").replace("##$", "<");
 								if (fieldName != null)
 									fld.set(container, str);
 								else if (arrPos != null)
@@ -268,7 +268,7 @@ public class ReflectiveXML {
 				f.write(prefix+"<"+realcls.getName());
 				if (name != null) f.write(" name=\""+name+"\"");
 				if (o != null) {
-					f.write(" value=\""+((String)o).replace("\"", "#$%").replace("\n", "#%$").replace("\t", "$#%")+"\"");
+					f.write(" value=\""+((String)o).replace("\"", "#$%").replace("\n", "#%$").replace("\t", "##%").replace("<", "##$")+"\"");
 				}
 				if (arrPos >= 0) f.write(" position=\""+arrPos+"\"");
 				f.write(" />\n");
