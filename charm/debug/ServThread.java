@@ -193,7 +193,7 @@ public abstract class ServThread extends Thread {
 				// used for debugging (anyway they were treated in the same
 				// way).
 
-				//while (prerr.ready()) outline+=prerr.readLine()+"\n";
+				while (prerr.ready()) outline+="\n"+prerr.readLine();
 				outlinechunk.append(outline+"\n");
 				//}
 
