@@ -13,12 +13,18 @@ public class Preference extends JPanel {
 	public Point location;
 	public Recent recentConfig;
 	public Recent recentPython;
+	public int memViewLineWidth;
+	public int memViewNumLines;
+	public int memViewHPixels;
 	
 	public Preference() {
 		size = null;
 		location = null;
 		recentConfig = new Recent();
 		recentPython = new Recent();
+		memViewLineWidth = 16;
+		memViewNumLines = 50;
+		memViewHPixels = 1000;
 	}
 	
 	public Object[] getRecent() {
