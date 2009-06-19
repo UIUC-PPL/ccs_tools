@@ -5,8 +5,8 @@
  * format. This format allows the user to modify it manually if he so
  * chooses. Moreover, and most importantly, if the definition of the class
  * is changed in a later version of the program, the configuration file is
- * still usable, with the clause that new variables will be initialized to
- * null for classes, false for boolean, 0 for all other primitive types.
+ * still usable, with the clause that new variables will be initialized by
+ * the empty-argument constructor of the container class.
  * 
  * Currently ReflectiveXML supports generic classes, arrays, and primitive
  * types. Static variables are currently overwritten when an object is restored.
@@ -70,6 +70,7 @@ public class ReflectiveXML {
 							Class classtype = Class.forName(type);
 							o = classtype.newInstance();
 							// Blank all fields.
+							/*
 							Field fieldlist[] = classtype.getDeclaredFields();
 							AccessibleObject.setAccessible(fieldlist, true);
 							for (int i = 0; i < fieldlist.length; i++) {
@@ -86,6 +87,7 @@ public class ReflectiveXML {
 									}
 								}
 							}
+							*/
 						} catch (ClassNotFoundException e) {
 							System.err.println(e);
 						} catch (InstantiationException e) {
