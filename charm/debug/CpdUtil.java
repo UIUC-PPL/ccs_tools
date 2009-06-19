@@ -6,6 +6,8 @@ import java.io.IOException;
 import java.util.SortedSet;
 import java.util.Iterator;
 
+import javax.swing.SwingUtilities;
+
 /**
    Utilities for getting and setting CpdList values.
 */
@@ -14,8 +16,12 @@ public class CpdUtil {
     private CcsServer ccs;
   
     public void abort(String problem) {
-	System.out.println(problem);
-	System.exit(1);
+    	System.out.println(problem);
+    	//System.exit(1);
+    	Runnable doWorkRunnable = new Runnable() {
+			public void run() { ParDebug.debugger.quitProgram(); }
+		};
+		SwingUtilities.invokeLater(doWorkRunnable);
     }
    
     /// Return the number of items in this cpdList on this processor.
@@ -170,7 +176,8 @@ public class CpdUtil {
 				ccsHandlerName.equalsIgnoreCase("ccs_remove_all_break_points") ||
 				ccsHandlerName.equalsIgnoreCase("ccs_set_break_point") ||
 				ccsHandlerName.equalsIgnoreCase("ccs_remove_break_point") ||
-				ccsHandlerName.equalsIgnoreCase("ccs_continue_break_point"));
+				ccsHandlerName.equalsIgnoreCase("ccs_continue_break_point") ||
+				ccsHandlerName.equalsIgnoreCase("ccs_single_step"));
 		return sendCcsRequestBytes(ccsHandlerName, req, destPE, waiting);
     }
     public byte[] sendCcsRequestBytes(String ccsHandlerName, byte[] req, int destPE, boolean waitForReply) {
