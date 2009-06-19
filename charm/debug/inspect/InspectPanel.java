@@ -7,6 +7,7 @@ import java.awt.event.*;
 import charm.debug.ParDebug;
 import charm.debug.fmt.*;
 import charm.debug.inspect.JTreeVisitor;
+import charm.debug.pdata.MsgPList;
 import charm.debug.pdata.Slot;
 
 import java.nio.ByteBuffer;
@@ -47,6 +48,13 @@ public class InspectPanel extends JPanel implements ActionListener {
 		this.pe = pe;
 		long location = slot.getLocation();
 		System.out.println("location = "+(int)location+", "+(int)(location>>>32));
+		if (slot.getType() == Slot.MESSAGE_TYPE) {
+			PList list = ParDebug.server.getPList("converse/message",pe,(int)location,(int)(location>>>32));
+			MsgPList msg = ParDebug.debugger.getMessageList();
+			msg.load(list);
+			msg.elementAt(0).getDetails(this);
+			return true;
+		}
 		PList list = ParDebug.server.getPList("converse/memory/data",pe,(int)location,(int)(location>>>32));
 		if (list==null) System.out.println("list is null!");
 		PList cur = (PList)list.elementAt(0);
@@ -57,12 +65,12 @@ public class InspectPanel extends JPanel implements ActionListener {
 			int startingPoint = 0;
 			PAbstract info = cur.elementNamed("value");
 			if (info != null) buf = ByteBuffer.wrap(((PString)info).getBytes()).order(Inspector.getByteOrder());
-			// Messages have the envelope at the beginning, need to take it out
-			if (slot.getType() == Slot.MESSAGE_TYPE) {
-				System.out.println("size = "+Inspector.getTypeCreate("envelope").getSize());
-				startingPoint = 8+Inspector.getTypeCreate("envelope").getSize();
-				buf.position(startingPoint);
-			}
+//			// Messages have the envelope at the beginning, need to take it out
+//			if (slot.getType() == Slot.MESSAGE_TYPE) {
+//				System.out.println("size = "+Inspector.getTypeCreate("envelope").getSize());
+//				startingPoint = 8+Inspector.getTypeCreate("envelope").getSize();
+//				buf.position(startingPoint);
+//			}
 			if (type == null) {
 			String request = "info symbol 0x";
 			if (Inspector.is64bit()) request += Long.toHexString(buf.getLong());
@@ -74,10 +82,10 @@ public class InspectPanel extends JPanel implements ActionListener {
 				GenericType gt = Inspector.getTypeCreate(strtype);
 				load(new SuperClassElement(gt,0), buf, 0);
 				return true;
-			} else if (slot.getType() == Slot.MESSAGE_TYPE){
-				GenericType gt = Inspector.getTypeCreate("envelope");
-				load(new SuperClassElement(gt,0), buf, 8);
-				return true;
+//			} else if (slot.getType() == Slot.MESSAGE_TYPE){
+//				GenericType gt = Inspector.getTypeCreate("envelope");
+//				load(new SuperClassElement(gt,0), buf, 8);
+//				return true;
 			}
 			else {
 				buf.rewind();
@@ -121,6 +129,12 @@ public class InspectPanel extends JPanel implements ActionListener {
 		tree.addMouseListener(popupListener);
 	}
 	
+	public void addBeforeTree(MutableTreeNode node) {
+		DefaultTreeModel model = (DefaultTreeModel)tree.getModel();
+		DefaultMutableTreeNode root = (DefaultMutableTreeNode)model.getRoot();
+		model.insertNodeInto(node, root, 0);
+	}
+	
 	public void actionPerformed(ActionEvent e) {
 		DefaultMutableTreeNode obj = (DefaultMutableTreeNode)tree.getSelectionPath().getLastPathComponent();
 		InspectedElement el = (InspectedElement)obj.getUserObject();
@@ -147,7 +161,8 @@ public class InspectPanel extends JPanel implements ActionListener {
 					if (arraySize == 1) arraySize = 0;
 					VariableElement vel = new VariableElement(el.e.getType(), null, arraySize, el.e.getPointer()+el.e.getType().getPointer()-1, 0);
 					jtv.visit(vel);
-					obj.add((DefaultMutableTreeNode)jtv.top.getFirstChild());
+					//obj.add((DefaultMutableTreeNode)jtv.top.getFirstChild());
+					((DefaultTreeModel)tree.getModel()).insertNodeInto((DefaultMutableTreeNode)jtv.top.getFirstChild(), obj, 0);
 					//JTree t = (JTree)jtv.getResult();
 				} else {
 					JOptionPane.showMessageDialog(this, "No data found", "Missing data", JOptionPane.ERROR_MESSAGE);

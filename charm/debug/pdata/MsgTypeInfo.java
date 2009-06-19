@@ -1,6 +1,8 @@
 package charm.debug.pdata;
 
+import charm.debug.inspect.GenericType;
 import charm.debug.inspect.InspectPanel;
+import charm.debug.inspect.Inspector;
 
 // Information regarding a message type
 public class MsgTypeInfo extends GenericInfo {
@@ -8,12 +10,14 @@ public class MsgTypeInfo extends GenericInfo {
     String name;
     int size;
     String description;
+    GenericType type;
 
     MsgTypeInfo(int i, String n, int s, String d) {
         index = i;
         name = n;
         size = s;
         description = d;
+        type = Inspector.getTypeCreate(name);
     }
 
     public String toString() {

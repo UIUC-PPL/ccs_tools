@@ -13,6 +13,14 @@ public class MsgPList extends GenericPList {
         return (MsgInfo)data.elementAt(i);
     }
 
+    public MsgPList() { }
+    
+    public MsgPList(MsgPList msg) {
+    	epList = msg.epList;
+    	msgList = msg.msgList;
+    	chareList = msg.chareList;
+    }
+    
     public boolean needRefresh() {
         return true;
     }
@@ -35,13 +43,31 @@ public class MsgPList extends GenericPList {
                 int prioBits = ((PNative)msg.elementNamed("prioBits")).getIntValue(0);
                 int userSize = ((PNative)msg.elementNamed("userSize")).getIntValue(0);
                 int msgType = ((PNative)msg.elementNamed("msgType")).getIntValue(0);
-                int msgFor = ((PNative)msg.elementNamed("msgFor")).getIntValue(0);
+                int envType = ((PNative)msg.elementNamed("envType")).getIntValue(0);
                 int ep = ((PNative)msg.elementNamed("ep")).getIntValue(0);
                 PList msgData = (PList)msg.elementNamed("data");
                 EpInfo epEntry = epList.getEntryFor(ep);
                 int flags = 0;
                 if (((PString)lcur.elementNamed("name")).getString().equals("Breakpoint")) flags |= MsgInfo.BREAKPOINT;
-                data.add(new MsgInfo(from, prioBits, userSize, msgList.elementAt(msgType), msgFor, chareList.elementAt(epEntry.getChareType()), epEntry, msgData, flags));
+                MsgInfo info = new MsgInfo(from, prioBits, userSize, msgList.elementAt(msgType), envType, chareList.elementAt(epEntry.getChareType()), epEntry, msgData, flags);
+                data.add(info);
+                if (msg.elementNamed("arrID") != null) {
+                	int arrayID = ((PNative)msg.elementNamed("arrID")).getIntValue(0);
+                	int nInts = ((PNative)msg.elementNamed("nInts")).getIntValue(0);
+                	int dimension = ((PNative)msg.elementNamed("dimension")).getIntValue(0);
+                	int[] index = null;
+                	if (dimension > 0 && dimension <= 6) {
+                		index = new int[dimension];
+                		for (int i=0; i<dimension; ++i) index[i] = ((PNative)msg.elementNamed("index")).getIntValue(i);
+                	}
+                	info.setArrayElement(arrayID, nInts, dimension, index);
+                }
+                if (msg.elementNamed("groupID") != null) {
+                	info.setGroupID(((PNative)msg.elementNamed("groupID")).getIntValue(0));
+                }
+                if (msg.elementNamed("ptr") != null) {
+                	info.setObjectPtr(((PNative)msg.elementNamed("ptr")).getLongValue(0));
+                }
             }
             /*
             PString lstr = (PString)lcur.elementNamed("name");
