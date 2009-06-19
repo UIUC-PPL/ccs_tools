@@ -439,33 +439,36 @@ DEPRECATED!! The correct implementation is in CpdList.java
     public Preference getPreferences() {
     	return preferences;
     }
+
+	public MsgPList getMessageList() {
+		return new MsgPList(messageQueue);
+	}
     
     /// The user has just selected the cpdListIndex'th list on forPE.
     ///  Expand a list of the contents into dest.
-    private void populateNewList(int cpdListIndex,int forPE, DefaultListModel dest)
-    {
-	  dest.removeAllElements();
-          outputArea.setList(null);
-          newOutputArea.setText("");
-	  listItems = null;
-	  
-          String lName=cpdLists[cpdListIndex].name;
-	  if (lName==null) return; /* the initial empty list */
-          GenericPList list = cpdLists[cpdListIndex].list;
+    private void populateNewList(int cpdListIndex,int forPE, DefaultListModel dest) {
+    	dest.removeAllElements();
+    	outputArea.setList(null);
+    	newOutputArea.setText("");
+    	listItems = null;
 
-          if (list == null || list.needRefresh()) {
-              int nItems=server.getListLength(lName,forPE);
-              listItems = server.getPList(lName,forPE,0,nItems);
-          }
+    	String lName=cpdLists[cpdListIndex].name;
+    	if (lName==null) return; /* the initial empty list */
+    	GenericPList list = cpdLists[cpdListIndex].list;
 
-          if (list != null) {
-              if (list.needRefresh()) list.load(listItems);
-              list.populate(dest);
-          } else {
-              for (PAbstract cur=listItems.elementAt(0);cur!=null;cur=cur.getNext()) {
-                  dest.addElement(cur.getDeepName());
-              }
-          }
+    	if (list == null || list.needRefresh()) {
+    		int nItems=server.getListLength(lName,forPE);
+    		listItems = server.getPList(lName,forPE,0,nItems);
+    	}
+
+    	if (list != null) {
+    		if (list.needRefresh()) list.load(listItems);
+    		list.populate(dest);
+    	} else {
+    		for (PAbstract cur=listItems.elementAt(0);cur!=null;cur=cur.getNext()) {
+    			dest.addElement(cur.getDeepName());
+    		}
+    	}
     }
     
     /// The user has just selected listItem from the cpdListIndex'th list on forPE.
@@ -1043,7 +1046,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
         							+"handle SIGWAITING nostop noprint\n"
         							+"attach "+pid+"\n"
         							+"END_OF_SCRIPT\n"
-        							+"gdb "+new File(exec.executable).getAbsolutePath()
+        							+"gdb "+new File(getFilename()).getAbsolutePath()
         							+" -x /tmp/start_gdb."+pid+"\"";
         			if (!exec.hostname.equals("localhost") && exec.sshTunnel) { // TODO: This part does not work!!!!
         				sshCommand = "ssh -T "+exec.hostname+" ssh -T";
@@ -1161,7 +1164,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
     		frame.setContentPane(newContentPane);
     		frame.setTitle("Allocation Graph");
 
-    		String executable = new File(exec.executable).getAbsolutePath();
+    		String executable = new File(getFilename()).getAbsolutePath();
     		String logFile = new File(executable).getParent();
     		if (logFile == null) logFile = ".";
     		logFile += "/memoryLog_";
@@ -1447,7 +1450,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
         interpreterHandle = 0;
         installedPythonScripts = new PythonInstalledCode(false);
     	programOutputArea.setText("");
-    	String executable = new File(exec.executable).getAbsolutePath();
+    	String executable = new File(getFilename()).getAbsolutePath();
     	String charmrunDir = new File(executable).getParent();
     	if (charmrunDir==null) charmrunDir=".";
     	String charmrunPath = charmrunDir + "/charmrun";
@@ -1503,7 +1506,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
     			return;
     		}
     	} else {
-    		programOutputArea.setText("Attaching to running program");
+    		programOutputArea.setText("Attaching to running program\n");
     		if (! exec.inputFile.equals("")) servthread = (new ServThread.File(this, new File(exec.inputFile), exec.waitFile));
     		else servthread = (new ServThread.CCS(this, exec));
     		servthread.start();
@@ -1601,7 +1604,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
     			CcsServer.writeLong(globals, 16, bssPos);
     			CcsServer.writeLong(globals, 24, bssPos+bssSize);
     		} else {
-    			globals = new byte[20]; // 4 pointers of 4 bytes each + 8 extra bytes
+    			globals = new byte[24]; // 4 pointers of 4 bytes each + 8 extra bytes
     			CcsServer.writeInt(globals, 0, dataPos);
     			CcsServer.writeInt(globals, 4, dataPos+dataSize);
     			CcsServer.writeInt(globals, 8, bssPos);
@@ -1800,6 +1803,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
     private String getInitialInfo() {
 		String executable = new File(getFilename()).getAbsolutePath();
 		String totCommandLine = "size -A " + executable;
+		System.out.println(totCommandLine);
 		String hostname = getHostname();
 		if (!hostname.equals("localhost")) {
 			totCommandLine = hostname + " " + totCommandLine;
@@ -1847,7 +1851,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
         //		"[-user <username>] [-port <port>] [-sshtunnel] [-display <display>]]");
     }
     
-    String getFilename() { return exec.executable; }
+    String getFilename() { return exec.workingDir+((exec.workingDir.equals("")||exec.workingDir.endsWith("/"))?"":"/")+exec.executable; }
     String getHostname() { return exec.hostname; }
     String getUsername() { return exec.username; }
     int getSshPort() { return exec.sshport; }
