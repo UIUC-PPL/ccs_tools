@@ -229,4 +229,9 @@ public class CpdUtil {
     	}
     	return ret;
     }
+    
+    /* This method uses the newer CCS broadcast mechanism to communicate at once with the whole application */
+    public byte[] bcastCcsRequest(String ccsHandlerName, String parameterName) {
+    	return sendCcsRequestBytes(ccsHandlerName, parameterName, -1);
+    }
 };
