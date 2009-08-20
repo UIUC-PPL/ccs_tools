@@ -27,6 +27,9 @@ import java.awt.*;
 import java.awt.event.*;
 import javax.swing.event.*;
 import java.net.*;
+import java.nio.ByteBuffer;
+import java.nio.IntBuffer;
+
 import javax.swing.tree.*;
 import org.xml.sax.SAXException;
 
@@ -353,8 +356,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
        statusArea.setText(txt);
     }
     
-    public void notifyBreakpoint (String txt) {
-    	int pe = Integer.parseInt(txt.substring(28, txt.indexOf(' ',28)));
+    public void notifyBreakpoint (int pe, String txt) {
     	System.out.println("notifyBreakpoint: "+txt+" pe="+pe);
     	if (pes[pe].isFrozen()) {
     		System.err.println("Error: processor "+pe+" already frozen!");
@@ -375,8 +377,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
     	//setStatusMessage(txt);
     }
     
-    public void notifyFreeze (String txt) {
-    	int pe = Integer.parseInt(txt.substring(17));
+    public void notifyFreeze (int pe, String txt) {
     	System.out.println("notifyFreeze: "+txt+" pe="+pe);
     	if (pes[pe].isFrozen()) {
     		System.err.println("Error: processor "+pe+" already frozen!");
@@ -396,8 +397,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
 		}
     }
     
-    public void notifyAbort (String txt) {
-    	int pe = Integer.parseInt(txt.substring(29));
+    public void notifyAbort (int pe, String txt) {
     	System.out.println("notifyAbort: "+txt+" pe="+pe);
     	pes[pe].setDead();
     	enableButtons();
@@ -410,11 +410,9 @@ DEPRECATED!! The correct implementation is in CpdList.java
 		}
     }
 
-    public void notifySignal (String txt) {
+    public void notifySignal (int pe, String txt) {
     	//System.out.println("signal string: "+txt);
-    	int separ = txt.indexOf(':',29);
-    	int pe = Integer.parseInt(txt.substring(29, separ));
-    	int signal = Integer.parseInt(txt.substring(separ+2));
+    	int signal = Integer.parseInt(txt);
     	System.out.println("notifySignal: "+txt+" pe="+pe+", sigNo="+signal);
     	pes[pe].setDead();
     	enableButtons();
@@ -1632,13 +1630,26 @@ DEPRECATED!! The correct implementation is in CpdList.java
     			pes[i] = new Processor(i);
     		}
     		if (attachMode) {
+    			Date start = new Date();
+    			byte[] stat = server.bcastCcsRequest("ccs_debug", "status");
+    			System.out.println("status: received "+stat.length+" bytes");
+    			IntBuffer b = ByteBuffer.wrap(stat).asIntBuffer();
+    			for (int i=0; i<exec.npes; ++i) {
+    				if (b.get(i*2+1) == 1) {
+    					pes[b.get(i*2)].setRunning();
+    				}
+    			}
+    			System.out.println("Single bcast connection: "+((new Date()).getTime()-start.getTime()));
+    			start = new Date();
     			// gather the status of the processes
     			byte[][] status = server.bcastCcsRequest("ccs_debug", "status", exec.npes);
     			for (int i=0; i<exec.npes; ++i) {
-    				if (status[i][0] == 1) {
-    					pes[i].setRunning();
+        			IntBuffer buf = ByteBuffer.wrap(status[i]).asIntBuffer();
+    				if (buf.get(1) == 1) {
+    					pes[buf.get(0)].setRunning();
     				}
     			}
+    			System.out.println("Multiple ptp connection: "+((new Date()).getTime()-start.getTime()));
     		}
 			PeSet all = new PeSet("all", pes);
 			peListModel.addElement(all);
