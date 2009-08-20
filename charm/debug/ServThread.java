@@ -276,33 +276,35 @@ public abstract class ServThread extends Thread {
 			int cpdEnd = outlinechunk.indexOf("\n", cpdStart+1);
 			String outline = outlinechunk.substring(cpdStart+5, cpdEnd);
 			outlinechunk.delete(cpdStart, cpdEnd+1);
-			if (outline.indexOf("Break point reached", 0) != -1)
+			int pe = Integer.parseInt(outline.substring(0, outline.indexOf(' ')));
+			outline = outline.substring(outline.indexOf(' ')+1);
+			if (outline.indexOf("BP", 0) != -1)
 			{
 				mainThread.setStatusMessage(outline);
-				Runnable doWorkRunnable = new Notify(outline) {
-					public void run() { mainThread.notifyBreakpoint(text); }
+				Runnable doWorkRunnable = new Notify(pe, outline.substring(3)) {
+					public void run() { mainThread.notifyBreakpoint(pe, text); }
 				};
 				SwingUtilities.invokeLater(doWorkRunnable);
 				//mainThread.notifyBreakpoint(outline);
 			}
-			else if (outline.indexOf("Frozen processor") != -1) {
+			else if (outline.indexOf("Freeze") != -1) {
 				mainThread.setStatusMessage(outline);
-				Runnable doWorkRunnable = new Notify(outline) {
-					public void run() { mainThread.notifyFreeze(text); }
+				Runnable doWorkRunnable = new Notify(pe, outline.substring(7)) {
+					public void run() { mainThread.notifyFreeze(pe, text); }
 				};
 				SwingUtilities.invokeLater(doWorkRunnable);
 			}
-			else if (outline.indexOf("CmiAbort called") != -1) {
+			else if (outline.indexOf("Abort") != -1) {
 				mainThread.setStatusMessage(outline.substring(5));
-				Runnable doWorkRunnable = new Notify(outline) {
-					public void run() { mainThread.notifyAbort(text); }
+				Runnable doWorkRunnable = new Notify(pe, outline.substring(6)) {
+					public void run() { mainThread.notifyAbort(pe, text); }
 				};
 				SwingUtilities.invokeLater(doWorkRunnable);
 			}
-			else if (outline.indexOf("Signal received") != -1) {
+			else if (outline.indexOf("Signal") != -1) {
 				mainThread.setStatusMessage(outline.substring(5));
-				Runnable doWorkRunnable = new Notify(outline) {
-					public void run() { mainThread.notifySignal(text); }
+				Runnable doWorkRunnable = new Notify(pe, outline.substring(7)) {
+					public void run() { mainThread.notifySignal(pe, text); }
 				};
 				SwingUtilities.invokeLater(doWorkRunnable);
 			} else {
@@ -325,8 +327,9 @@ public abstract class ServThread extends Thread {
 	public int getFlag() { return flag; }
 	
 	public abstract class Notify implements Runnable {
+		public int pe;
 		public String text;
-		public Notify(String txt) {text = txt;}
+		public Notify(int p, String txt) {pe = p; text = txt;}
 	}
 };
 
