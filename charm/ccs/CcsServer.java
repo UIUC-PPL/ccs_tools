@@ -119,6 +119,23 @@ public class CcsServer
     };
     private Request lastRequest;
 
+    /** Send a request to a Converse program.  This executes a CCS "handler"
+     * (registered in the parallel program with CcsRegisterHandler)
+     * on all the processors.
+     *
+     * @param handlerName gives the name of the CCS handler to process the request.
+     */
+    public Request sendRequest(String handlerName)
+    	throws IOException {return sendRequest(handlerName,-1,null);}
+    /** Send a request to a Converse program.  This executes a CCS "handler"
+     * (registered in the parallel program with CcsRegisterHandler)
+     * on all the processors with the given data.
+     *
+     * @param handlerName gives the name of the CCS handler to process the request.
+     * @param data gives the data to pass to the handler, if any.
+     */
+    public Request sendRequest(String handlerName, byte []data)
+    	throws IOException {return sendRequest(handlerName,-1,data);}
    /** Send a request to a Converse program.  This executes a CCS "handler"
     * (registered in the parallel program with CcsRegisterHandler)
     * on the given processor.
