@@ -76,6 +76,13 @@ public class PeSet {
 	public Iterator runningIterator() {return new Running();}
 	public Iterator frozenIterator() {return new Frozen();}
 	
+	public int[] toIDsArray() {
+		int []result = new int[list.size()];
+		Iterator iter = iterator();
+		for (int i=0; iter.hasNext(); ++i) result[i] = ((Processor)iter.next()).getId(); 
+		return result;
+	}
+	
 	public class Running implements Iterator {
 		Iterator iter;
 		Object next;

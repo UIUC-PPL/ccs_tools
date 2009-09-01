@@ -338,6 +338,9 @@ DEPRECATED!! The correct implementation is in CpdList.java
        addedRunParameter();
     }
 */
+    public int getNumPes() {
+    	return exec.npes;
+    }
     public int getSelectedPe() {
     	return Integer.parseInt((String)pesbox.getSelectedItem());
     }
@@ -1094,20 +1097,22 @@ DEPRECATED!! The correct implementation is in CpdList.java
     		if (chkbox.isSelected())
     		{
     			chkbox.ep.addBP(((PeSet)peList.getSelectedValue()).getList());
-    			server.bcastCcsRequest("ccs_set_break_point", entryPointName,((PeSet)peList.getSelectedValue()).iterator());
+    			byte []reply = server.bcastCcsRequest("ccs_set_break_point", entryPointName,((PeSet)peList.getSelectedValue()).toIDsArray());
     			//stepButton.setEnabled(true);
     			//continueButton.setEnabled(true);
     			//freezeButton.setEnabled(false);
-    			setStatusMessage ("Break Point set at entry point " +entryPointName); 
+    			if (reply[0] != 0) setStatusMessage ("Break Point set at entry point " +entryPointName);
+    			else JOptionPane.showInternalMessageDialog(this, "Could not set breakpoint!", "Error", JOptionPane.ERROR_MESSAGE);
     		}
     		else
     		{
     			chkbox.ep.removeBP(((PeSet)peList.getSelectedValue()).getList());
-    			server.bcastCcsRequest("ccs_remove_break_point", entryPointName,((PeSet)peList.getSelectedValue()).iterator());
+    			byte []reply = server.bcastCcsRequest("ccs_remove_break_point", entryPointName,((PeSet)peList.getSelectedValue()).toIDsArray());
     			//stepButton.setEnabled(true);
     			//continueButton.setEnabled(true);   
     			//freezeButton.setEnabled(true);
-    			setStatusMessage ("Break Point removed at entry point " +entryPointName+" on selected Pes"); 
+    			if (reply[0] != 0) setStatusMessage ("Break Point removed at entry point " +entryPointName+" on selected Pes");
+    			else JOptionPane.showInternalMessageDialog(this, "Could not remove breakpoint!", "Error", JOptionPane.ERROR_MESSAGE);
     		}
     		PeSet set = (PeSet)peList.getSelectedValue();
     		if (set != null) chkbox.setCoverageColor(set.getList());
@@ -1183,8 +1188,8 @@ DEPRECATED!! The correct implementation is in CpdList.java
     			return;
     		}
     		pe = inputValue;
-    		if (pe >= numberPesGlobal) {
-    			JOptionPane.showMessageDialog(this, "There are only "+numberPesGlobal+" processors.", "Error", JOptionPane.ERROR_MESSAGE);
+    		if (pe >= getNumPes()) {
+    			JOptionPane.showMessageDialog(this, "There are only "+getNumPes()+" processors.", "Error", JOptionPane.ERROR_MESSAGE);
     			return;
     		}
     		if (inputValue == -1) pe = 0;
@@ -1206,8 +1211,8 @@ DEPRECATED!! The correct implementation is in CpdList.java
     		} catch (NumberFormatException ex) {
     			return;
     		}
-    		if (pe >= numberPesGlobal) {
-    			JOptionPane.showMessageDialog(this, "There are only "+numberPesGlobal+" processors.", "Error", JOptionPane.ERROR_MESSAGE);
+    		if (pe >= getNumPes()) {
+    			JOptionPane.showMessageDialog(this, "There are only "+getNumPes()+" processors.", "Error", JOptionPane.ERROR_MESSAGE);
     			return;
     		}
     		if (pe == -1) pe = 0;
@@ -1269,6 +1274,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
 	    			while (iter.hasNext()) set.add(pes[((Integer)iter.next()).intValue()]);
 	    			PeSet newset = new PeSet(input.getName(), set);
 	    			peListModel.addElement(newset);
+	    			peList.setSelectedValue(newset, true);
 	    			/*
 	    			System.out.println("Name: "+input.getName());
 	    			Collection l = input.getPes();
@@ -1455,15 +1461,15 @@ DEPRECATED!! The correct implementation is in CpdList.java
     	if (envDisplay.length() == 0) envDisplay = getEnvDisplay();
     	// System.out.println(envDisplay);
 
-    	numberPesGlobal = exec.npes;
     	String totCommandLine = charmrunPath + " " + "+p"+ exec.npes + " " +executable + " " + exec.parameters+"  +cpd +DebugDisplay " +envDisplay+" ++server";// ++charmdebug";
     	if (exec.port.length() != 0)
     		totCommandLine += " ++server-port " + exec.port;
     	// TODO: add a parameter to the input parameters to allow a working directory
     	//totCommandLine = "(cd /expand/home/bohm/work/leanCP/binary/water_32M_10Ry_cpmd_correct; "+totCommandLine+")";
-    	if (exec.workingDir != null && exec.workingDir.length() != 0)
-    		totCommandLine = "cd "+exec.workingDir+"; "+totCommandLine;
     	if (!exec.hostname.equals("localhost") || exec.sshport != 0) {
+        	if (exec.workingDir != null && exec.workingDir.length() != 0) {
+        		totCommandLine = "cd "+exec.workingDir+"; "+totCommandLine;
+        	}
     		if (exec.username.length()>0) {
     			totCommandLine = "-l " + exec.username + " " + totCommandLine;
     		}
@@ -1480,7 +1486,11 @@ DEPRECATED!! The correct implementation is in CpdList.java
     		programOutputArea.setText(totCommandLine);
     		try {
     			// start new process for charmrun
-    			p = runtime.exec(totCommandLine);
+    			File workDir = null;
+    			if (exec.workingDir != null && exec.workingDir.length() != 0) {
+    				workDir = new File(exec.workingDir);
+    			}
+    			p = runtime.exec(totCommandLine, null, workDir);
     			//BufferedReader prerr = new BufferedReader(new InputStreamReader(p.getErrorStream()));
     			//BufferedReader prout = new BufferedReader(new InputStreamReader(p.getInputStream()));
     			//System.out.println("Start reading p");
@@ -1613,26 +1623,17 @@ DEPRECATED!! The correct implementation is in CpdList.java
 
     		/* Create the pe list */
     		//peList = new boolean[exec.npes];
-    		pes = new Processor[exec.npes];
-    		for (int i = 0; i < exec.npes; i++)
-    		{
-    			String peNumber = (new Integer(i)).toString();
-    			pesbox.addItem( peNumber );
-    			/*
-    			String chkboxlabel = "pe " + peNumber;
-    			JCheckBox chkbox = new JCheckBox(chkboxlabel); 
-    			peListModel.addElement(chkbox);
-    			chkbox.setSelected(true);
-    			chkbox.addActionListener(this);
-    			chkbox.setActionCommand("pecheck");
-    			*/
-    			//peList[i] = true;
-    			pes[i] = new Processor(i);
-    		}
     		if (attachMode) {
     			Date start = new Date();
     			byte[] stat = server.bcastCcsRequest("ccs_debug", "status");
     			System.out.println("status: received "+stat.length+" bytes");
+    			exec.npes = stat.length / 8;
+    			pes = new Processor[exec.npes];
+        		for (int i = 0; i < exec.npes; i++) {
+        			String peNumber = (new Integer(i)).toString();
+        			pesbox.addItem( peNumber );
+        			pes[i] = new Processor(i);
+        		}
     			IntBuffer b = ByteBuffer.wrap(stat).asIntBuffer();
     			for (int i=0; i<exec.npes; ++i) {
     				if (b.get(i*2+1) == 1) {
@@ -1640,13 +1641,23 @@ DEPRECATED!! The correct implementation is in CpdList.java
     				}
     			}
     			System.out.println("Single bcast connection: "+((new Date()).getTime()-start.getTime()));
-    			start = new Date();
+    		} else {
+    			pes = new Processor[exec.npes];
+    			for (int i = 0; i < exec.npes; i++) {
+    				String peNumber = (new Integer(i)).toString();
+    				pesbox.addItem( peNumber );
+    				pes[i] = new Processor(i);
+    			}
+    		}
+    		if (attachMode) {
+    			Processor fakePE[] = new Processor[exec.npes];
+    			Date start = new Date();
     			// gather the status of the processes
     			byte[][] status = server.bcastCcsRequest("ccs_debug", "status", exec.npes);
     			for (int i=0; i<exec.npes; ++i) {
         			IntBuffer buf = ByteBuffer.wrap(status[i]).asIntBuffer();
     				if (buf.get(1) == 1) {
-    					pes[buf.get(0)].setRunning();
+    					fakePE[buf.get(0)].setRunning();
     				}
     			}
     			System.out.println("Multiple ptp connection: "+((new Date()).getTime()-start.getTime()));
@@ -1868,7 +1879,6 @@ DEPRECATED!! The correct implementation is in CpdList.java
     int getSshPort() { return exec.sshport; }
     EpPList getEpItems() { return (EpPList)epItems.clone(); }
     
-    public static int numberPesGlobal;
     public static ParDebug debugger;
     public static void main(String[] args) {
     	Execution exec = new Execution();
@@ -2016,7 +2026,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
     		public void windowClosing(WindowEvent e) {
     			if (debugger.isRunning)
     			{
-    				ParDebug.server.bcastCcsRequest("ccs_debug_quit", "",-1,numberPesGlobal,null);
+    				ParDebug.server.bcastCcsRequest("ccs_debug_quit", "",-1,ParDebug.debugger.getNumPes(),null);
     				debugger.quitProgram();
     			} 
     			debugger.preferences.save();

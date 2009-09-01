@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.util.SortedSet;
 import java.util.Iterator;
 
+import javax.swing.DebugGraphics;
 import javax.swing.SwingUtilities;
 
 /**
@@ -173,9 +174,6 @@ public class CpdUtil {
 		CcsServer.writeString(req,0,reqStr+1,parameterName);
 		boolean waiting = ! (parameterName.equalsIgnoreCase("freeze") ||
 				ccsHandlerName.equalsIgnoreCase("ccs_debug_quit") ||
-				ccsHandlerName.equalsIgnoreCase("ccs_remove_all_break_points") ||
-				ccsHandlerName.equalsIgnoreCase("ccs_set_break_point") ||
-				ccsHandlerName.equalsIgnoreCase("ccs_remove_break_point") ||
 				ccsHandlerName.equalsIgnoreCase("ccs_continue_break_point") ||
 				ccsHandlerName.equalsIgnoreCase("ccs_single_step"));
 		return sendCcsRequestBytes(ccsHandlerName, req, destPE, waiting);
@@ -222,6 +220,36 @@ public class CpdUtil {
     	}
     }
     
+    public byte[] bcastCcsRequest(String ccsHandlerName, String parameterName, int []peList) {
+    	if (peList.length == ParDebug.debugger.getNumPes()) return bcastCcsRequest(ccsHandlerName, parameterName);
+    	boolean waitForReply = true;
+		int reqStr=parameterName.length();
+		int reqLen = reqStr+1;
+		byte[] req=new byte[reqLen];
+		CcsServer.writeString(req,0,reqStr+1,parameterName);
+    	try {
+    		System.out.print("Requesting "+ccsHandlerName+" to:");
+    		for (int i=0; i<peList.length; ++i) System.out.print(" "+peList[i]);
+    		System.out.println();
+    		CcsServer.Request r=ccs.sendRequest(ccsHandlerName,peList,req);
+    		if (waitForReply)
+    		{
+    			byte[] resp=ccs.recvResponse(r);
+    			return resp;
+    		}
+    		else {
+    			return null;
+    		}
+    	} catch (IOException e) {
+    		e.printStackTrace();
+    		abort("Network error connecting to application to perform "+ccsHandlerName);
+    		return null;
+    	}
+    }
+    
+    /** @deprecated This function does a broadcast by sending a request to every
+     * processor individually, which is bad. It is still in use by older functions
+     * that do not support yet the CCS broadcast mechanism. */
     public byte[][] bcastCcsRequest(String ccsHandlerName, String parameterName, int npes) {
     	byte[][] ret = new byte[npes][];
     	for (int pe=0; pe<npes; ++pe) {

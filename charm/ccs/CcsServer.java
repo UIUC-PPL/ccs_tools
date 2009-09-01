@@ -17,6 +17,7 @@ package charm.ccs;
 import java.net.*;
 import java.io.*;
 //import java.util.*;
+import java.security.InvalidParameterException;
 import java.security.MessageDigest;
 
 /** 
@@ -126,7 +127,7 @@ public class CcsServer
      * @param handlerName gives the name of the CCS handler to process the request.
      */
     public Request sendRequest(String handlerName)
-    	throws IOException {return sendRequest(handlerName,-1,null);}
+    	throws IOException {return sendRequest(handlerName,-1,null,null);}
     /** Send a request to a Converse program.  This executes a CCS "handler"
      * (registered in the parallel program with CcsRegisterHandler)
      * on all the processors with the given data.
@@ -135,7 +136,7 @@ public class CcsServer
      * @param data gives the data to pass to the handler, if any.
      */
     public Request sendRequest(String handlerName, byte []data)
-    	throws IOException {return sendRequest(handlerName,-1,data);}
+    	throws IOException {return sendRequest(handlerName,-1,data,null);}
    /** Send a request to a Converse program.  This executes a CCS "handler"
     * (registered in the parallel program with CcsRegisterHandler)
     * on the given processor.
@@ -144,7 +145,7 @@ public class CcsServer
     * @param destPe gives the (0-based) processor number to process the request.
     */
    public Request sendRequest(String handlerName, int destPe)
-   	throws IOException {return sendRequest(handlerName,destPe,null);}
+   	throws IOException {return sendRequest(handlerName,destPe,null,null);}
    /** Send a request to a Converse program.  This executes a CCS "handler"
     * (registered in the parallel program with CcsRegisterHandler)
     * on the given processor with the given data.
@@ -154,8 +155,37 @@ public class CcsServer
     * @param data gives the data to pass to the handler, if any.
     */
    public Request sendRequest(String handlerName, int destPe, byte []data)
-   	throws IOException
-   {
+   	throws IOException {return sendRequest(handlerName,destPe,data,null);}
+   /** Send a request to a Converse program.  This executes a CCS "handler"
+    * (registered in the parallel program with CcsRegisterHandler)
+    * on the given processors.
+    *
+    * @param handlerName gives the name of the CCS handler to process the request.
+    * @param destPe list the set of processors to send the request (for multicasts)
+    */   
+   public Request sendRequest(String handlerName, int []destPes)
+    throws IOException {return sendRequest(handlerName,0,null,destPes);}
+   /** Send a request to a Converse program.  This executes a CCS "handler"
+    * (registered in the parallel program with CcsRegisterHandler)
+    * on the given processors with the given data.
+    *
+    * @param handlerName gives the name of the CCS handler to process the request.
+    * @param destPe list the set of processors to send the request (for multicasts)
+    * @param data gives the data to pass to the handler, if any.
+    */   
+   public Request sendRequest(String handlerName, int []destPes, byte []data)
+    throws IOException {return sendRequest(handlerName,0,data,destPes);}
+   /** Send a request to a Converse program.  This executes a CCS "handler"
+    * (registered in the parallel program with CcsRegisterHandler)
+    * on the given processors with the given data.
+    *
+    * @param handlerName gives the name of the CCS handler to process the request.
+    * @param destPe gives the (0-based) processor number to process the request.
+    * @param data gives the data to pass to the handler, if any.
+    * @param pes list the set of processors to send the request (for multicasts)
+    */   
+   private Request sendRequest(String handlerName, int destPe, byte []data, int[] pes)
+    throws IOException {
    	//Open a socket and send the request header
 	debug("  Connecting for request '"+handlerName+"'");
    	Socket sock=new Socket(hostIP,hostPort);
@@ -169,7 +199,12 @@ public class CcsServer
 	int headerLen=handlerOff+handlerMAX;
 	byte[] header=new byte[headerLen];
 	writeInt(header,0,dataLen);
-	writeInt(header,4,destPe);
+	if (pes != null) {
+		if (pes.length == 0) throw new InvalidParameterException("CCS multicast requested without processors specified");
+		if (pes.length > 1) writeInt(header, 4, -pes.length);
+		else writeInt(header, 4, pes[0]);
+	}
+	else writeInt(header,4,destPe);
 	writeString(header,8,handlerMAX,handlerName);
 
 	int salt=0;
@@ -185,6 +220,11 @@ public class CcsServer
    	o.write(header,0,headerLen);
    	debug("  Header sent.  Sending "+dataLen+" bytes of request data");
 
+   	//Send the processor list
+   	if (pes!=null && pes.length > 1) {
+   		for (int i=0; i<pes.length; ++i) o.writeInt(pes[i]);
+   	}
+   	
    	//Send any associated data
    	if (data!=null)
    		o.write(data);
