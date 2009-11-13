@@ -86,7 +86,7 @@ public class PythonInstalledCode extends JDialog {
 		table.getColumnModel().getColumn(3).setCellRenderer(new PythonCodeRenderer());
 		//table.setDefaultRenderer(String.class, new PythonCodeRenderer());
 		JScrollPane tableScroll = new JScrollPane(table);
-		table.setFillsViewportHeight(true);
+		//table.setFillsViewportHeight(true);
 		add(tableScroll);
 		//JLabel tmp = new JLabel("tmp");
 		//add(tmp);

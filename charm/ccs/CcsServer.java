@@ -15,6 +15,8 @@ Orion Sky Lawlor, olawlor@acm.org, 10/15/2000
 package charm.ccs;
 
 import java.net.*;
+import java.nio.channels.Channels;
+import java.nio.channels.SocketChannel;
 import java.io.*;
 //import java.util.*;
 import java.security.InvalidParameterException;
@@ -188,7 +190,8 @@ public class CcsServer
     throws IOException {
    	//Open a socket and send the request header
 	debug("  Connecting for request '"+handlerName+"'");
-   	Socket sock=new Socket(hostIP,hostPort);
+   	//Socket sock=new Socket(hostIP,hostPort);
+	Socket sock = SocketChannel.open(new InetSocketAddress(hostIP, hostPort)).socket();
 	debug("  Connected.  Sending header");
    	DataOutputStream o=new DataOutputStream(sock.getOutputStream());
 	int dataLen=0;
@@ -250,7 +253,7 @@ public class CcsServer
    public byte[] recvResponse(Request r) throws IOException
    {
 	debug("  Waiting for response");
-   	DataInputStream i=new DataInputStream(r.sock.getInputStream());
+   	DataInputStream i=new DataInputStream(Channels.newInputStream(r.sock.getChannel()));
 	if (isAuth) {
 	    byte[] hash=new byte[SHA_len];
 	    i.readFully(hash);

@@ -2,6 +2,7 @@ package charm.debug;
 
 //import java.net.*;
 import java.io.*;
+import java.nio.channels.ClosedByInterruptException;
 
 import javax.swing.SwingUtilities;
 
@@ -23,6 +24,7 @@ public abstract class ServThread extends Thread {
 	volatile int flag;
 	static final int maxChunk=50*1024; /* maximum chunk size */
 	
+	/** This class is used to get the output of an application started directly by CharmDebug. */
 	public static class Charmrun extends ServThread {
 		Process p = null; 
 		BufferedReader prout, prerr;
@@ -86,6 +88,7 @@ public abstract class ServThread extends Thread {
 		}
 	}
 	
+	/** This class is used to fetch output from a program to which CharmDebug "attach"ed. */
 	public static class CCS extends ServThread {
 		CcsServer server;
 		public CCS(ParDebug d, Execution e) {
@@ -114,6 +117,9 @@ public abstract class ServThread extends Thread {
 					return new String(resp);
 				}
 				else return null;
+            } catch (ClosedByInterruptException ce) {
+            	System.out.println("Socket closed by interrupt");
+            	return null;
             } catch (IOException e) {
             	System.out.println("Exception while fetching stdio");
             	e.printStackTrace();
@@ -125,11 +131,9 @@ public abstract class ServThread extends Thread {
 	
 	public static class File extends ServThread {
 		BufferedReader prout;
-		boolean terminating;
 
 		public File(ParDebug d, java.io.File f, boolean wait) {
 			super(d);
-			terminating = false;
 			while (wait) {
 				try {
 					prout = new BufferedReader(new FileReader(f));
@@ -145,10 +149,6 @@ public abstract class ServThread extends Thread {
 			}
 		}
 
-		public void terminate() {
-			terminating = true;
-		}
-		
 		String getNextOutput(StringBuffer outlinechunk) throws Exception {
 			boolean foundPort = false;
 			String outline;
@@ -206,6 +206,7 @@ public abstract class ServThread extends Thread {
 	public ServThread(ParDebug d) {
 		mainThread = d;
 		flag = 0;
+		terminating = false;
 		/*try {
 			//charmrunIn = new BufferedWriter(new OutputStreamWriter(p.getOutputStream()));
 			//charmrunOut = new BufferedReader(new InputStreamReader(p.getErrorStream()));
@@ -223,13 +224,15 @@ public abstract class ServThread extends Thread {
 	// string used to pass the output back from the info gdb
 	public static String infoStr;
 
+	boolean terminating;
+
 	/* This method is specific for each type of input method:
 	 * STDOUT for programs started directly;
 	 * CCS for programs attached.
 	 */
 	abstract String getNextOutput(StringBuffer outlinechunk) throws Exception;
 	
-	public void terminate() { }
+	public void terminate() { terminating=true; }
 	
 	public void run() {
 		//runtime = Runtime.getRuntime();
@@ -257,7 +260,11 @@ public abstract class ServThread extends Thread {
 				System.out.println("Failed to print");
 				e.printStackTrace();
 			}
-			System.out.println("Finished running parallel program");
+			if (isInterrupted()) {
+				System.out.println("Disconnecting from parallel program");
+			} else {
+				System.out.println("Finished running parallel program");
+			}
 			Runnable doWorkRunnable = new Runnable() {
 				public void run() { mainThread.quitProgram(); }
 			};
@@ -305,6 +312,11 @@ public abstract class ServThread extends Thread {
 				mainThread.setStatusMessage(outline.substring(5));
 				Runnable doWorkRunnable = new Notify(pe, outline.substring(7)) {
 					public void run() { mainThread.notifySignal(pe, text); }
+				};
+				SwingUtilities.invokeLater(doWorkRunnable);
+			} else if (outline.indexOf("Cross") != -1) {
+				Runnable doWorkRunnable = new Notify(pe, outline.substring(6)) {
+					public void run() { mainThread.notifyCorruption(pe, text); }
 				};
 				SwingUtilities.invokeLater(doWorkRunnable);
 			} else {

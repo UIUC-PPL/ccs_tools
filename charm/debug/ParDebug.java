@@ -149,6 +149,7 @@ public class ParDebug extends JPanel
     private JMenuItem menuActionAttach;
     private JMenuItem menuActionContinue;
     private JMenuItem menuActionQuit;
+    private JMenuItem menuActionDisconnect;
     private JMenuItem menuActionFreeze;
     private JMenuItem menuActionPython;
     private JMenuItem menuActionPythonInstalled;
@@ -427,6 +428,39 @@ DEPRECATED!! The correct implementation is in CpdList.java
 				populateNewList(listsbox.getSelectedIndex(),forPE, listModel);
 		}
     }
+    
+    public void notifyCorruption (int pe, String txt) {
+    	int space = txt.indexOf(' ');
+    	String address = txt.substring(0, space); //Inspector.is64bit() ? Long.parseLong(txt.substring(2, space), 16) : Integer.parseInt(txt.substring(2, space), 16);
+    	txt = txt.substring(space+1);
+    	space = txt.indexOf(' ');
+    	int chare = Integer.parseInt(txt.substring(0, space));
+    	txt = txt.substring(space+1);
+    	space = txt.indexOf(' ');
+    	int owner = Integer.parseInt(txt.substring(0, space));
+    	System.out.print("cross corruption: chare "+chare+" accessed memory location "+address+" owned by chare "+owner);
+    	txt = txt.substring(space+1);
+    	space = txt.indexOf(' ');
+    	int count = Integer.parseInt(txt.substring(0, space));
+    	if (count > 0) System.out.println(": {");
+    	for (int i=0; i<count; ++i) {
+    		txt = txt.substring(space+1);
+    		space = txt.indexOf(' ');
+    		System.out.println("  "+Symbol.get(Long.parseLong(txt.substring(2, space), 16)));
+    	}
+    	if (count > 0) System.out.print("}");
+    	txt = txt.substring(space+1);
+    	space = txt.indexOf(' ');
+    	count = Integer.parseInt(txt.substring(0, space));
+    	if (count > 0) System.out.println(" Stack trace of corruption: {");
+    	for (int i=0; i<count; ++i) {
+    		txt = txt.substring(space+1);
+    		space = txt.indexOf(' ');
+    		System.out.println("  "+Symbol.get(Long.parseLong(txt.substring(2, space), 16)));
+    	}
+    	if (count > 0) System.out.print("}");
+    	System.out.println();
+    }
 
     public Dimension getPreferredSize() {
     	if (preferences.size != null) return preferences.size;
@@ -560,6 +594,8 @@ DEPRECATED!! The correct implementation is in CpdList.java
        listenTo(menuActionContinue,"unfreeze","Continue to run the parallel program"); 
        menuAction.add(menuActionFreeze = new JMenuItem("Freeze",'F'));
        listenTo(menuActionFreeze,"freeze","Freeze the parallel program"); 
+       menuAction.add(menuActionDisconnect = new JMenuItem("Disconnect",'D'));
+       listenTo(menuActionDisconnect,"disconnect","Disconnect from the parallel program"); 
        menuAction.add(menuActionQuit = new JMenuItem("Quit",'Q'));
        listenTo(menuActionQuit,"quit","Quit the parallel program"); 
        menuAction.addSeparator();
@@ -1017,6 +1053,10 @@ DEPRECATED!! The correct implementation is in CpdList.java
     			populateNewList(listsbox.getSelectedIndex(),forPE, listModel);
     		}    		setStatusMessage("Single message delivered");
     	}
+    	else if (e.getActionCommand().equals("disconnect")) {
+    		servthread.terminate();
+    		servthread.interrupt();
+    	}
     	else if (e.getActionCommand().equals("quit")) {
     		server.bcastCcsRequest("ccs_debug_quit", "", exec.npes);
     		servthread.terminate();
@@ -1348,13 +1388,17 @@ DEPRECATED!! The correct implementation is in CpdList.java
     	PeSet set = (PeSet)peList.getSelectedValue();
 		stepButton.setEnabled(true);
 		continueButton.setEnabled(true);
+		menuActionContinue.setEnabled(true);
 		freezeButton.setEnabled(true);
+		menuActionFreeze.setEnabled(true);
     	if (set.isAllFrozen()) {
     		freezeButton.setEnabled(false);
+    		menuActionFreeze.setEnabled(false);
     	}
     	if (set.isAllRunning() || set.isSomeDead()) {
     		stepButton.setEnabled(false);
     		continueButton.setEnabled(false);
+    		menuActionContinue.setEnabled(false);
     	}
     }
     
@@ -1669,11 +1713,15 @@ DEPRECATED!! The correct implementation is in CpdList.java
     		peList.updateUI();
 
     		startButton.setEnabled(false);
+    		menuActionStart.setEnabled(false);
+    		menuActionAttach.setEnabled(false);
 			stepButton.setEnabled(true);
     		continueButton.setEnabled(true);
+    		menuActionContinue.setEnabled(true);
     		quitButton.setEnabled(false);
     		freezeButton.setEnabled(false);
     		startGdbButton.setEnabled(true); 
+    		menuActionDisconnect.setEnabled(true);
     		menuActionPython.setEnabled(true);
     		menuActionPythonInstalled.setEnabled(true);
     		menuMemoryView.setEnabled(true);
@@ -1802,6 +1850,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
     	listsbox.setEnabled(false);
     	pesbox.removeAllItems(); 
     	pesbox.setEnabled(false);
+    	menuActionDisconnect.setEnabled(false);
     	menuActionPython.setEnabled(false);
     	menuActionPythonInstalled.setEnabled(false);
     	menuMemoryView.setEnabled(false);
