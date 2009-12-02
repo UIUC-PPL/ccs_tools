@@ -1850,7 +1850,12 @@ DEPRECATED!! The correct implementation is in CpdList.java
     	listsbox.setEnabled(false);
     	pesbox.removeAllItems(); 
     	pesbox.setEnabled(false);
+    	menuActionStart.setEnabled(true);
+    	menuActionAttach.setEnabled(true);
+    	menuActionContinue.setEnabled(false);
+    	menuActionFreeze.setEnabled(false);
     	menuActionDisconnect.setEnabled(false);
+    	menuActionQuit.setEnabled(false);
     	menuActionPython.setEnabled(false);
     	menuActionPythonInstalled.setEnabled(false);
     	menuMemoryView.setEnabled(false);
