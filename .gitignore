@@ -2,8 +2,7 @@
 # Ignore directory where classes will be built into
 classes
 
-# Ignore binary executable files
-bin
-
 # Ignore all produced output of compilation
 *.class
+*.jar
+
