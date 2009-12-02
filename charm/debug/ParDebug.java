@@ -1927,7 +1927,10 @@ DEPRECATED!! The correct implementation is in CpdList.java
         //		"[-user <username>] [-port <port>] [-sshtunnel] [-display <display>]]");
     }
     
-    String getFilename() { return exec.workingDir+((exec.workingDir.equals("")||exec.workingDir.endsWith("/"))?"":"/")+exec.executable; }
+    String getFilename() {
+    	if (exec.executable.charAt(0) == '/') return exec.executable;
+    	return exec.workingDir+((exec.workingDir.equals("")||exec.workingDir.endsWith("/"))?"":"/")+exec.executable;
+    }
     String getHostname() { return exec.hostname; }
     String getUsername() { return exec.username; }
     int getSshPort() { return exec.sshport; }
