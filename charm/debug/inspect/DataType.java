@@ -166,6 +166,7 @@ public class DataType extends GenericType {
             int pointerCount = 0;
             
             while (line.charAt(variableStart+1+pointerCount) == '*') pointerCount++;
+            if (variableStart < 0) continue;
             String varType = line.substring(0, variableStart).trim();
             if (varType.startsWith("const")) {
             	varType = varType.substring(varType.indexOf(" ")+1);
