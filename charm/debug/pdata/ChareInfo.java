@@ -51,8 +51,8 @@ public class ChareInfo extends GenericInfo {
             return (JTree)jtv.getResult();*/
         }
         else if (id != null) {
-            int nItems = ParDebug.server.getListLength("charm/object",ParDebug.currentListedPE);
-            PList list = ParDebug.server.getPList("charm/object",ParDebug.currentListedPE,0,nItems,id);
+            int nItems = ParDebug.debugger.server.getListLength("charm/object",ParDebug.currentListedPE);
+            PList list = ParDebug.debugger.server.getPList("charm/object",ParDebug.currentListedPE,0,nItems,id);
             if (list==null) {
             	panel.clear();
             	return;

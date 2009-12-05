@@ -59,7 +59,7 @@ public class ParDebug extends JPanel
 
     /// This variable is responsible for handling all the CCS communication with
     /// the running application
-    public static CpdUtil server;
+    public CpdUtil server;
 
     //private CcsServer ccs; DEPRACATED: it goes into the variable "server"
     private DefaultListModel listModel;
@@ -341,6 +341,9 @@ DEPRECATED!! The correct implementation is in CpdList.java
 */
     public int getNumPes() {
     	return exec.npes;
+    }
+    public GdbProcess getGdb() {
+    	return gdb;
     }
     public int getSelectedPe() {
     	return Integer.parseInt((String)pesbox.getSelectedItem());
@@ -1235,7 +1238,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
     		if (inputValue == -1) pe = 0;
     		CcsServer.writeInt(ParDebug.globals, ParDebug.globals.length-8, e.getActionCommand().equals("leakquick") ? 1 : 0);
     		CcsServer.writeInt(ParDebug.globals, ParDebug.globals.length-4, inputValue);
-    		ParDebug.server.sendCcsRequestBytes("converse_memory_leak", ParDebug.globals, pe, true);
+    		debugger.server.sendCcsRequestBytes("converse_memory_leak", ParDebug.globals, pe, true);
 
     		/*
     		if (inputValue == -1) frame.setTitle("Combined Allocation Tree");
@@ -1256,7 +1259,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
     			return;
     		}
     		if (pe == -1) pe = 0;
-    		byte[] buf = ParDebug.server.sendCcsRequestBytes("ccs_debug_memStat", input, pe);
+    		byte[] buf = debugger.server.sendCcsRequestBytes("ccs_debug_memStat", input, pe);
     		PConsumer cons=new PConsumer();
     		cons.decode(buf);
     		PList stat = cons.getList();
@@ -2083,7 +2086,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
     		public void windowClosing(WindowEvent e) {
     			if (debugger.isRunning)
     			{
-    				ParDebug.server.bcastCcsRequest("ccs_debug_quit", "",-1,ParDebug.debugger.getNumPes(),null);
+    				debugger.server.bcastCcsRequest("ccs_debug_quit", "",-1,ParDebug.debugger.getNumPes(),null);
     				debugger.quitProgram();
     			} 
     			debugger.preferences.save();

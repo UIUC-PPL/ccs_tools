@@ -49,13 +49,13 @@ public class InspectPanel extends JPanel implements ActionListener {
 		long location = slot.getLocation();
 		System.out.println("location = "+(int)location+", "+(int)(location>>>32));
 		if (slot.getType() == Slot.MESSAGE_TYPE) {
-			PList list = ParDebug.server.getPList("converse/message",pe,(int)location,(int)(location>>>32));
+			PList list = ParDebug.debugger.server.getPList("converse/message",pe,(int)location,(int)(location>>>32));
 			MsgPList msg = ParDebug.debugger.getMessageList();
 			msg.load(list);
 			msg.elementAt(0).getDetails(this);
 			return true;
 		}
-		PList list = ParDebug.server.getPList("converse/memory/data",pe,(int)location,(int)(location>>>32));
+		PList list = ParDebug.debugger.server.getPList("converse/memory/data",pe,(int)location,(int)(location>>>32));
 		if (list==null) System.out.println("list is null!");
 		PList cur = (PList)list.elementAt(0);
 		int size = ((PNative)cur.elementNamed("size")).getIntValue(0);
@@ -142,7 +142,7 @@ public class InspectPanel extends JPanel implements ActionListener {
 		long location = Long.parseLong(el.value.substring(el.value.indexOf("0x")+2), 16);
 		if (e.getActionCommand().equals("dereference")) {
 			if (location > 0) {
-				PList list = ParDebug.server.getPList("converse/memory/data",pe,(int)location,(int)(location>>>32));
+				PList list = ParDebug.debugger.server.getPList("converse/memory/data",pe,(int)location,(int)(location>>>32));
 				if (list==null) System.out.println("list is null!");
 				PList cur = (PList)list.elementAt(0);
 				int size = ((PNative)cur.elementNamed("size")).getIntValue(0);
