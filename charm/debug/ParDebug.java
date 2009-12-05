@@ -21,7 +21,6 @@ import charm.util.ReflectiveXML;
 import javax.swing.*;
 
 import java.io.*;
-import java.text.ParseException;
 import java.util.*;
 import java.awt.*;
 import java.awt.event.*;
@@ -55,7 +54,6 @@ public class ParDebug extends JPanel
     public static int dataPos;
     static ServThread servthread;
     private static GdbProcess gdb;
-    private boolean attachMode;
 
     /// This variable is responsible for handling all the CCS communication with
     /// the running application
@@ -1019,12 +1017,10 @@ DEPRECATED!! The correct implementation is in CpdList.java
     		preferences.size = getParent().getSize();
     	}
     	else if (e.getActionCommand().equals("begin")) { /* buttons... */
-    		attachMode = false;
-    		startProgram();
+    		startProgram(false);
     	}
     	else if (e.getActionCommand().equals("attach")) {
-    		attachMode = true;
-    		startProgram();
+    		startProgram(true);
     	} else if (e.getActionCommand().equals("freeze")) {
     		// stop program
     		server.bcastCcsRequest("ccs_debug", "freeze", ((PeSet)peList.getSelectedValue()).runningIterator());
@@ -1422,80 +1418,11 @@ DEPRECATED!! The correct implementation is in CpdList.java
     }
     
     public void applyCommands(Vector commands) {
-    	for (int i=0; i<commands.size(); ++i) {
-    		String command = (String)commands.elementAt(i);
-    		System.out.println("applying command: "+command);
-    		if (command.equals("start")) {
-    			attachMode = false;
-    			startProgram();
-    		}
-    		else if (command.equals("attach")) {
-    			attachMode = true;
-    			startProgram();
-    		}
-    		else if (command.startsWith("python")) {
-    			command = command.substring(command.indexOf(' ')).trim();
-    			File f = new File(command.substring(0, command.indexOf(' ')));
-    			PythonScript script = new PythonScript(gdb);
-    			String code;
-    			try {
-	                code = script.loadPythonCode(f);
-                } catch (IOException e) {
-                	System.out.println("could not load file "+f.getAbsolutePath());
-                	break;
-                }
-                try {
-	                script.parseCode(code);
-                } catch (ParseException e) {
-                	System.out.println("could not parse python code: "+code);
-                }
-                command = command.substring(command.indexOf(' ')).trim();
-    			int boundChare = Integer.parseInt(command.substring(0, (command+" ").indexOf(' ')));
-    			script.setChare(groupItems.elementAt(boundChare));
-    			int next;
-    			while ((next = command.indexOf(' ')) != -1) {
-    				command = command.substring(next).trim();
-    				int ep = Integer.parseInt(command.substring(0, (command+" ").indexOf(' ')));
-    				int where = ep>0 ? 1 : 0;
-    				ep = ep>0 ? ep : -ep;
-    				script.addEP(where, epItems.getEntryFor(ep));
-    			}
-    			executePython(script);
-    		}
-    		else if (command.startsWith("time")) {
-    			Date now = new Date();
-    			System.out.println(command.substring(5)+" "+now+" ("+now.getTime()+")");
-    		}
-    		else if (command.equals("quit")) {
-        		server.bcastCcsRequest("ccs_debug_quit", "", exec.npes);
-        		quitProgram(); 
-    		}
-			else if (command.equals("continue")) {
-				server.bcastCcsRequest("ccs_continue_break_point", "", exec.npes);
-			}
-			else if (command.startsWith("memstat")) {
-				String input = command.substring(command.indexOf(' ')).trim();
-				int pe = Integer.parseInt(input);;
-				if (pe == -1) pe = 0;
-	    		byte[] buf = ParDebug.server.sendCcsRequestBytes("ccs_debug_memStat", input, pe);
-	    		PConsumer cons=new PConsumer();
-	    		cons.decode(buf);
-	    		PList stat = cons.getList();
-	    		System.out.println(stat);
-			}
-			else if (command.equals("allocation")) {
-				
-			}
-    		else {
-    			System.out.println("Command not recognized: "+command);
-    		}
-    	}
     }
     
 /*************** Program Control ***********************/
     /// Start the program from scratch.
-    public void startProgram() 
-    {
+    public void startProgram(boolean attachMode) {
     	gdb.terminate();
     	isRunning = true;
         interpreterHandle = 0;
