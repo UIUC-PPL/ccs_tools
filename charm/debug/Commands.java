@@ -18,6 +18,7 @@ public class Commands implements NotifyListener {
 	Vector list;
 	int position;
 	Vector events;
+	boolean waiting;
 	
 	public Commands(File f, ParDebug d) {
 		debugger = d;
@@ -39,6 +40,9 @@ public class Commands implements NotifyListener {
 	public String getNext() {
 		if (position == list.size()) return null;
 		return (String)list.elementAt(position++);
+	}
+	public void pushBack() {
+		position--;
 	}
 	
 	public void apply() {
@@ -103,6 +107,29 @@ public class Commands implements NotifyListener {
 			}
 			else if (command.equals("allocation")) {
 				
+			}
+			else if (command.startsWith("wait")) {
+				String condition = command.substring(command.indexOf(' ')).trim();
+				boolean matchSuccess = false;
+				int type = 0;
+				if (condition.equals("breakpoint")) {
+					type = NotifyEvent.BREAKPOINT;
+				} else if (condition.equals("freeze")) {
+					type = NotifyEvent.FREEZE;
+				}
+				for (int i=0; i<events.size(); ++i) {
+					if (((NotifyEvent)events.get(i)).type == type) {
+						matchSuccess = true;
+						events.remove(i);
+						break;
+					}
+				}
+
+				if (!matchSuccess) {
+					pushBack();
+					waiting = true;
+					break;
+				}
 			}
     		else {
     			System.out.println("Command not recognized: "+command);
