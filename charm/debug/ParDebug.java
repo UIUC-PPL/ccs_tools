@@ -76,6 +76,7 @@ public class ParDebug extends JPanel
     //private SortedSet breakpointSet[];
     private int interpreterHandle;
     private PythonInstalledCode installedPythonScripts;
+    private Vector notificationListeners;
     
     private class CpdListInfo {
        public String display; // Client name CpdList should be displayed as.
@@ -361,6 +362,13 @@ DEPRECATED!! The correct implementation is in CpdList.java
        statusArea.setText(txt);
     }
     
+    public void addNotifyListener(NotifyListener l) {
+    	notificationListeners.add(l);
+    }
+    public void removeNotifyListener(NotifyListener l) {
+    	notificationListeners.remove(l);
+    }
+    
     public void notifyBreakpoint (int pe, String txt) {
     	System.out.println("notifyBreakpoint: "+txt+" pe="+pe);
     	if (pes[pe].isFrozen()) {
@@ -380,6 +388,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
 				populateNewList(listsbox.getSelectedIndex(),forPE, listModel);
 		}
     	//setStatusMessage(txt);
+		for (int i=0; i<notificationListeners.size(); ++i) ((NotifyListener)notificationListeners.get(i)).notifyBreakpoint(pe, txt);
     }
     
     public void notifyFreeze (int pe, String txt) {
@@ -400,6 +409,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
 			if (forPE == pe)
 				populateNewList(listsbox.getSelectedIndex(),forPE, listModel);
 		}
+		for (int i=0; i<notificationListeners.size(); ++i) ((NotifyListener)notificationListeners.get(i)).notifyFreeze(pe, txt);
     }
     
     public void notifyAbort (int pe, String txt) {
@@ -413,6 +423,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
 			if (forPE == pe)
 				populateNewList(listsbox.getSelectedIndex(),forPE, listModel);
 		}
+		for (int i=0; i<notificationListeners.size(); ++i) ((NotifyListener)notificationListeners.get(i)).notifyAbort(pe, txt);
     }
 
     public void notifySignal (int pe, String txt) {
@@ -428,6 +439,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
 			if (forPE == pe)
 				populateNewList(listsbox.getSelectedIndex(),forPE, listModel);
 		}
+		for (int i=0; i<notificationListeners.size(); ++i) ((NotifyListener)notificationListeners.get(i)).notifySignal(pe, txt);
     }
     
     public void notifyCorruption (int pe, String txt) {
@@ -461,6 +473,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
     	}
     	if (count > 0) System.out.print("}");
     	System.out.println();
+		for (int i=0; i<notificationListeners.size(); ++i) ((NotifyListener)notificationListeners.get(i)).notifyCorruption(pe, txt);
     }
 
     public Dimension getPreferredSize() {
@@ -1865,6 +1878,8 @@ DEPRECATED!! The correct implementation is in CpdList.java
     String getUsername() { return exec.username; }
     int getSshPort() { return exec.sshport; }
     EpPList getEpItems() { return (EpPList)epItems.clone(); }
+    CharePList getGroupItems() { return groupItems; }
+    Execution getExecution() { return exec; }
     
     public static ParDebug debugger;
     public static void main(String[] args) {
@@ -1885,7 +1900,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
     	exec.sshTunnel = false;
     	sshTunnel = null;
     	boolean noWindow = false;
-    	Vector commands = null;
+    	File commands = null;
 
     	// parsing command-line parameters
     	int i = 0;
@@ -1953,16 +1968,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
 				}
     		}
     		else if (args[i].equals("-commands")) {
-    			try {
-    				BufferedReader com = new BufferedReader(new FileReader(args[i+1]));
-    				System.out.println("Loading commands: "+new File(args[i+1]).getAbsolutePath());
-    				commands = new Vector();
-    				String str = null;
-    				while ((str = com.readLine()) != null) commands.add(str); 
-    			} catch (IOException ioe) {
-    				System.out.println("Could not open command file ");
-    				ioe.printStackTrace();
-    			}
+    			commands = new File(args[i+1]);
     		}
     		else
     		{ /* Just a 1-argument */
@@ -2032,6 +2038,9 @@ DEPRECATED!! The correct implementation is in CpdList.java
     		if (debugger.getPreferredLocation() != null) appFrame.setLocation(debugger.getPreferredLocation());
     		appFrame.setVisible(true);
     	}
-    	if (commands != null) debugger.applyCommands(commands);
+    	if (commands != null) {
+    		Commands cmds = new Commands(commands, debugger);
+    		cmds.apply();
+    	}
     }
 }

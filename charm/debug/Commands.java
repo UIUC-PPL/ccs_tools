@@ -11,7 +11,7 @@ import java.text.ParseException;
 import charm.debug.fmt.PConsumer;
 import charm.debug.fmt.PList;
 
-public class Commands {
+public class Commands extends NotifyAdapter {
 	ParDebug debugger;
 	Vector list;
 	int position;
@@ -67,14 +67,14 @@ public class Commands {
                 }
                 command = command.substring(command.indexOf(' ')).trim();
     			int boundChare = Integer.parseInt(command.substring(0, (command+" ").indexOf(' ')));
-    			script.setChare(groupItems.elementAt(boundChare));
+    			script.setChare(debugger.getGroupItems().elementAt(boundChare));
     			int next;
     			while ((next = command.indexOf(' ')) != -1) {
     				command = command.substring(next).trim();
     				int ep = Integer.parseInt(command.substring(0, (command+" ").indexOf(' ')));
     				int where = ep>0 ? 1 : 0;
     				ep = ep>0 ? ep : -ep;
-    				script.addEP(where, epItems.getEntryFor(ep));
+    				script.addEP(where, debugger.getEpItems().getEntryFor(ep));
     			}
     			debugger.executePython(script);
     		}
@@ -83,11 +83,11 @@ public class Commands {
     			System.out.println(command.substring(5)+" "+now+" ("+now.getTime()+")");
     		}
     		else if (command.equals("quit")) {
-        		debugger.server.bcastCcsRequest("ccs_debug_quit", "", exec.npes);
+        		debugger.server.bcastCcsRequest("ccs_debug_quit", "", debugger.getExecution().npes);
         		debugger.quitProgram(); 
     		}
 			else if (command.equals("continue")) {
-				debugger.server.bcastCcsRequest("ccs_continue_break_point", "", exec.npes);
+				debugger.server.bcastCcsRequest("ccs_continue_break_point", "", debugger.getExecution().npes);
 			}
 			else if (command.startsWith("memstat")) {
 				String input = command.substring(command.indexOf(' ')).trim();
@@ -108,7 +108,7 @@ public class Commands {
     	}
 	}
 	
-	public void receiveEvent(int pe, String txt) {
+	public void notifyBreakpoint(int pe, String txt) {
 		
 	}
 }
