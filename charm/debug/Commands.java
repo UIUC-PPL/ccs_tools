@@ -8,10 +8,12 @@ import java.util.Date;
 import java.util.Vector;
 import java.text.ParseException;
 
+import charm.debug.event.NotifyEvent;
+import charm.debug.event.NotifyListener;
 import charm.debug.fmt.PConsumer;
 import charm.debug.fmt.PList;
 
-public class Commands extends NotifyAdapter {
+public class Commands implements NotifyListener {
 	ParDebug debugger;
 	Vector list;
 	int position;
@@ -108,7 +110,11 @@ public class Commands extends NotifyAdapter {
     	}
 	}
 	
-	public void notifyBreakpoint(int pe, String txt) {
-		
+	public void receiveNotification(NotifyEvent e) {
+		events.add(e);
+		if (waiting) {
+			waiting = false;
+			apply();
+		}
 	}
 }

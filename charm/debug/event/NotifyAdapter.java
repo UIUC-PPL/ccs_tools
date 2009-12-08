@@ -1,4 +1,6 @@
-package charm.debug;
+/*
+ * package charm.debug.event;
+
 
 public class NotifyAdapter implements NotifyListener {
 
@@ -28,3 +30,4 @@ public class NotifyAdapter implements NotifyListener {
 	}
 
 }
+*/

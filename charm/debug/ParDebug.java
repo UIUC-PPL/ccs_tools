@@ -11,6 +11,8 @@
 package charm.debug;
 
 import charm.ccs.*;
+import charm.debug.event.NotifyEvent;
+import charm.debug.event.NotifyListener;
 import charm.debug.fmt.*;
 import charm.debug.pdata.*;
 import charm.debug.inspect.Inspector;
@@ -388,7 +390,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
 				populateNewList(listsbox.getSelectedIndex(),forPE, listModel);
 		}
     	//setStatusMessage(txt);
-		for (int i=0; i<notificationListeners.size(); ++i) ((NotifyListener)notificationListeners.get(i)).notifyBreakpoint(pe, txt);
+		for (int i=0; i<notificationListeners.size(); ++i) ((NotifyListener)notificationListeners.get(i)).receiveNotification(new NotifyEvent(NotifyEvent.BREAKPOINT, pe, txt));
     }
     
     public void notifyFreeze (int pe, String txt) {
@@ -409,7 +411,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
 			if (forPE == pe)
 				populateNewList(listsbox.getSelectedIndex(),forPE, listModel);
 		}
-		for (int i=0; i<notificationListeners.size(); ++i) ((NotifyListener)notificationListeners.get(i)).notifyFreeze(pe, txt);
+		for (int i=0; i<notificationListeners.size(); ++i) ((NotifyListener)notificationListeners.get(i)).receiveNotification(new NotifyEvent(NotifyEvent.FREEZE, pe, txt));
     }
     
     public void notifyAbort (int pe, String txt) {
@@ -423,7 +425,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
 			if (forPE == pe)
 				populateNewList(listsbox.getSelectedIndex(),forPE, listModel);
 		}
-		for (int i=0; i<notificationListeners.size(); ++i) ((NotifyListener)notificationListeners.get(i)).notifyAbort(pe, txt);
+		for (int i=0; i<notificationListeners.size(); ++i) ((NotifyListener)notificationListeners.get(i)).receiveNotification(new NotifyEvent(NotifyEvent.ABORT, pe, txt));
     }
 
     public void notifySignal (int pe, String txt) {
@@ -439,7 +441,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
 			if (forPE == pe)
 				populateNewList(listsbox.getSelectedIndex(),forPE, listModel);
 		}
-		for (int i=0; i<notificationListeners.size(); ++i) ((NotifyListener)notificationListeners.get(i)).notifySignal(pe, txt);
+		for (int i=0; i<notificationListeners.size(); ++i) ((NotifyListener)notificationListeners.get(i)).receiveNotification(new NotifyEvent(NotifyEvent.SIGNAL, pe, txt));
     }
     
     public void notifyCorruption (int pe, String txt) {
@@ -473,7 +475,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
     	}
     	if (count > 0) System.out.print("}");
     	System.out.println();
-		for (int i=0; i<notificationListeners.size(); ++i) ((NotifyListener)notificationListeners.get(i)).notifyCorruption(pe, txt);
+		for (int i=0; i<notificationListeners.size(); ++i) ((NotifyListener)notificationListeners.get(i)).receiveNotification(new NotifyEvent(NotifyEvent.CORRUPTION, pe, txt));
     }
 
     public Dimension getPreferredSize() {
