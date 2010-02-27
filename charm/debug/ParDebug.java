@@ -1450,7 +1450,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
     	if (envDisplay.length() == 0) envDisplay = getEnvDisplay();
     	// System.out.println(envDisplay);
 
-    	String totCommandLine = charmrunPath + " " + "+p"+ exec.npes + " " +executable + " " + exec.parameters+"  +cpd +DebugDisplay " +envDisplay+" ++server";// ++charmdebug";
+    	String totCommandLine = charmrunPath + " " + "+p"+ exec.npes + " " +executable + " " + exec.parameters+"  +cpd +DebugSuspend +DebugDisplay " +envDisplay+" ++server";// ++charmdebug";
     	if (exec.port.length() != 0)
     		totCommandLine += " ++server-port " + exec.port;
     	// TODO: add a parameter to the input parameters to allow a working directory
