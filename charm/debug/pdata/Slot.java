@@ -17,8 +17,9 @@ public class Slot implements Comparable {
 	private int chareID;
 	private Vector backtrace;
 
-	public static final int MODIFIED = 0x20;
-	public static final int NEW_BLOCK = 0x10;
+	public static final int MODIFIED = 0x40;
+	public static final int NEW_BLOCK = 0x20;
+	public static final int LEAK_CLEAN = 0x10;
 	public static final int LEAK_FLAG = 0x8;
 	public static final int TYPE_MASK = 0x7;
 	public static final int UNKNOWN_TYPE = 0x0;
