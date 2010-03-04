@@ -159,6 +159,8 @@ public class ParDebug extends JPanel
     private JMenuItem menuMemoryAllocationGraph;
     private JMenuItem menuMemoryLeak;
     private JMenuItem menuMemoryQuickLeak;
+    private JMenuItem menuMemoryMark;
+    private JMenuItem menuMemoryUnmark;
     private JMenuItem menuMemoryStatistics;
     
 
@@ -617,13 +619,19 @@ DEPRECATED!! The correct implementation is in CpdList.java
        menuMemory.add(menuMemoryAllocationGraph = new JMenuItem("Memory Allocation Graph",'G'));
        listenTo(menuMemoryAllocationGraph,"allocationGraph","Print the memory allocation graph");
        menuMemory.addSeparator();
-       menuMemory.add(menuMemoryQuickLeak = new JMenuItem("Quick Leak Search"));
+       menuMemory.add(menuMemoryQuickLeak = new JMenuItem("Quick Leak Search",'Q'));
        listenTo(menuMemoryQuickLeak,"leakquick","Quick search for memory leacks");
        menuMemoryQuickLeak.setEnabled(false);
-       menuMemory.add(menuMemoryLeak = new JMenuItem("Leak Search"));
+       menuMemory.add(menuMemoryLeak = new JMenuItem("Leak Search",'L'));
        listenTo(menuMemoryLeak,"leaksearch","Search for memory leacks");
        menuMemoryLeak.setEnabled(false);
-       menuMemory.add(menuMemoryStatistics = new JMenuItem("Statistics"));
+       menuMemory.add(menuMemoryMark = new JMenuItem("Mark Memory Clean",'M'));
+       listenTo(menuMemoryMark,"memorymark","Mark all existing memory as not leaking");
+       menuMemoryMark.setEnabled(false);
+       menuMemory.add(menuMemoryUnmark = new JMenuItem("Unmark memory Clean",'U'));
+       listenTo(menuMemoryUnmark,"memoryunmark","Removing not-leak mark on all existing memory");
+       menuMemoryUnmark.setEnabled(false);
+       menuMemory.add(menuMemoryStatistics = new JMenuItem("Statistics",'S'));
        listenTo(menuMemoryStatistics,"memstat","Display memory statistics");
        menuMemoryStatistics.setEnabled(false);
        
@@ -1219,7 +1227,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
     	    }
     	}
     	else if (e.getActionCommand().equals("leaksearch") || e.getActionCommand().equals("leakquick")) {
-    		String input = JOptionPane.showInputDialog("Processor to load (-1 for all)");
+    		String input = JOptionPane.showInputDialog("Processor to scan (-1 for all)");
     		int inputValue;
     		int pe;
     		try {
@@ -1242,6 +1250,23 @@ DEPRECATED!! The correct implementation is in CpdList.java
     		else frame.setTitle("Allocation Tree Processor "+input);
     		if (inputValue == -1) inputValue = 0; /* Send request to 0 */
     		
+    	}
+    	else if (e.getActionCommand().equals("memorymark") || e.getActionCommand().equals("memoryunmark")) {
+    		String input = JOptionPane.showInputDialog("Processor to mark (-1 for all)");
+    		int pe;
+    		try {
+    			pe = Integer.parseInt(input);
+    		} catch (NumberFormatException ex) {
+    			return;
+    		}
+    		if (pe >= getNumPes()) {
+    			JOptionPane.showMessageDialog(this, "There are only "+getNumPes()+" processors.", "Error", JOptionPane.ERROR_MESSAGE);
+    			return;
+    		}
+    		if (pe == -1) pe = 0;
+    		byte[] data = new byte[1];
+    		data[0] = (e.getActionCommand().equals("memorymark") ? (byte)1 : 0);
+    		ParDebug.server.sendCcsRequestBytes("converse_memory_mark", data, pe, false);
     	}
     	else if (e.getActionCommand().equals("memstat")) {
     		String input = JOptionPane.showInputDialog("Processor to load (-1 for all)");
@@ -1728,6 +1753,8 @@ DEPRECATED!! The correct implementation is in CpdList.java
     		menuMemoryAllocationTree.setEnabled(true);
     		menuMemoryLeak.setEnabled(true);
     		menuMemoryQuickLeak.setEnabled(true);
+    		menuMemoryMark.setEnabled(true);
+    		menuMemoryUnmark.setEnabled(true);
     		menuMemoryStatistics.setEnabled(true);
     		enableButtons();
     		
@@ -1862,6 +1889,8 @@ DEPRECATED!! The correct implementation is in CpdList.java
     	menuMemoryAllocationTree.setEnabled(false);
     	menuMemoryLeak.setEnabled(false);
     	menuMemoryQuickLeak.setEnabled(false);
+    	menuMemoryMark.setEnabled(false);
+    	menuMemoryUnmark.setEnabled(false);
     	menuMemoryStatistics.setEnabled(false);
 
     	peList.removeAll();
