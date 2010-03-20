@@ -1531,6 +1531,11 @@ DEPRECATED!! The correct implementation is in CpdList.java
     	// System.out.println(envDisplay);
 
     	String totCommandLine = charmrunPath + " " + "+p"+ exec.npes + " " +executable + " " + exec.parameters+"  +cpd +DebugSuspend +DebugDisplay " +envDisplay+" ++server";// ++charmdebug";
+    	int targetPes = exec.npes;
+    	if (exec.virtualDebug) {
+    		totCommandLine += " +bgnetwork dummy +x1 +y1 +z"+exec.virtualNpes;
+    		targetPes = exec.virtualNpes;
+    	}
     	if (exec.port.length() != 0)
     		totCommandLine += " ++server-port " + exec.port;
     	// TODO: add a parameter to the input parameters to allow a working directory
@@ -1693,6 +1698,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
     		/* Create the pe list */
     		//peList = new boolean[exec.npes];
     		if (attachMode) {
+    			if (exec.virtualDebug) JOptionPane.showInternalMessageDialog(this, "Warning, attach mode does not yet support virtual debugging!");
     			Date start = new Date();
     			byte[] stat = server.bcastCcsRequest("ccs_debug", "status");
     			System.out.println("status: received "+stat.length+" bytes");
@@ -1711,8 +1717,8 @@ DEPRECATED!! The correct implementation is in CpdList.java
     			}
     			System.out.println("Single bcast connection: "+((new Date()).getTime()-start.getTime()));
     		} else {
-    			pes = new Processor[exec.npes];
-    			for (int i = 0; i < exec.npes; i++) {
+    			pes = new Processor[targetPes];
+    			for (int i = 0; i < targetPes; i++) {
     				String peNumber = (new Integer(i)).toString();
     				pesbox.addItem( peNumber );
     				pes[i] = new Processor(i);
