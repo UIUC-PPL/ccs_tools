@@ -1700,6 +1700,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
     			Date start = new Date();
     			byte[] stat = server.bcastCcsRequest("ccs_debug", "status");
     			System.out.println("status: received "+stat.length+" bytes");
+    			exec.virtualDebug = Inspector.isEmulated();
     			exec.npes = stat.length / 8;
     			exec.virtualNpes = exec.npes;
     			pes = new Processor[exec.npes];
