@@ -342,7 +342,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
     }
 */
     public int getNumPes() {
-    	return exec.npes;
+    	return exec.virtualDebug ? exec.virtualNpes : exec.npes;
     }
     public int getSelectedPe() {
     	return Integer.parseInt((String)pesbox.getSelectedItem());
@@ -1066,7 +1066,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
     		servthread.interrupt();
     	}
     	else if (e.getActionCommand().equals("quit")) {
-    		server.bcastCcsRequest("ccs_debug_quit", "", exec.npes);
+    		server.bcastCcsRequest("ccs_debug_quit", "", getNumPes());
     		servthread.terminate();
     	}
     	else if (e.getActionCommand().equals("startgdb")) 
@@ -1074,7 +1074,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
     		SortedSet set = ((PeSet)peList.getSelectedValue()).getList();
     		//server.bcastCcsRequest("ccs_remove_all_break_points", "", set.iterator());
     		//server.bcastCcsRequest("ccs_debug_startgdb","",1,numberPes,peList);
-        	for (int i=0; i<exec.npes; ++i) {
+        	for (int i=0; i<getNumPes(); ++i) {
         		if (set.contains(pes[i])){
         			PList pl = server.getPList("hostinfo", i);
         			PList cur=(PList)pl.elementAt(0);
@@ -1172,7 +1172,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
     	}
     	else if (e.getActionCommand().equals("memory")) {
     		// ask the user for input
-    		MemoryDialog input = new MemoryDialog(appFrame, true, exec.npes);
+    		MemoryDialog input = new MemoryDialog(appFrame, true, getNumPes());
     		if (input.confirmed()) {
     			JFrame frame = new JFrame("Memory visualization");
     			frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
@@ -1205,7 +1205,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
     	}
     	else if (e.getActionCommand().equals("allocationGraph")) {
     	    // ask the user for input
-    	    AllocationGraphDialog input = new AllocationGraphDialog(appFrame, true, exec.npes);
+    	    AllocationGraphDialog input = new AllocationGraphDialog(appFrame, true, getNumPes());
     	    if (input.confirmed()) { 	    
     		JFrame frame = new JFrame("Allocation Graph");
     		frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
@@ -1219,7 +1219,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
     		String logFile = new File(executable).getParent();
     		if (logFile == null) logFile = ".";
     		logFile += "/memoryLog_";
-    		at.load(frame, new MemoryTrace(logFile, exec.npes), input);
+    		at.load(frame, new MemoryTrace(logFile, getNumPes()), input);
 
     		frame.setJMenuBar(at.getMenu());
     		frame.pack();
@@ -1331,7 +1331,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
     		installedPythonScripts.setVisible(true);
     	}
     	else if (e.getActionCommand().equals("newPeSet")) {
-    		PeSetDialog input = new PeSetDialog(appFrame, true, exec.npes);
+    		PeSetDialog input = new PeSetDialog(appFrame, true, getNumPes());
     		if (input.confirmed()) {
     			Iterator iter = input.getPes().iterator();
     			if (iter.hasNext()) {
@@ -1388,7 +1388,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
     	}
     	else if (e.getActionCommand().equals("exitDebugger")) {
     		if (isRunning) {
-    			server.bcastCcsRequest("ccs_debug_quit", "", exec.npes);
+    			server.bcastCcsRequest("ccs_debug_quit", "", getNumPes());
     			quitProgram();
     		}
             preferences.save();
@@ -1489,11 +1489,11 @@ DEPRECATED!! The correct implementation is in CpdList.java
     			System.out.println(command.substring(5)+" "+now+" ("+now.getTime()+")");
     		}
     		else if (command.equals("quit")) {
-        		server.bcastCcsRequest("ccs_debug_quit", "", exec.npes);
+        		server.bcastCcsRequest("ccs_debug_quit", "", getNumPes());
         		quitProgram(); 
     		}
 			else if (command.equals("continue")) {
-				server.bcastCcsRequest("ccs_continue_break_point", "", exec.npes);
+				server.bcastCcsRequest("ccs_continue_break_point", "", getNumPes());
 			}
 			else if (command.startsWith("memstat")) {
 				String input = command.substring(command.indexOf(' ')).trim();
@@ -1531,10 +1531,8 @@ DEPRECATED!! The correct implementation is in CpdList.java
     	// System.out.println(envDisplay);
 
     	String totCommandLine = charmrunPath + " " + "+p"+ exec.npes + " " +executable + " " + exec.parameters+"  +cpd +DebugSuspend +DebugDisplay " +envDisplay+" ++server";// ++charmdebug";
-    	int targetPes = exec.npes;
     	if (exec.virtualDebug) {
-    		totCommandLine += " +bgnetwork dummy +x1 +y1 +z"+exec.virtualNpes;
-    		targetPes = exec.virtualNpes;
+    		totCommandLine += " +bgnetwork dummy +LBPeriod 1000000 +x1 +y1 +z"+exec.virtualNpes;
     	}
     	if (exec.port.length() != 0)
     		totCommandLine += " ++server-port " + exec.port;
@@ -1703,6 +1701,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
     			byte[] stat = server.bcastCcsRequest("ccs_debug", "status");
     			System.out.println("status: received "+stat.length+" bytes");
     			exec.npes = stat.length / 8;
+    			exec.virtualNpes = exec.npes;
     			pes = new Processor[exec.npes];
         		for (int i = 0; i < exec.npes; i++) {
         			String peNumber = (new Integer(i)).toString();
@@ -1717,8 +1716,8 @@ DEPRECATED!! The correct implementation is in CpdList.java
     			}
     			System.out.println("Single bcast connection: "+((new Date()).getTime()-start.getTime()));
     		} else {
-    			pes = new Processor[targetPes];
-    			for (int i = 0; i < targetPes; i++) {
+    			pes = new Processor[getNumPes()];
+    			for (int i = 0; i < getNumPes(); i++) {
     				String peNumber = (new Integer(i)).toString();
     				pesbox.addItem( peNumber );
     				pes[i] = new Processor(i);
