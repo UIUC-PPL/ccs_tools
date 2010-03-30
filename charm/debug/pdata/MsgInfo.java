@@ -44,15 +44,16 @@ public class MsgInfo extends GenericInfo {
     public static final int ForBocMsg      =5;
     public static final int ForVidMsg      =6;
     public static final int FillVidMsg     =7;
-    public static final int RODataMsg      =8;
-    public static final int ROMsgMsg       =9;
-    public static final int ExitMsg        =10;
-    public static final int ReqStatMsg     =11;
-    public static final int StatMsg        =12;
-    public static final int NodeBocInitMsg =13;
-    public static final int ForNodeBocMsg  =14;
-    public static final int ArrayEltInitMsg =15;
-    public static final int ForArrayEltMsg  =16;
+    public static final int DeleteVidMsg   =8;
+    public static final int RODataMsg      =9;
+    public static final int ROMsgMsg       =10;
+    public static final int ExitMsg        =11;
+    public static final int ReqStatMsg     =12;
+    public static final int StatMsg        =13;
+    public static final int NodeBocInitMsg =14;
+    public static final int ForNodeBocMsg  =15;
+    public static final int ArrayEltInitMsg =16;
+    public static final int ForArrayEltMsg  =17;
     public static final String[] envTypes = {
     	"",
     	"NewChareMsg",
@@ -62,6 +63,7 @@ public class MsgInfo extends GenericInfo {
     	"ForBocMsg",
     	"ForVidMsg",
     	"FillVidMsg",
+    	"DeleteVidMsg",
     	"RODataMsg",
     	"ROMsgMsg",
     	"ExitMsg",
