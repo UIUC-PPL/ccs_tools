@@ -2025,6 +2025,14 @@ DEPRECATED!! The correct implementation is in CpdList.java
     	    		System.out.println("Could not understand the specified number of processors");
     	    	}
     		}
+    		else if (args[i].equals("-virtual")) {
+    			exec.virtualDebug = true;
+    			try {
+    				exec.virtualNpes = Integer.parseInt(args[i+1]);
+    			} catch (NumberFormatException e) {
+    	    		System.out.println("Could not understand the specified number of virtual processors");
+    	    	}
+    		}
     		else if (args[i].equals("-display"))
     			envDisplay = args[i+1];
     		else if (args[i].equals("-dir"))
