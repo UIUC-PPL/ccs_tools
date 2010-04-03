@@ -187,6 +187,7 @@ public class CpdUtil {
     			return resp;
     		}
     		else {
+    			ccs.close(r);
     			return null;
     		}
     	} catch (IOException e) {
@@ -236,6 +237,7 @@ public class CpdUtil {
     		{
     			byte[] resp=ccs.recvResponse(r);
     			return resp;
+
     		}
     		else {
     			return null;
