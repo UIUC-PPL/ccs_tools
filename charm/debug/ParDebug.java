@@ -1648,7 +1648,12 @@ DEPRECATED!! The correct implementation is in CpdList.java
 
     		// Retrieve the initial info from charmrun regarding the program segments
     		//StringBuffer initialInfoBuf = new StringBuffer();
-    		String initialInfo = getInitialInfo(); //servthread.infoCommand(" ");
+    		boolean success = getInitialInfo(); //servthread.infoCommand(" ");
+    		if (!success) {
+    			JOptionPane.showMessageDialog(this, "Could not gather information from executable", "Error", JOptionPane.ERROR_MESSAGE);
+    			quitProgram();
+    			return;
+    		}
     		//while ((initialInfo = servthread.infoCommand(" ")).indexOf("\n(gdb)") == -1) {
     		//    initialInfoBuf.append(initialInfo);
     		//    System.out.println("++|"+initialInfo+"|");
@@ -1657,39 +1662,6 @@ DEPRECATED!! The correct implementation is in CpdList.java
     		//initialInfoBuf.append(initialInfo);
     		//initialInfo = initialInfoBuf.toString();
     		//System.out.println("|"+initialInfo+"|");
-    		int dataInitial = initialInfo.indexOf("\n.data ");
-    		int dataFinal = initialInfo.indexOf("\n",dataInitial+1);
-    		String dataValues = initialInfo.substring(dataInitial+6,dataFinal).trim();
-    		int endSize = dataValues.indexOf(' ');
-    		int startPos = dataValues.lastIndexOf(' ');
-    		int dataSize = Integer.parseInt(dataValues.substring(0,endSize));
-    		dataPos = Integer.parseInt(dataValues.substring(startPos+1));
-    		System.out.println("string1: |"+initialInfo.substring(dataInitial+6,dataFinal).trim()+"| "+dataSize+" "+dataPos);
-    		int bssInitial = initialInfo.indexOf("\n.bss");
-    		int bssFinal = initialInfo.indexOf("\n",bssInitial+1);
-    		String bssValues = initialInfo.substring(bssInitial+6,bssFinal).trim();
-    		endSize = bssValues.indexOf(' ');
-    		startPos = bssValues.lastIndexOf(' ');
-    		int bssSize = Integer.parseInt(bssValues.substring(0,endSize));
-    		int bssPos = Integer.parseInt(bssValues.substring(startPos+1));
-    		System.out.println("string1: |"+initialInfo.substring(bssInitial+5,bssFinal).trim()+"| "+bssSize+" "+bssPos);
-    		// FIXME: here we assume the program is 32 bit, or if 64 bit all the addresses are small
-    		
-    		int zero = 0;
-    		// HACK!
-    		if (Inspector.is64bit()) {
-    			globals = new byte[40]; // 4 pointers of 8 bytes each + 8 extra bytes
-       			CcsServer.writeLong(globals, 0, dataPos);
-    			CcsServer.writeLong(globals, 8, dataPos+dataSize);
-    			CcsServer.writeLong(globals, 16, bssPos);
-    			CcsServer.writeLong(globals, 24, bssPos+bssSize);
-    		} else {
-    			globals = new byte[24]; // 4 pointers of 4 bytes each + 8 extra bytes
-    			CcsServer.writeInt(globals, 0, dataPos);
-    			CcsServer.writeInt(globals, 4, dataPos+dataSize);
-    			CcsServer.writeInt(globals, 8, bssPos);
-    			CcsServer.writeInt(globals, 12, bssPos+bssSize);
-    		}
     		// Delete the first print made by gdb at startup
     		//System.out.println(servthread.infoCommand(" "));
 
@@ -1911,22 +1883,24 @@ DEPRECATED!! The correct implementation is in CpdList.java
     	setStatusMessage(new String("Ready to start new program"));
     }
     
-    private String getInitialInfo() {
+    private boolean getInitialInfo() {
 		String executable = new File(getFilename()).getAbsolutePath();
 		String totCommandLine = "size -A " + executable;
 		System.out.println(totCommandLine);
 		String hostname = getHostname();
+		String initialInfo;
+		String commandLinePrefix = "";
 		if (!hostname.equals("localhost")) {
-			totCommandLine = hostname + " " + totCommandLine;
+			commandLinePrefix = hostname + " ";
 			String username = getUsername();
 			if (!username.equals("")) {
-				totCommandLine = "-l " + username + " " + totCommandLine;
+				commandLinePrefix = "-l " + username + " " + commandLinePrefix;
 			}
-			totCommandLine = "ssh " + totCommandLine;
+			commandLinePrefix = "ssh " + commandLinePrefix;
 		}
 		try {
 			//System.out.println("Starting: '"+totCommandLine+"'");
-			Process p = Runtime.getRuntime().exec(totCommandLine);
+			Process p = Runtime.getRuntime().exec(commandLinePrefix+totCommandLine);
 			BufferedReader output = new BufferedReader(new InputStreamReader(p.getInputStream()));
 			StringBuffer reply = new StringBuffer();
 			int c;
@@ -1934,11 +1908,105 @@ DEPRECATED!! The correct implementation is in CpdList.java
 				reply.append((char)c);
 			}
 			//System.out.println("STRINGA: "+reply.toString());
-			return reply.toString();
+			//return reply.toString();
+			initialInfo = reply.toString();
 		} catch (Exception e) {
 			System.out.println("Failed to start gdb info program");
-			return "error";
+			return false;
 		}
+
+		boolean success;
+		int dataSize=0,bssPos=0,bssSize=0; 
+		try {
+			int dataInitial = initialInfo.indexOf("\n.data ");
+			int dataFinal = initialInfo.indexOf("\n",dataInitial+1);
+			String dataValues = initialInfo.substring(dataInitial+6,dataFinal).trim();
+			int endSize = dataValues.indexOf(' ');
+			int startPos = dataValues.lastIndexOf(' ');
+			dataSize = Integer.parseInt(dataValues.substring(0,endSize));
+			dataPos = Integer.parseInt(dataValues.substring(startPos+1));
+			System.out.println("string1: |"+initialInfo.substring(dataInitial+6,dataFinal).trim()+"| "+dataSize+" "+dataPos);
+			int bssInitial = initialInfo.indexOf("\n.bss");
+			int bssFinal = initialInfo.indexOf("\n",bssInitial+1);
+			String bssValues = initialInfo.substring(bssInitial+6,bssFinal).trim();
+			endSize = bssValues.indexOf(' ');
+			startPos = bssValues.lastIndexOf(' ');
+			bssSize = Integer.parseInt(bssValues.substring(0,endSize));
+			bssPos = Integer.parseInt(bssValues.substring(startPos+1));
+			System.out.println("string1: |"+initialInfo.substring(bssInitial+5,bssFinal).trim()+"| "+bssSize+" "+bssPos);
+			success = true;
+		} catch (Exception e) {
+			System.out.println("Failed to read ELF format");
+			success = false;
+		}
+		
+		if (!success) {
+			// could not read "size -A" output, try XCOFF "dump -h"
+			totCommandLine = "dump -h -Xany " + executable;
+			try {
+				//System.out.println("Starting: '"+totCommandLine+"'");
+				Process p = Runtime.getRuntime().exec(commandLinePrefix+totCommandLine);
+				BufferedReader output = new BufferedReader(new InputStreamReader(p.getInputStream()));
+				StringBuffer reply = new StringBuffer();
+				int c;
+				while ((c = output.read()) != -1) {
+					reply.append((char)c);
+				}
+				//System.out.println("STRINGA: "+reply.toString());
+				//return reply.toString();
+				initialInfo = reply.toString();
+			} catch (Exception e) {
+				System.out.println("Failed to start gdb info program");
+				return false;
+			}
+			
+			try {
+				int dataInitial = initialInfo.indexOf("Section Header for .data");
+				dataInitial = initialInfo.indexOf("0x",dataInitial+1);
+				int dataFinal = initialInfo.indexOf(' ',dataInitial+1);
+				dataPos = Integer.parseInt(initialInfo.substring(dataInitial+2,dataFinal), 16);
+				dataInitial = initialInfo.indexOf("0x",dataInitial+1);
+				dataInitial = initialInfo.indexOf("0x",dataInitial+1);
+				dataInitial = initialInfo.indexOf("0x",dataInitial+1);
+				dataFinal = initialInfo.indexOf(' ',dataInitial+1);
+				dataSize = Integer.parseInt(initialInfo.substring(dataInitial+2, dataFinal), 16);
+				System.out.println("string1: "+dataSize+" "+dataPos);
+				
+				int bssInitial = initialInfo.indexOf("Section Header for .bss");
+				bssInitial = initialInfo.indexOf("0x",bssInitial+1);
+				int bssFinal = initialInfo.indexOf(' ',bssInitial+1);
+				bssPos = Integer.parseInt(initialInfo.substring(bssInitial+2,bssFinal), 16);
+				bssInitial = initialInfo.indexOf("0x",bssInitial+1);
+				bssInitial = initialInfo.indexOf("0x",bssInitial+1);
+				bssInitial = initialInfo.indexOf("0x",bssInitial+1);
+				bssFinal = initialInfo.indexOf(' ',bssInitial+1);
+				bssSize = Integer.parseInt(initialInfo.substring(bssInitial+2, bssFinal), 16);
+				System.out.println("string1: "+bssSize+" "+bssPos);
+				success = true;
+			} catch (Exception e) {
+				System.out.println("Failed to read XCOFF format");
+				success = false;
+			}
+		}
+	
+		if (!success) return false;
+		// FIXME: here we assume the program is 32 bit, or if 64 bit all the addresses are small
+		
+		// HACK!
+		if (Inspector.is64bit()) {
+			globals = new byte[40]; // 4 pointers of 8 bytes each + 8 extra bytes
+   			CcsServer.writeLong(globals, 0, dataPos);
+			CcsServer.writeLong(globals, 8, dataPos+dataSize);
+			CcsServer.writeLong(globals, 16, bssPos);
+			CcsServer.writeLong(globals, 24, bssPos+bssSize);
+		} else {
+			globals = new byte[24]; // 4 pointers of 4 bytes each + 8 extra bytes
+			CcsServer.writeInt(globals, 0, dataPos);
+			CcsServer.writeInt(globals, 4, dataPos+dataSize);
+			CcsServer.writeInt(globals, 8, bssPos);
+			CcsServer.writeInt(globals, 12, bssPos+bssSize);
+		}
+		return true;
     }
     
     public static void printUsage()
