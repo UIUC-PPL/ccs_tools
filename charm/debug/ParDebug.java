@@ -1968,7 +1968,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
 				int dataInitial = initialInfo.indexOf("Section Header for .data");
 				dataInitial = initialInfo.indexOf("0x",dataInitial+1);
 				int dataFinal = initialInfo.indexOf(' ',dataInitial+1);
-				dataPos = Integer.parseInt(initialInfo.substring(dataInitial+2,dataFinal), 16);
+				dataPos = (int)Long.parseLong(initialInfo.substring(dataInitial+2,dataFinal), 16);
 				dataInitial = initialInfo.indexOf("0x",dataInitial+1);
 				dataInitial = initialInfo.indexOf("0x",dataInitial+1);
 				dataInitial = initialInfo.indexOf("0x",dataInitial+1);
@@ -1979,7 +1979,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
 				int bssInitial = initialInfo.indexOf("Section Header for .bss");
 				bssInitial = initialInfo.indexOf("0x",bssInitial+1);
 				int bssFinal = initialInfo.indexOf(' ',bssInitial+1);
-				bssPos = Integer.parseInt(initialInfo.substring(bssInitial+2,bssFinal), 16);
+				bssPos = (int)Long.parseLong(initialInfo.substring(bssInitial+2,bssFinal), 16);
 				bssInitial = initialInfo.indexOf("0x",bssInitial+1);
 				bssInitial = initialInfo.indexOf("0x",bssInitial+1);
 				bssInitial = initialInfo.indexOf("0x",bssInitial+1);
