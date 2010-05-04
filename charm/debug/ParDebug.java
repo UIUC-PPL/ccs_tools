@@ -1381,10 +1381,12 @@ DEPRECATED!! The correct implementation is in CpdList.java
     	else if (e.getActionCommand().equals("lists") 
     			|| e.getActionCommand().equals("changepe")) 
     	{ /* Clicked on list or pe drop-down */
+    		System.out.println("Starting generation new list "+(new Date()).getTime());
     		if (pesbox.getSelectedItem()!=null) {
     			int forPE=Integer.parseInt((String)pesbox.getSelectedItem());
     			populateNewList(listsbox.getSelectedIndex(),forPE, listModel); 
     		}
+    		System.out.println("Ended generation new list "+(new Date()).getTime());
     	}
     	else if (e.getActionCommand().equals("exitDebugger")) {
     		if (isRunning) {
@@ -1400,12 +1402,14 @@ DEPRECATED!! The correct implementation is in CpdList.java
       
       if(e.getValueIsAdjusting()) return;
       
+      System.out.println("Starting generation new detailed information "+(new Date()).getTime());
       JList theList = (JList)e.getSource();
       if (theList == listItemNames && !theList.isSelectionEmpty())
       {
         int forPE=Integer.parseInt((String)pesbox.getSelectedItem());
         expandListElement(listsbox.getSelectedIndex(),forPE,theList.getSelectedIndex());
       }
+      System.out.println("Ended generation new detailed information "+(new Date()).getTime());
   
     } // end of valueChanged
 
