@@ -14,10 +14,12 @@ public class ParamsDialog extends JDialog implements ActionListener, ChangeListe
 	//ParDebug mainObject = null;
 	Execution exec = null;
 
-	private JTextField  clParams, numPes, portno, sshport, hostname, username, filename, dir, inputFile, virtualPes;
-	private JCheckBox sshTunnel, waitFile, virtualDebug;
+	private JTextField  clParams, numPes, portno, sshport, hostname, username, filename, dir, inputFile, virtualPes, recordPes, replayPe;
+	private JCheckBox sshTunnel, waitFile, virtualDebug, recplayActive, recplayDetail;
 	private JButton chooser, dirchooser;
 	private JLabel virtualPeslabel;
+	private JRadioButton record, replay, recordDetail, replayDetail;
+	private JPanel recplayEnabled, fullEnabled;
 
 	public ParamsDialog(Frame parent, boolean modal, Execution obj) {
 		super (parent, modal);
@@ -346,6 +348,7 @@ public class ParamsDialog extends JDialog implements ActionListener, ChangeListe
 		cancelButton.addActionListener(this);
 		buttonPanel.add(cancelButton);
 
+		/*
 		c.gridx = 1;
 		c.gridy = nextLine;
 		c.gridwidth = 7;
@@ -356,8 +359,117 @@ public class ParamsDialog extends JDialog implements ActionListener, ChangeListe
 		grid.setConstraints(buttonPanel, c);
 
 		contents.add(buttonPanel);
+		 */
+		
+		JTabbedPane tabbedPane = new JTabbedPane();
+		tabbedPane.addTab("Basic", contents);
+		
+		JPanel recplay = new JPanel();
+		//recplay.setLayout(new BoxLayout(recplay, BoxLayout.Y_AXIS));
+		GridBagLayout recplayGrid = new GridBagLayout();
+		GridBagConstraints recplayConstraint = new GridBagConstraints();
+		recplayConstraint.gridwidth = 1;
+		recplayConstraint.fill = GridBagConstraints.NONE;
+		recplayConstraint.anchor = GridBagConstraints.WEST;
+		recplay.setLayout(recplayGrid);
+		recplayActive = new JCheckBox("Enable Record/Replay");
+		recplayActive.addChangeListener(this);
+		recplayConstraint.gridx=0;
+		recplayConstraint.gridy=0;
+		recplayGrid.setConstraints(recplayActive, recplayConstraint);
+		recplay.add(recplayActive);
+		recplayEnabled = new JPanel();
+		recplayEnabled.setBorder(BorderFactory.createEmptyBorder(0, 20, 0, 0));
+		recplayEnabled.setLayout(new BoxLayout(recplayEnabled, BoxLayout.Y_AXIS));
+		recplayConstraint.gridx=0;
+		recplayConstraint.gridy=1;
+		recplayGrid.setConstraints(recplayEnabled, recplayConstraint);
+		recplay.add(recplayEnabled);
+		
+		
+		ButtonGroup msgOrder = new ButtonGroup();
+		record = new JRadioButton("Record the ordering of the messages", true);
+		msgOrder.add(record);
+		recplayEnabled.add(record);
+		replay = new JRadioButton("Replay the message ordering", false);
+		replay.addChangeListener(this);
+		msgOrder.add(replay);
+		recplayEnabled.add(replay);
+		
+		recplayDetail = new JCheckBox("Enable detailed Record/Replay");
+		recplayEnabled.add(recplayDetail);
+		recplayDetail.addChangeListener(this);
+		fullEnabled = new JPanel();
+		fullEnabled.setBorder(BorderFactory.createEmptyBorder(0, 40, 0, 0));
+		fullEnabled.setLayout(new BoxLayout(fullEnabled, BoxLayout.Y_AXIS));
+		recplayConstraint.gridx=0;
+		recplayConstraint.gridy=2;
+		recplayGrid.setConstraints(fullEnabled, recplayConstraint);
+		recplay.add(fullEnabled);
+		
+		JPanel empty1 = new JPanel();
+		recplayConstraint.gridx=0;
+		recplayConstraint.gridy=3;
+		recplayConstraint.weightx=1;
+		recplayConstraint.weighty=1;
+		recplayGrid.setConstraints(empty1, recplayConstraint);
+		recplay.add(empty1);
 
-		getContentPane().add(contents);
+		JPanel fullPanel = new JPanel();
+		GridBagLayout fullPanelGrid = new GridBagLayout();
+		GridBagConstraints c1 = new GridBagConstraints();
+		c1.gridwidth = 1;
+		c1.fill = GridBagConstraints.NONE;
+		c1.anchor = GridBagConstraints.WEST;
+		fullPanel.setLayout(fullPanelGrid);
+		//fullPanel.setLayout(new GridLayout(2, 2, 10, 10));
+		ButtonGroup fullRecord = new ButtonGroup();
+		//JPanel leftPanel = new JPanel();
+		//leftPanel.setLayout(new BoxLayout(leftPanel, BoxLayout.Y_AXIS));
+		//JPanel rightPanel = new JPanel();
+		//rightPanel.setLayout(new BoxLayout(rightPanel, BoxLayout.Y_AXIS));
+		recordDetail = new JRadioButton("Record selected processors", true);
+		recordDetail.addChangeListener(this);
+		fullRecord.add(recordDetail);
+		c1.gridx=0;
+		c1.gridy=0;
+		fullPanelGrid.setConstraints(recordDetail, c1);
+		fullPanel.add(recordDetail);
+		recordPes = new JTextField(15);
+		//recordPes.setMaximumSize(new Dimension(60, 12));
+		c1.gridx=1;
+		c1.gridy=0;
+		fullPanelGrid.setConstraints(recordPes, c1);
+		fullPanel.add(recordPes);
+		replayDetail = new JRadioButton("Replay selected processor", false);
+		replayDetail.addChangeListener(this);
+		fullRecord.add(replayDetail);
+		c1.gridx=0;
+		c1.gridy=1;
+		fullPanelGrid.setConstraints(replayDetail, c1);
+		fullPanel.add(replayDetail);
+		replayPe = new JTextField(5);
+		//replayPe.setMaximumSize(new Dimension(40, 16));
+		c1.gridx=1;
+		c1.gridy=1;
+		fullPanelGrid.setConstraints(replayPe, c1);
+		fullPanel.add(replayPe);
+		c1.gridx=2;
+		c1.gridy=2;
+		c1.weightx=1;
+		c1.weighty=1;
+		JPanel empty = new JPanel();
+		fullPanelGrid.setConstraints(empty, c1);
+		fullPanel.add(empty);
+		//fullPanel.add(leftPanel);
+		//fullPanel.add(rightPanel);
+		fullEnabled.add(fullPanel);
+		
+		enableRecplay();
+		
+		tabbedPane.addTab("Record/Replay", recplay);
+		getContentPane().add(tabbedPane);
+		getContentPane().add(buttonPanel);
 
 		filename.setText(exec.executable);
 		clParams.setText(exec.parameters);
@@ -437,6 +549,29 @@ public class ParamsDialog extends JDialog implements ActionListener, ChangeListe
 		}
     }
 
+    private void enableRecplay() {
+    	boolean status = recplayActive.isSelected();
+		Color color = status ? Color.BLACK : Color.GRAY;
+		record.setEnabled(status);
+		record.setForeground(color);
+		replay.setEnabled(status);
+		replay.setForeground(color);
+		
+		status = status && replay.isSelected();
+		color = status ? Color.BLACK : Color.GRAY;
+		recplayDetail.setEnabled(status);
+		recplayDetail.setForeground(color);
+
+    	status = recplayActive.isSelected() && recplayDetail.isSelected() && replay.isSelected();
+		color = status ? Color.BLACK : Color.GRAY;
+		recordDetail.setEnabled(status);
+		recordDetail.setForeground(color);
+		recordPes.setEnabled(status && recordDetail.isSelected());
+		replayDetail.setEnabled(status);
+		replayDetail.setForeground(color);
+		replayPe.setEnabled(status && replayDetail.isSelected());
+    }
+    
 	public void stateChanged(ChangeEvent e) {
 		if (e.getSource()==virtualDebug) {
 			if (virtualDebug.isSelected()) {
@@ -447,6 +582,11 @@ public class ParamsDialog extends JDialog implements ActionListener, ChangeListe
 				virtualPes.setEnabled(false);
 			}
 		}
+		else if (e.getSource()==recplayActive ||
+				 e.getSource()==recplayDetail ||
+				 e.getSource()==replay ||
+				 e.getSource()==recordDetail ||
+				 e.getSource()==replayDetail) enableRecplay();
     }
 
     /*
