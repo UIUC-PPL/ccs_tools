@@ -22,6 +22,9 @@ public class Execution implements Serializable {
 	
 	public boolean virtualDebug;
 	public int virtualNpes;
+	
+	public boolean recplayActive, recplayDetailActive, record, replay, recordDetail, replayDetail;
+	public String selectedPes;
 
 	public static Execution load(File filename) throws IOException, ClassNotFoundException, SAXException {
 		//try {

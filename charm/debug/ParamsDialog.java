@@ -465,8 +465,6 @@ public class ParamsDialog extends JDialog implements ActionListener, ChangeListe
 		//fullPanel.add(rightPanel);
 		fullEnabled.add(fullPanel);
 		
-		enableRecplay();
-		
 		tabbedPane.addTab("Record/Replay", recplay);
 		getContentPane().add(tabbedPane);
 		getContentPane().add(buttonPanel);
@@ -488,6 +486,14 @@ public class ParamsDialog extends JDialog implements ActionListener, ChangeListe
 			virtualPes.setEnabled(true);
 		}
 		virtualPes.setText(""+exec.virtualNpes);
+		if (exec.recplayActive) recplayActive.setSelected(true);
+		if (exec.recplayDetailActive) recplayDetail.setSelected(true);
+		if (exec.replay) replay.setSelected(true);
+		if (exec.replayDetail) replayDetail.setSelected(true);
+		if (recordDetail.isSelected()) recordPes.setText(exec.selectedPes);
+		else if (replayDetail.isSelected()) replayPe.setText(exec.selectedPes);
+
+		enableRecplay();
 	}
 
     public void actionPerformed(ActionEvent e) {
@@ -528,6 +534,21 @@ public class ParamsDialog extends JDialog implements ActionListener, ChangeListe
 				JOptionPane.showMessageDialog(this, "All values must be positive integers", "Error", JOptionPane.ERROR_MESSAGE);
 				return;
 			}
+			if (recplayActive.isSelected() && recplayDetail.isSelected()) {
+				if (replayDetail.isSelected()) {
+					int pe;
+					try {
+						pe = Integer.parseInt(replayPe.getText());
+					} catch (NumberFormatException nfe) {
+						JOptionPane.showMessageDialog(this, "Only one processor may be selected", "Error", JOptionPane.ERROR_MESSAGE);
+						return;
+					}
+					if (pe < 0 || pe >= numberPes) {
+						JOptionPane.showMessageDialog(this, "The selected processor must be between 0 and the number of processors selected in the basic tab", "Error", JOptionPane.ERROR_MESSAGE);
+						return;
+					}
+				}
+			}
 			exec.executable = filename.getText();
 			exec.parameters = clParams.getText();
 			exec.npes = numberPes;
@@ -541,6 +562,17 @@ public class ParamsDialog extends JDialog implements ActionListener, ChangeListe
 			exec.workingDir = dir.getText();
 			exec.virtualDebug = virtualDebug.isSelected();
 			exec.virtualNpes = vPes;
+			exec.recplayActive = recplayActive.isSelected();
+			exec.recplayDetailActive = recplayDetail.isSelected();
+			exec.record = record.isSelected();
+			exec.replay = replay.isSelected();
+			exec.recordDetail = recordDetail.isSelected();
+			exec.replayDetail = replayDetail.isSelected();
+			exec.selectedPes = "";
+			if (recplayActive.isSelected() && recplayDetail.isSelected()) {
+				if (recordDetail.isSelected()) exec.selectedPes = recordPes.getText();
+				else if (replayDetail.isSelected()) exec.selectedPes = replayPe.getText();
+			}
 			closeWindow = true;
 		} 
 		if (closeWindow) {
