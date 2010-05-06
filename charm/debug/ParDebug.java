@@ -1534,14 +1534,25 @@ DEPRECATED!! The correct implementation is in CpdList.java
     	if (envDisplay.length() == 0) envDisplay = getEnvDisplay();
     	// System.out.println(envDisplay);
 
-    	String totCommandLine = charmrunPath + " " + "+p"+ exec.npes + " " +executable + " " + exec.parameters+"  +cpd +DebugSuspend +DebugDisplay " +envDisplay+" ++server";// ++charmdebug";
+    	String totCommandLine = charmrunPath + " " + "+p"+ exec.npes + " " +executable + " " + exec.parameters+"  +cpd +DebugDisplay " +envDisplay+" ++server";// ++charmdebug";
+    	if (!exec.doNotSuspend) totCommandLine += " +DebugSuspend";
     	if (exec.virtualDebug) {
-    		totCommandLine += " +bgnetwork dummy +LBPeriod 1000000 +x1 +y1 +z"+exec.virtualNpes;
+    		totCommandLine += " +bgnetwork dummy +LBPeriod 1000000 +x1 +y1 +z";
+    		if (!exec.recplayActive || !exec.recplayDetailActive || !exec.replayDetail) totCommandLine += exec.virtualNpes;
+    		else totCommandLine += "1";
+    	}
+    	if (exec.recplayActive) {
+    		if (exec.record) totCommandLine += " +record";
+    		else {
+    			totCommandLine += " +replay";
+    			if (exec.recplayDetailActive) {
+    				if (exec.recordDetail) totCommandLine += " +record-detail "+exec.selectedPes;
+    				else totCommandLine += " +replay-detail "+exec.selectedPes+"/"+exec.npes;
+    			}
+    		}
     	}
     	if (exec.port.length() != 0)
     		totCommandLine += " ++server-port " + exec.port;
-    	// TODO: add a parameter to the input parameters to allow a working directory
-    	//totCommandLine = "(cd /expand/home/bohm/work/leanCP/binary/water_32M_10Ry_cpmd_correct; "+totCommandLine+")";
     	if (!exec.hostname.equals("localhost") || exec.sshport != 0) {
         	if (exec.workingDir != null && exec.workingDir.length() != 0) {
         		totCommandLine = "cd "+exec.workingDir+"; "+totCommandLine;
