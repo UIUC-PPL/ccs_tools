@@ -15,7 +15,7 @@ public class ParamsDialog extends JDialog implements ActionListener, ChangeListe
 	Execution exec = null;
 
 	private JTextField  clParams, numPes, portno, sshport, hostname, username, filename, dir, inputFile, virtualPes, recordPes, replayPe;
-	private JCheckBox sshTunnel, waitFile, virtualDebug, recplayActive, recplayDetail;
+	private JCheckBox suspendOnStart, sshTunnel, waitFile, virtualDebug, recplayActive, recplayDetail;
 	private JButton chooser, dirchooser;
 	private JLabel virtualPeslabel;
 	private JRadioButton record, replay, recordDetail, replayDetail;
@@ -158,6 +158,15 @@ public class ParamsDialog extends JDialog implements ActionListener, ChangeListe
 		c.insets = new Insets(12,8,0,0);
 		grid.setConstraints(numPes,c); 
 
+		c.gridx = 1;
+		c.gridy = ++nextLine;
+		c.gridwidth = 1;
+		c.fill = GridBagConstraints.NONE;
+		c.anchor = GridBagConstraints.WEST;
+		c.insets = new Insets(0,4,0,0);
+		suspendOnStart = new JCheckBox("Suspend execution at startup");
+		grid.setConstraints(suspendOnStart, c);
+		
 		c.gridx = 0;
 		c.gridy = ++nextLine;
 		c.anchor = GridBagConstraints.WEST;
@@ -329,6 +338,7 @@ public class ParamsDialog extends JDialog implements ActionListener, ChangeListe
 		contents.add(inputFile);
 		contents.add(waitFile);
 		contents.add(sshTunnel);
+		contents.add(suspendOnStart);
 
 		JPanel buttonPanel = new JPanel();
 		buttonPanel.setLayout(new BoxLayout(buttonPanel, 0));
@@ -471,6 +481,7 @@ public class ParamsDialog extends JDialog implements ActionListener, ChangeListe
 
 		filename.setText(exec.executable);
 		clParams.setText(exec.parameters);
+		if (!exec.doNotSuspend) suspendOnStart.setSelected(true);  
 		numPes.setText(""+exec.npes);
 		portno.setText(""+exec.port);
 		sshport.setText(""+exec.sshport);
@@ -551,6 +562,7 @@ public class ParamsDialog extends JDialog implements ActionListener, ChangeListe
 			}
 			exec.executable = filename.getText();
 			exec.parameters = clParams.getText();
+			exec.doNotSuspend = ! suspendOnStart.isSelected();
 			exec.npes = numberPes;
 			exec.port = portno.getText();
 			exec.sshport = sshportNumber;

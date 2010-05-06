@@ -8,6 +8,7 @@ public class Execution implements Serializable {
 	//private static final long serialVersionUID = -6713359626743543537L;
 	public String executable;
 	public String parameters;
+	public boolean doNotSuspend;
 	public int npes;
 	public String ccshost;
 	public String port;
