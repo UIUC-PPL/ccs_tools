@@ -20,6 +20,9 @@ public class Execution implements Serializable {
 	public String inputFile;
 	public boolean waitFile;
 	
+	public boolean virtualDebug;
+	public int virtualNpes;
+
 	public static Execution load(File filename) throws IOException, ClassNotFoundException, SAXException {
 		//try {
 		FileReader fw = new FileReader(filename);

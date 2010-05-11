@@ -11,6 +11,7 @@ public class Inspector {
     private static Hashtable allTypes;
     private static ByteOrder byteOrder;
     private static boolean addressSpace64;
+    private static boolean bigEmulator;
     private static int sizeInt;
     private static int sizeLong;
     private static int sizeLongLong;
@@ -43,12 +44,19 @@ public class Inspector {
             System.out.print("64 bit, ");
             addressSpace64 = true;
         } else System.out.print("unknown pointer size, ");
-        if (machineType[1] == 1) {
+        if ((machineType[1] & 0x3) == 1) {
             System.out.println("little endian");
             byteOrder = ByteOrder.LITTLE_ENDIAN;
-        } else {
+        } else if ((machineType[1] & 0x3) == 2) {
             System.out.println("big endian");
             byteOrder = ByteOrder.BIG_ENDIAN;
+        } else {
+        	System.err.println("Unparsable answer from remote application. How did this happen?");
+        	System.exit(1);
+        }
+        bigEmulator = false;
+        if ((machineType[1] & 0x4) != 0) {
+        	bigEmulator = true;
         }
         sizeInt = machineType[2];
         sizeLong = machineType[3];
@@ -58,6 +66,7 @@ public class Inspector {
 
     public static ByteOrder getByteOrder() {return byteOrder;}
     public static boolean is64bit() {return addressSpace64;}
+    public static boolean isEmulated() {return bigEmulator;}
     public static int getIntSize() {return sizeInt;}
     public static int getLongSize() {return sizeLong;}
     public static int getLongLongSize() {return sizeLongLong;}

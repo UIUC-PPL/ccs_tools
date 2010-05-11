@@ -17,6 +17,8 @@ public class MemoryPanel extends JPanel
     private JMenu menuAction;
     private JMenuItem menuLeak;
     private JMenuItem menuLeakFast;
+    private JMenuItem menuLeakMark;
+    private JMenuItem menuLeakUnmark;
     private JMenuItem menuComputeCRC;
     private JMenuItem menuCheckCRC;
     private JMenu menuInfo;
@@ -54,6 +56,10 @@ public class MemoryPanel extends JPanel
 	menuLeak.addActionListener(this);
 	menuAction.add(menuLeakFast = new JMenuItem("Quick Search Leaks",'Q'));
 	menuLeakFast.addActionListener(this);
+	menuAction.add(menuLeakMark = new JMenuItem("Mark Existing Memory Clean",'M'));
+	menuLeakMark.addActionListener(this);
+	menuAction.add(menuLeakUnmark = new JMenuItem("Unmark Existing Memory Clean",'U'));
+	menuLeakUnmark.addActionListener(this);
 	menuAction.add(menuComputeCRC = new JMenuItem("Compute CRC",'C'));
 	menuComputeCRC.addActionListener(this);
 	menuAction.add(menuCheckCRC = new JMenuItem("Check CRC",'V'));
@@ -307,6 +313,16 @@ public class MemoryPanel extends JPanel
 	    traceWrite = true;
 	    displayBytes();
 	    repaint();
+	} else if (e.getSource() == menuLeakMark) {
+		System.out.println("Marking all memory currently allocated as clean");
+		byte[] data = new byte[1];
+		data[0] = 1;
+		ParDebug.debugger.server.sendCcsRequestBytes("converse_memory_mark", data, memoryData.getPe(), false);
+	} else if (e.getSource() == menuLeakUnmark) {
+		System.out.println("Removing previous markings of memory clean in the system");
+		byte[] data = new byte[1];
+		data[0] = 0;
+		ParDebug.debugger.server.sendCcsRequestBytes("converse_memory_mark", data, memoryData.getPe(), false);
 	} else if (e.getSource() == menuStat) {
 	    JOptionPane.showMessageDialog(this, memoryData.memoryStatString(), "Memory Statistics", JOptionPane.INFORMATION_MESSAGE);
 	} else if (e.getSource() == menuInspect || e.getSource() == menuInspectAs) {

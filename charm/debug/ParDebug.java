@@ -160,6 +160,8 @@ public class ParDebug extends JPanel
     private JMenuItem menuMemoryAllocationGraph;
     private JMenuItem menuMemoryLeak;
     private JMenuItem menuMemoryQuickLeak;
+    private JMenuItem menuMemoryMark;
+    private JMenuItem menuMemoryUnmark;
     private JMenuItem menuMemoryStatistics;
     
 
@@ -341,7 +343,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
     }
 */
     public int getNumPes() {
-    	return exec.npes;
+    	return exec.virtualDebug ? exec.virtualNpes : exec.npes;
     }
     public GdbProcess getGdb() {
     	return gdb;
@@ -633,13 +635,19 @@ DEPRECATED!! The correct implementation is in CpdList.java
        menuMemory.add(menuMemoryAllocationGraph = new JMenuItem("Memory Allocation Graph",'G'));
        listenTo(menuMemoryAllocationGraph,"allocationGraph","Print the memory allocation graph");
        menuMemory.addSeparator();
-       menuMemory.add(menuMemoryQuickLeak = new JMenuItem("Quick Leak Search"));
+       menuMemory.add(menuMemoryQuickLeak = new JMenuItem("Quick Leak Search",'Q'));
        listenTo(menuMemoryQuickLeak,"leakquick","Quick search for memory leacks");
        menuMemoryQuickLeak.setEnabled(false);
-       menuMemory.add(menuMemoryLeak = new JMenuItem("Leak Search"));
+       menuMemory.add(menuMemoryLeak = new JMenuItem("Leak Search",'L'));
        listenTo(menuMemoryLeak,"leaksearch","Search for memory leacks");
        menuMemoryLeak.setEnabled(false);
-       menuMemory.add(menuMemoryStatistics = new JMenuItem("Statistics"));
+       menuMemory.add(menuMemoryMark = new JMenuItem("Mark Memory Clean",'M'));
+       listenTo(menuMemoryMark,"memorymark","Mark all existing memory as not leaking");
+       menuMemoryMark.setEnabled(false);
+       menuMemory.add(menuMemoryUnmark = new JMenuItem("Unmark memory Clean",'U'));
+       listenTo(menuMemoryUnmark,"memoryunmark","Removing not-leak mark on all existing memory");
+       menuMemoryUnmark.setEnabled(false);
+       menuMemory.add(menuMemoryStatistics = new JMenuItem("Statistics",'S'));
        listenTo(menuMemoryStatistics,"memstat","Display memory statistics");
        menuMemoryStatistics.setEnabled(false);
        
@@ -1072,7 +1080,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
     		servthread.interrupt();
     	}
     	else if (e.getActionCommand().equals("quit")) {
-    		server.bcastCcsRequest("ccs_debug_quit", "", exec.npes);
+    		server.bcastCcsRequest("ccs_debug_quit", "", getNumPes());
     		servthread.terminate();
     	}
     	else if (e.getActionCommand().equals("startgdb")) 
@@ -1080,7 +1088,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
     		SortedSet set = ((PeSet)peList.getSelectedValue()).getList();
     		//server.bcastCcsRequest("ccs_remove_all_break_points", "", set.iterator());
     		//server.bcastCcsRequest("ccs_debug_startgdb","",1,numberPes,peList);
-        	for (int i=0; i<exec.npes; ++i) {
+        	for (int i=0; i<getNumPes(); ++i) {
         		if (set.contains(pes[i])){
         			PList pl = server.getPList("hostinfo", i);
         			PList cur=(PList)pl.elementAt(0);
@@ -1178,7 +1186,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
     	}
     	else if (e.getActionCommand().equals("memory")) {
     		// ask the user for input
-    		MemoryDialog input = new MemoryDialog(appFrame, true, exec.npes);
+    		MemoryDialog input = new MemoryDialog(appFrame, true, getNumPes());
     		if (input.confirmed()) {
     			JFrame frame = new JFrame("Memory visualization");
     			frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
@@ -1211,7 +1219,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
     	}
     	else if (e.getActionCommand().equals("allocationGraph")) {
     	    // ask the user for input
-    	    AllocationGraphDialog input = new AllocationGraphDialog(appFrame, true, exec.npes);
+    	    AllocationGraphDialog input = new AllocationGraphDialog(appFrame, true, getNumPes());
     	    if (input.confirmed()) { 	    
     		JFrame frame = new JFrame("Allocation Graph");
     		frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
@@ -1225,7 +1233,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
     		String logFile = new File(executable).getParent();
     		if (logFile == null) logFile = ".";
     		logFile += "/memoryLog_";
-    		at.load(frame, new MemoryTrace(logFile, exec.npes), input);
+    		at.load(frame, new MemoryTrace(logFile, getNumPes()), input);
 
     		frame.setJMenuBar(at.getMenu());
     		frame.pack();
@@ -1233,7 +1241,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
     	    }
     	}
     	else if (e.getActionCommand().equals("leaksearch") || e.getActionCommand().equals("leakquick")) {
-    		String input = JOptionPane.showInputDialog("Processor to load (-1 for all)");
+    		String input = JOptionPane.showInputDialog("Processor to scan (-1 for all)");
     		int inputValue;
     		int pe;
     		try {
@@ -1256,6 +1264,23 @@ DEPRECATED!! The correct implementation is in CpdList.java
     		else frame.setTitle("Allocation Tree Processor "+input);
     		if (inputValue == -1) inputValue = 0; /* Send request to 0 */
     		
+    	}
+    	else if (e.getActionCommand().equals("memorymark") || e.getActionCommand().equals("memoryunmark")) {
+    		String input = JOptionPane.showInputDialog("Processor to mark (-1 for all)");
+    		int pe;
+    		try {
+    			pe = Integer.parseInt(input);
+    		} catch (NumberFormatException ex) {
+    			return;
+    		}
+    		if (pe >= getNumPes()) {
+    			JOptionPane.showMessageDialog(this, "There are only "+getNumPes()+" processors.", "Error", JOptionPane.ERROR_MESSAGE);
+    			return;
+    		}
+    		if (pe == -1) pe = 0;
+    		byte[] data = new byte[1];
+    		data[0] = (e.getActionCommand().equals("memorymark") ? (byte)1 : 0);
+    		ParDebug.server.sendCcsRequestBytes("converse_memory_mark", data, pe, false);
     	}
     	else if (e.getActionCommand().equals("memstat")) {
     		String input = JOptionPane.showInputDialog("Processor to load (-1 for all)");
@@ -1320,7 +1345,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
     		installedPythonScripts.setVisible(true);
     	}
     	else if (e.getActionCommand().equals("newPeSet")) {
-    		PeSetDialog input = new PeSetDialog(appFrame, true, exec.npes);
+    		PeSetDialog input = new PeSetDialog(appFrame, true, getNumPes());
     		if (input.confirmed()) {
     			Iterator iter = input.getPes().iterator();
     			if (iter.hasNext()) {
@@ -1370,14 +1395,16 @@ DEPRECATED!! The correct implementation is in CpdList.java
     	else if (e.getActionCommand().equals("lists") 
     			|| e.getActionCommand().equals("changepe")) 
     	{ /* Clicked on list or pe drop-down */
+    		System.out.println("Starting generation new list "+(new Date()).getTime());
     		if (pesbox.getSelectedItem()!=null) {
     			int forPE=Integer.parseInt((String)pesbox.getSelectedItem());
     			populateNewList(listsbox.getSelectedIndex(),forPE, listModel); 
     		}
+    		System.out.println("Ended generation new list "+(new Date()).getTime());
     	}
     	else if (e.getActionCommand().equals("exitDebugger")) {
     		if (isRunning) {
-    			server.bcastCcsRequest("ccs_debug_quit", "", exec.npes);
+    			server.bcastCcsRequest("ccs_debug_quit", "", getNumPes());
     			quitProgram();
     		}
             preferences.save();
@@ -1389,12 +1416,14 @@ DEPRECATED!! The correct implementation is in CpdList.java
       
       if(e.getValueIsAdjusting()) return;
       
+      System.out.println("Starting generation new detailed information "+(new Date()).getTime());
       JList theList = (JList)e.getSource();
       if (theList == listItemNames && !theList.isSelectionEmpty())
       {
         int forPE=Integer.parseInt((String)pesbox.getSelectedItem());
         expandListElement(listsbox.getSelectedIndex(),forPE,theList.getSelectedIndex());
       }
+      System.out.println("Ended generation new detailed information "+(new Date()).getTime());
   
     } // end of valueChanged
 
@@ -1433,6 +1462,74 @@ DEPRECATED!! The correct implementation is in CpdList.java
     }
     
     public void applyCommands(Vector commands) {
+    	for (int i=0; i<commands.size(); ++i) {
+    		String command = (String)commands.elementAt(i);
+    		System.out.println("applying command: "+command);
+    		if (command.equals("start")) {
+    			attachMode = false;
+    			startProgram();
+    		}
+    		else if (command.equals("attach")) {
+    			attachMode = true;
+    			startProgram();
+    		}
+    		else if (command.startsWith("python")) {
+    			command = command.substring(command.indexOf(' ')).trim();
+    			File f = new File(command.substring(0, command.indexOf(' ')));
+    			PythonScript script = new PythonScript(gdb);
+    			String code;
+    			try {
+	                code = script.loadPythonCode(f);
+                } catch (IOException e) {
+                	System.out.println("could not load file "+f.getAbsolutePath());
+                	break;
+                }
+                try {
+	                script.parseCode(code);
+                } catch (ParseException e) {
+                	System.out.println("could not parse python code: "+code);
+                }
+                command = command.substring(command.indexOf(' ')).trim();
+    			int boundChare = Integer.parseInt(command.substring(0, (command+" ").indexOf(' ')));
+    			script.setChare(groupItems.elementAt(boundChare));
+    			int next;
+    			while ((next = command.indexOf(' ')) != -1) {
+    				command = command.substring(next).trim();
+    				int ep = Integer.parseInt(command.substring(0, (command+" ").indexOf(' ')));
+    				int where = ep>0 ? 1 : 0;
+    				ep = ep>0 ? ep : -ep;
+    				script.addEP(where, epItems.getEntryFor(ep));
+    			}
+    			executePython(script);
+    		}
+    		else if (command.startsWith("time")) {
+    			Date now = new Date();
+    			System.out.println(command.substring(5)+" "+now+" ("+now.getTime()+")");
+    		}
+    		else if (command.equals("quit")) {
+        		server.bcastCcsRequest("ccs_debug_quit", "", getNumPes());
+        		quitProgram(); 
+    		}
+			else if (command.equals("continue")) {
+				server.bcastCcsRequest("ccs_continue_break_point", "", getNumPes());
+			}
+			else if (command.startsWith("memstat")) {
+				String input = command.substring(command.indexOf(' ')).trim();
+				int pe = Integer.parseInt(input);;
+				if (pe == -1) pe = 0;
+	    		byte[] buf = ParDebug.server.sendCcsRequestBytes("ccs_debug_memStat", input, pe);
+	    		PConsumer cons=new PConsumer();
+	    		cons.decode(buf);
+	    		PList stat = cons.getList();
+	    		System.out.println(stat);
+			}
+			else if (command.equals("allocation")) {
+				
+			}
+    		else {
+    			System.out.println("Command not recognized: "+command);
+    		}
+    	}
     }
     
 /*************** Program Control ***********************/
@@ -1451,6 +1548,9 @@ DEPRECATED!! The correct implementation is in CpdList.java
     	// System.out.println(envDisplay);
 
     	String totCommandLine = charmrunPath + " " + "+p"+ exec.npes + " " +executable + " " + exec.parameters+"  +cpd +DebugSuspend +DebugDisplay " +envDisplay+" ++server";// ++charmdebug";
+    	if (exec.virtualDebug) {
+    		totCommandLine += " +bgnetwork dummy +LBPeriod 1000000 +x1 +y1 +z"+exec.virtualNpes;
+    	}
     	if (exec.port.length() != 0)
     		totCommandLine += " ++server-port " + exec.port;
     	// TODO: add a parameter to the input parameters to allow a working directory
@@ -1565,7 +1665,12 @@ DEPRECATED!! The correct implementation is in CpdList.java
 
     		// Retrieve the initial info from charmrun regarding the program segments
     		//StringBuffer initialInfoBuf = new StringBuffer();
-    		String initialInfo = getInitialInfo(); //servthread.infoCommand(" ");
+    		boolean success = getInitialInfo(); //servthread.infoCommand(" ");
+    		if (!success) {
+    			JOptionPane.showMessageDialog(this, "Could not gather information from executable", "Error", JOptionPane.ERROR_MESSAGE);
+    			quitProgram();
+    			return;
+    		}
     		//while ((initialInfo = servthread.infoCommand(" ")).indexOf("\n(gdb)") == -1) {
     		//    initialInfoBuf.append(initialInfo);
     		//    System.out.println("++|"+initialInfo+"|");
@@ -1574,49 +1679,19 @@ DEPRECATED!! The correct implementation is in CpdList.java
     		//initialInfoBuf.append(initialInfo);
     		//initialInfo = initialInfoBuf.toString();
     		//System.out.println("|"+initialInfo+"|");
-    		int dataInitial = initialInfo.indexOf("\n.data ");
-    		int dataFinal = initialInfo.indexOf("\n",dataInitial+1);
-    		String dataValues = initialInfo.substring(dataInitial+6,dataFinal).trim();
-    		int endSize = dataValues.indexOf(' ');
-    		int startPos = dataValues.lastIndexOf(' ');
-    		int dataSize = Integer.parseInt(dataValues.substring(0,endSize));
-    		dataPos = Integer.parseInt(dataValues.substring(startPos+1));
-    		System.out.println("string1: |"+initialInfo.substring(dataInitial+6,dataFinal).trim()+"| "+dataSize+" "+dataPos);
-    		int bssInitial = initialInfo.indexOf("\n.bss");
-    		int bssFinal = initialInfo.indexOf("\n",bssInitial+1);
-    		String bssValues = initialInfo.substring(bssInitial+6,bssFinal).trim();
-    		endSize = bssValues.indexOf(' ');
-    		startPos = bssValues.lastIndexOf(' ');
-    		int bssSize = Integer.parseInt(bssValues.substring(0,endSize));
-    		int bssPos = Integer.parseInt(bssValues.substring(startPos+1));
-    		System.out.println("string1: |"+initialInfo.substring(bssInitial+5,bssFinal).trim()+"| "+bssSize+" "+bssPos);
-    		// FIXME: here we assume the program is 32 bit, or if 64 bit all the addresses are small
-    		
-    		int zero = 0;
-    		// HACK!
-    		if (Inspector.is64bit()) {
-    			globals = new byte[40]; // 4 pointers of 8 bytes each + 8 extra bytes
-       			CcsServer.writeLong(globals, 0, dataPos);
-    			CcsServer.writeLong(globals, 8, dataPos+dataSize);
-    			CcsServer.writeLong(globals, 16, bssPos);
-    			CcsServer.writeLong(globals, 24, bssPos+bssSize);
-    		} else {
-    			globals = new byte[24]; // 4 pointers of 4 bytes each + 8 extra bytes
-    			CcsServer.writeInt(globals, 0, dataPos);
-    			CcsServer.writeInt(globals, 4, dataPos+dataSize);
-    			CcsServer.writeInt(globals, 8, bssPos);
-    			CcsServer.writeInt(globals, 12, bssPos+bssSize);
-    		}
     		// Delete the first print made by gdb at startup
     		//System.out.println(servthread.infoCommand(" "));
 
     		/* Create the pe list */
     		//peList = new boolean[exec.npes];
     		if (attachMode) {
+    			if (exec.virtualDebug) JOptionPane.showInternalMessageDialog(this, "Warning, attach mode does not yet support virtual debugging!");
     			Date start = new Date();
     			byte[] stat = server.bcastCcsRequest("ccs_debug", "status");
     			System.out.println("status: received "+stat.length+" bytes");
+    			exec.virtualDebug = Inspector.isEmulated();
     			exec.npes = stat.length / 8;
+    			exec.virtualNpes = exec.npes;
     			pes = new Processor[exec.npes];
         		for (int i = 0; i < exec.npes; i++) {
         			String peNumber = (new Integer(i)).toString();
@@ -1631,8 +1706,8 @@ DEPRECATED!! The correct implementation is in CpdList.java
     			}
     			System.out.println("Single bcast connection: "+((new Date()).getTime()-start.getTime()));
     		} else {
-    			pes = new Processor[exec.npes];
-    			for (int i = 0; i < exec.npes; i++) {
+    			pes = new Processor[getNumPes()];
+    			for (int i = 0; i < getNumPes(); i++) {
     				String peNumber = (new Integer(i)).toString();
     				pesbox.addItem( peNumber );
     				pes[i] = new Processor(i);
@@ -1673,6 +1748,8 @@ DEPRECATED!! The correct implementation is in CpdList.java
     		menuMemoryAllocationTree.setEnabled(true);
     		menuMemoryLeak.setEnabled(true);
     		menuMemoryQuickLeak.setEnabled(true);
+    		menuMemoryMark.setEnabled(true);
+    		menuMemoryUnmark.setEnabled(true);
     		menuMemoryStatistics.setEnabled(true);
     		enableButtons();
     		
@@ -1807,6 +1884,8 @@ DEPRECATED!! The correct implementation is in CpdList.java
     	menuMemoryAllocationTree.setEnabled(false);
     	menuMemoryLeak.setEnabled(false);
     	menuMemoryQuickLeak.setEnabled(false);
+    	menuMemoryMark.setEnabled(false);
+    	menuMemoryUnmark.setEnabled(false);
     	menuMemoryStatistics.setEnabled(false);
 
     	peList.removeAll();
@@ -1821,22 +1900,24 @@ DEPRECATED!! The correct implementation is in CpdList.java
     	setStatusMessage(new String("Ready to start new program"));
     }
     
-    private String getInitialInfo() {
+    private boolean getInitialInfo() {
 		String executable = new File(getFilename()).getAbsolutePath();
 		String totCommandLine = "size -A " + executable;
 		System.out.println(totCommandLine);
 		String hostname = getHostname();
+		String initialInfo;
+		String commandLinePrefix = "";
 		if (!hostname.equals("localhost")) {
-			totCommandLine = hostname + " " + totCommandLine;
+			commandLinePrefix = hostname + " ";
 			String username = getUsername();
 			if (!username.equals("")) {
-				totCommandLine = "-l " + username + " " + totCommandLine;
+				commandLinePrefix = "-l " + username + " " + commandLinePrefix;
 			}
-			totCommandLine = "ssh " + totCommandLine;
+			commandLinePrefix = "ssh " + commandLinePrefix;
 		}
 		try {
 			//System.out.println("Starting: '"+totCommandLine+"'");
-			Process p = Runtime.getRuntime().exec(totCommandLine);
+			Process p = Runtime.getRuntime().exec(commandLinePrefix+totCommandLine);
 			BufferedReader output = new BufferedReader(new InputStreamReader(p.getInputStream()));
 			StringBuffer reply = new StringBuffer();
 			int c;
@@ -1844,11 +1925,105 @@ DEPRECATED!! The correct implementation is in CpdList.java
 				reply.append((char)c);
 			}
 			//System.out.println("STRINGA: "+reply.toString());
-			return reply.toString();
+			//return reply.toString();
+			initialInfo = reply.toString();
 		} catch (Exception e) {
 			System.out.println("Failed to start gdb info program");
-			return "error";
+			return false;
 		}
+
+		boolean success;
+		int dataSize=0,bssPos=0,bssSize=0; 
+		try {
+			int dataInitial = initialInfo.indexOf("\n.data ");
+			int dataFinal = initialInfo.indexOf("\n",dataInitial+1);
+			String dataValues = initialInfo.substring(dataInitial+6,dataFinal).trim();
+			int endSize = dataValues.indexOf(' ');
+			int startPos = dataValues.lastIndexOf(' ');
+			dataSize = Integer.parseInt(dataValues.substring(0,endSize));
+			dataPos = Integer.parseInt(dataValues.substring(startPos+1));
+			System.out.println("string1: |"+initialInfo.substring(dataInitial+6,dataFinal).trim()+"| "+dataSize+" "+dataPos);
+			int bssInitial = initialInfo.indexOf("\n.bss");
+			int bssFinal = initialInfo.indexOf("\n",bssInitial+1);
+			String bssValues = initialInfo.substring(bssInitial+6,bssFinal).trim();
+			endSize = bssValues.indexOf(' ');
+			startPos = bssValues.lastIndexOf(' ');
+			bssSize = Integer.parseInt(bssValues.substring(0,endSize));
+			bssPos = Integer.parseInt(bssValues.substring(startPos+1));
+			System.out.println("string1: |"+initialInfo.substring(bssInitial+5,bssFinal).trim()+"| "+bssSize+" "+bssPos);
+			success = true;
+		} catch (Exception e) {
+			System.out.println("Failed to read ELF format");
+			success = false;
+		}
+		
+		if (!success) {
+			// could not read "size -A" output, try XCOFF "dump -h"
+			totCommandLine = "dump -h -Xany " + executable;
+			try {
+				//System.out.println("Starting: '"+totCommandLine+"'");
+				Process p = Runtime.getRuntime().exec(commandLinePrefix+totCommandLine);
+				BufferedReader output = new BufferedReader(new InputStreamReader(p.getInputStream()));
+				StringBuffer reply = new StringBuffer();
+				int c;
+				while ((c = output.read()) != -1) {
+					reply.append((char)c);
+				}
+				//System.out.println("STRINGA: "+reply.toString());
+				//return reply.toString();
+				initialInfo = reply.toString();
+			} catch (Exception e) {
+				System.out.println("Failed to start gdb info program");
+				return false;
+			}
+			
+			try {
+				int dataInitial = initialInfo.indexOf("Section Header for .data");
+				dataInitial = initialInfo.indexOf("0x",dataInitial+1);
+				int dataFinal = initialInfo.indexOf(' ',dataInitial+1);
+				dataPos = (int)Long.parseLong(initialInfo.substring(dataInitial+2,dataFinal), 16);
+				dataInitial = initialInfo.indexOf("0x",dataInitial+1);
+				dataInitial = initialInfo.indexOf("0x",dataInitial+1);
+				dataInitial = initialInfo.indexOf("0x",dataInitial+1);
+				dataFinal = initialInfo.indexOf(' ',dataInitial+1);
+				dataSize = Integer.parseInt(initialInfo.substring(dataInitial+2, dataFinal), 16);
+				System.out.println("string1: "+dataSize+" "+dataPos);
+				
+				int bssInitial = initialInfo.indexOf("Section Header for .bss");
+				bssInitial = initialInfo.indexOf("0x",bssInitial+1);
+				int bssFinal = initialInfo.indexOf(' ',bssInitial+1);
+				bssPos = (int)Long.parseLong(initialInfo.substring(bssInitial+2,bssFinal), 16);
+				bssInitial = initialInfo.indexOf("0x",bssInitial+1);
+				bssInitial = initialInfo.indexOf("0x",bssInitial+1);
+				bssInitial = initialInfo.indexOf("0x",bssInitial+1);
+				bssFinal = initialInfo.indexOf(' ',bssInitial+1);
+				bssSize = Integer.parseInt(initialInfo.substring(bssInitial+2, bssFinal), 16);
+				System.out.println("string1: "+bssSize+" "+bssPos);
+				success = true;
+			} catch (Exception e) {
+				System.out.println("Failed to read XCOFF format");
+				success = false;
+			}
+		}
+	
+		if (!success) return false;
+		// FIXME: here we assume the program is 32 bit, or if 64 bit all the addresses are small
+		
+		// HACK!
+		if (Inspector.is64bit()) {
+			globals = new byte[40]; // 4 pointers of 8 bytes each + 8 extra bytes
+   			CcsServer.writeLong(globals, 0, dataPos);
+			CcsServer.writeLong(globals, 8, dataPos+dataSize);
+			CcsServer.writeLong(globals, 16, bssPos);
+			CcsServer.writeLong(globals, 24, bssPos+bssSize);
+		} else {
+			globals = new byte[24]; // 4 pointers of 4 bytes each + 8 extra bytes
+			CcsServer.writeInt(globals, 0, dataPos);
+			CcsServer.writeInt(globals, 4, dataPos+dataSize);
+			CcsServer.writeInt(globals, 8, bssPos);
+			CcsServer.writeInt(globals, 12, bssPos+bssSize);
+		}
+		return true;
     }
     
     public static void printUsage()
@@ -1935,6 +2110,14 @@ DEPRECATED!! The correct implementation is in CpdList.java
     	    		exec.npes = Integer.parseInt(numberPesString);
     	    	} catch (NumberFormatException e) {
     	    		System.out.println("Could not understand the specified number of processors");
+    	    	}
+    		}
+    		else if (args[i].equals("-virtual")) {
+    			exec.virtualDebug = true;
+    			try {
+    				exec.virtualNpes = Integer.parseInt(args[i+1]);
+    			} catch (NumberFormatException e) {
+    	    		System.out.println("Could not understand the specified number of virtual processors");
     	    	}
     		}
     		else if (args[i].equals("-display"))

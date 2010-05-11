@@ -4,17 +4,20 @@ import java.awt.*;
 import java.awt.event.*;
 
 import javax.swing.*;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 
 import charm.debug.preference.Execution;
 
-public class ParamsDialog extends JDialog implements ActionListener {
+public class ParamsDialog extends JDialog implements ActionListener, ChangeListener {
 
 	//ParDebug mainObject = null;
 	Execution exec = null;
 
-	private JTextField  clParams, numPes, portno, sshport, hostname, username, filename, dir, inputFile;
-	private JCheckBox sshTunnel, waitFile;
+	private JTextField  clParams, numPes, portno, sshport, hostname, username, filename, dir, inputFile, virtualPes;
+	private JCheckBox sshTunnel, waitFile, virtualDebug;
 	private JButton chooser, dirchooser;
+	private JLabel virtualPeslabel;
 
 	public ParamsDialog(Frame parent, boolean modal, Execution obj) {
 		super (parent, modal);
@@ -153,6 +156,39 @@ public class ParamsDialog extends JDialog implements ActionListener {
 		c.insets = new Insets(12,8,0,0);
 		grid.setConstraints(numPes,c); 
 
+		c.gridx = 0;
+		c.gridy = ++nextLine;
+		c.anchor = GridBagConstraints.WEST;
+		c.insets = new Insets(12,8,0,0);
+		virtualDebug = new JCheckBox("Virtualized debugging:");
+		virtualDebug.addChangeListener(this);
+		grid.setConstraints(virtualDebug, c);
+		contents.add(virtualDebug);
+
+		c.gridx = 1;
+		c.gridy = nextLine;
+		c.gridwidth = 1;
+		c.anchor = GridBagConstraints.WEST;
+		c.insets = new Insets(12,8,0,0);
+		virtualPeslabel = new JLabel();
+		virtualPeslabel.setText("Number of Virtal Processors:");
+		virtualPeslabel.setForeground(Color.GRAY);
+		virtualPeslabel.setLabelFor(virtualPes);
+		grid.setConstraints(virtualPeslabel, c);
+		contents.add(virtualPeslabel);
+
+		c.gridx = 2;
+		c.gridy = nextLine;
+		c.gridwidth = 1;
+		c.fill = GridBagConstraints.NONE;
+		c.anchor = GridBagConstraints.WEST;
+		c.insets = new Insets(12,8,0,0);
+		virtualPes = new JTextField(5);
+		virtualPes.setEnabled(false);
+		virtualPes.setActionCommand("cmd.ok");
+		virtualPes.addActionListener(this);
+		grid.setConstraints(virtualPes, c);
+		contents.add(virtualPes);
 
 		c.gridx = 0;
 		c.gridy = ++nextLine;
@@ -334,6 +370,12 @@ public class ParamsDialog extends JDialog implements ActionListener {
 		waitFile.setSelected(exec.waitFile);
 		sshTunnel.setSelected(exec.sshTunnel);
 		dir.setText(exec.workingDir);
+		virtualDebug.setSelected(exec.virtualDebug);
+		if (exec.virtualDebug) {
+			virtualPeslabel.setForeground(Color.BLACK);
+			virtualPes.setEnabled(true);
+		}
+		virtualPes.setText(""+exec.virtualNpes);
 	}
 
     public void actionPerformed(ActionEvent e) {
@@ -362,12 +404,14 @@ public class ParamsDialog extends JDialog implements ActionListener {
 			//mainObject.setParametersForProgram(clParams.getText(), numPes.getText(), portno.getText(),
 			//		hostname.getText(), username.getText(), sshTunnel.isSelected());
 			int numberPes;
+			int vPes=0;
 			int portNumber;
 			int sshportNumber=0;
 			try {
 				numberPes = Integer.parseInt(numPes.getText());
 				if (!portno.getText().equals("")) portNumber = Integer.parseInt(portno.getText());
 				if (!sshport.getText().equals("")) sshportNumber = Integer.parseInt(sshport.getText());
+				if (virtualDebug.isSelected()) vPes=Integer.parseInt(virtualPes.getText());
 			} catch (NumberFormatException nfe) {
 				JOptionPane.showMessageDialog(this, "All values must be positive integers", "Error", JOptionPane.ERROR_MESSAGE);
 				return;
@@ -383,11 +427,25 @@ public class ParamsDialog extends JDialog implements ActionListener {
 			exec.waitFile = waitFile.isSelected();
 			exec.sshTunnel = sshTunnel.isSelected();
 			exec.workingDir = dir.getText();
+			exec.virtualDebug = virtualDebug.isSelected();
+			exec.virtualNpes = vPes;
 			closeWindow = true;
 		} 
 		if (closeWindow) {
 			setVisible(false);
 			dispose();
+		}
+    }
+
+	public void stateChanged(ChangeEvent e) {
+		if (e.getSource()==virtualDebug) {
+			if (virtualDebug.isSelected()) {
+				virtualPeslabel.setForeground(Color.BLACK);
+				virtualPes.setEnabled(true);
+			} else {
+				virtualPeslabel.setForeground(Color.GRAY);
+				virtualPes.setEnabled(false);
+			}
 		}
     }
 
@@ -449,7 +507,7 @@ public class ParamsDialog extends JDialog implements ActionListener {
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frame.pack();
 		frame.setVisible(false);
-		JDialog dialog = new ParamsDialog(frame, true, null);
+		JDialog dialog = new ParamsDialog(frame, true, new Execution());
 		dialog.addWindowListener(new WindowAdapter() { 
 			public void windowClosing(WindowEvent event){
 				System.exit(0);
