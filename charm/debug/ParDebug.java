@@ -1704,11 +1704,17 @@ DEPRECATED!! The correct implementation is in CpdList.java
     			}
     			System.out.println("Single bcast connection: "+((new Date()).getTime()-start.getTime()));
     		} else {
-    			pes = new Processor[getNumPes()];
-    			for (int i = 0; i < getNumPes(); i++) {
-    				String peNumber = (new Integer(i)).toString();
-    				pesbox.addItem( peNumber );
-    				pes[i] = new Processor(i);
+    			if (exec.recplayActive && exec.recplayDetailActive && exec.replayDetail) {
+    				pes = new Processor[1];
+    				pesbox.addItem(exec.selectedPes);
+    				pes[0] = new Processor(Integer.parseInt(exec.selectedPes));
+    			} else {
+    				pes = new Processor[getNumPes()];
+    				for (int i = 0; i < getNumPes(); i++) {
+    					String peNumber = (new Integer(i)).toString();
+    					pesbox.addItem( peNumber );
+    					pes[i] = new Processor(i);
+    				}
     			}
     		}
     		if (attachMode) {
