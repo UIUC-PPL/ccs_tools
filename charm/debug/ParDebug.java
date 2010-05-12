@@ -374,111 +374,138 @@ DEPRECATED!! The correct implementation is in CpdList.java
     	notificationListeners.remove(l);
     }
     
-    public void notifyBreakpoint (int pe, String txt) {
-    	System.out.println("notifyBreakpoint: "+txt+" pe="+pe);
-    	if (pes[pe].isFrozen()) {
-    		System.err.println("Error: processor "+pe+" already frozen!");
-    		return;
-    	}
-    	pes[pe].setFrozen();
-    	enableButtons();
-    	peList.repaint();
-    	//stepButton.setEnabled(true);
-    	//continueButton.setEnabled(true);
-    	//freezeButton.setEnabled(false);
-		CpdListInfo list = cpdLists[listsbox.getSelectedIndex()];
-		if (list.list == messageQueue) {
-			int forPE=Integer.parseInt((String)pesbox.getSelectedItem());
-			if (forPE == pe)
-				populateNewList(listsbox.getSelectedIndex(),forPE, listModel);
-		}
-    	//setStatusMessage(txt);
-		for (int i=0; i<notificationListeners.size(); ++i) ((NotifyListener)notificationListeners.get(i)).receiveNotification(new NotifyEvent(NotifyEvent.BREAKPOINT, pe, txt));
+    /** Method called by ServThread to notify all listeners about events coming from the parallel application */
+    public void notify(NotifyEvent e) {
+    	for (int i=0; i<notificationListeners.size(); ++i) ((NotifyListener)notificationListeners.get(i)).receiveNotification(e);
     }
     
-    public void notifyFreeze (int pe, String txt) {
-    	System.out.println("notifyFreeze: "+txt+" pe="+pe);
-    	if (pes[pe].isFrozen()) {
-    		System.err.println("Error: processor "+pe+" already frozen!");
-    		return;
-    	}
-    	pes[pe].setFrozen();
-    	enableButtons();
-    	peList.repaint();
-    	//stepButton.setEnabled(true);
-    	//continueButton.setEnabled(true);
-    	//freezeButton.setEnabled(false);
-		CpdListInfo list = cpdLists[listsbox.getSelectedIndex()];
-		if (list.list == messageQueue) {
-			int forPE=Integer.parseInt((String)pesbox.getSelectedItem());
-			if (forPE == pe)
-				populateNewList(listsbox.getSelectedIndex(),forPE, listModel);
-		}
-		for (int i=0; i<notificationListeners.size(); ++i) ((NotifyListener)notificationListeners.get(i)).receiveNotification(new NotifyEvent(NotifyEvent.FREEZE, pe, txt));
-    }
-    
-    public void notifyAbort (int pe, String txt) {
-    	System.out.println("notifyAbort: "+txt+" pe="+pe);
-    	pes[pe].setDead();
-    	enableButtons();
-    	peList.repaint();
-		CpdListInfo list = cpdLists[listsbox.getSelectedIndex()];
-		if (list.list == messageQueue) {
-			int forPE=Integer.parseInt((String)pesbox.getSelectedItem());
-			if (forPE == pe)
-				populateNewList(listsbox.getSelectedIndex(),forPE, listModel);
-		}
-		for (int i=0; i<notificationListeners.size(); ++i) ((NotifyListener)notificationListeners.get(i)).receiveNotification(new NotifyEvent(NotifyEvent.ABORT, pe, txt));
-    }
+    /** Class containing all the notifications coming from the parallel application.
+     *  This class is registered as a NotifyListener by ParDebug when initializing.
+     *  Being an internal class it has access to all local variables of ParDebug.
+     */
+    private class NotifyGUI implements NotifyListener {
 
-    public void notifySignal (int pe, String txt) {
-    	//System.out.println("signal string: "+txt);
-    	int signal = Integer.parseInt(txt);
-    	System.out.println("notifySignal: "+txt+" pe="+pe+", sigNo="+signal);
-    	pes[pe].setDead();
-    	enableButtons();
-    	peList.repaint();
-		CpdListInfo list = cpdLists[listsbox.getSelectedIndex()];
-		if (list.list == messageQueue) {
-			int forPE=Integer.parseInt((String)pesbox.getSelectedItem());
-			if (forPE == pe)
-				populateNewList(listsbox.getSelectedIndex(),forPE, listModel);
-		}
-		for (int i=0; i<notificationListeners.size(); ++i) ((NotifyListener)notificationListeners.get(i)).receiveNotification(new NotifyEvent(NotifyEvent.SIGNAL, pe, txt));
-    }
-    
-    public void notifyCorruption (int pe, String txt) {
-    	int space = txt.indexOf(' ');
-    	String address = txt.substring(0, space); //Inspector.is64bit() ? Long.parseLong(txt.substring(2, space), 16) : Integer.parseInt(txt.substring(2, space), 16);
-    	txt = txt.substring(space+1);
-    	space = txt.indexOf(' ');
-    	int chare = Integer.parseInt(txt.substring(0, space));
-    	txt = txt.substring(space+1);
-    	space = txt.indexOf(' ');
-    	int owner = Integer.parseInt(txt.substring(0, space));
-    	System.out.print("cross corruption: chare "+chare+" accessed memory location "+address+" owned by chare "+owner);
-    	txt = txt.substring(space+1);
-    	space = txt.indexOf(' ');
-    	int count = Integer.parseInt(txt.substring(0, space));
-    	if (count > 0) System.out.println(": {");
-    	for (int i=0; i<count; ++i) {
+    	public void receiveNotification(NotifyEvent e) {
+    		switch (e.type) {
+    		case NotifyEvent.BREAKPOINT:
+    			notifyBreakpoint(e.pe, e.txt);
+    			break;
+    		case NotifyEvent.FREEZE:
+    			notifyFreeze(e.pe, e.txt);
+    			break;
+    		case NotifyEvent.ABORT:
+    			notifyAbort(e.pe, e.txt);
+    			break;
+    		case NotifyEvent.SIGNAL:
+    			notifySignal(e.pe, e.txt);
+    			break;
+    		case NotifyEvent.CORRUPTION:
+    			notifyCorruption(e.pe, e.txt);
+    			break;
+    		}
+    	}
+
+    	public void notifyBreakpoint (int pe, String txt) {
+    		System.out.println("notifyBreakpoint: "+txt+" pe="+pe);
+    		if (pes[pe].isFrozen()) {
+    			System.err.println("Error: processor "+pe+" already frozen!");
+    			return;
+    		}
+    		pes[pe].setFrozen();
+    		enableButtons();
+    		peList.repaint();
+    		//stepButton.setEnabled(true);
+    		//continueButton.setEnabled(true);
+    		//freezeButton.setEnabled(false);
+    		CpdListInfo list = cpdLists[listsbox.getSelectedIndex()];
+    		if (list.list == messageQueue) {
+    			int forPE=Integer.parseInt((String)pesbox.getSelectedItem());
+    			if (forPE == pe)
+    				populateNewList(listsbox.getSelectedIndex(),forPE, listModel);
+    		}
+    		//setStatusMessage(txt);
+    	}
+
+    	public void notifyFreeze (int pe, String txt) {
+    		System.out.println("notifyFreeze: "+txt+" pe="+pe);
+    		if (pes[pe].isFrozen()) {
+    			System.err.println("Error: processor "+pe+" already frozen!");
+    			return;
+    		}
+    		pes[pe].setFrozen();
+    		enableButtons();
+    		peList.repaint();
+    		//stepButton.setEnabled(true);
+    		//continueButton.setEnabled(true);
+    		//freezeButton.setEnabled(false);
+    		CpdListInfo list = cpdLists[listsbox.getSelectedIndex()];
+    		if (list.list == messageQueue) {
+    			int forPE=Integer.parseInt((String)pesbox.getSelectedItem());
+    			if (forPE == pe)
+    				populateNewList(listsbox.getSelectedIndex(),forPE, listModel);
+    		}
+    	}
+
+    	public void notifyAbort (int pe, String txt) {
+    		System.out.println("notifyAbort: "+txt+" pe="+pe);
+    		pes[pe].setDead();
+    		enableButtons();
+    		peList.repaint();
+    		CpdListInfo list = cpdLists[listsbox.getSelectedIndex()];
+    		if (list.list == messageQueue) {
+    			int forPE=Integer.parseInt((String)pesbox.getSelectedItem());
+    			if (forPE == pe)
+    				populateNewList(listsbox.getSelectedIndex(),forPE, listModel);
+    		}
+    	}
+
+    	public void notifySignal (int pe, String txt) {
+    		//System.out.println("signal string: "+txt);
+    		int signal = Integer.parseInt(txt);
+    		System.out.println("notifySignal: "+txt+" pe="+pe+", sigNo="+signal);
+    		pes[pe].setDead();
+    		enableButtons();
+    		peList.repaint();
+    		CpdListInfo list = cpdLists[listsbox.getSelectedIndex()];
+    		if (list.list == messageQueue) {
+    			int forPE=Integer.parseInt((String)pesbox.getSelectedItem());
+    			if (forPE == pe)
+    				populateNewList(listsbox.getSelectedIndex(),forPE, listModel);
+    		}
+    	}
+
+    	public void notifyCorruption (int pe, String txt) {
+    		int space = txt.indexOf(' ');
+    		String address = txt.substring(0, space); //Inspector.is64bit() ? Long.parseLong(txt.substring(2, space), 16) : Integer.parseInt(txt.substring(2, space), 16);
     		txt = txt.substring(space+1);
     		space = txt.indexOf(' ');
-    		System.out.println("  "+Symbol.get(Long.parseLong(txt.substring(2, space), 16)));
-    	}
-    	if (count > 0) System.out.print("}");
-    	txt = txt.substring(space+1);
-    	space = txt.indexOf(' ');
-    	count = Integer.parseInt(txt.substring(0, space));
-    	if (count > 0) System.out.println(" Stack trace of corruption: {");
-    	for (int i=0; i<count; ++i) {
+    		int chare = Integer.parseInt(txt.substring(0, space));
     		txt = txt.substring(space+1);
     		space = txt.indexOf(' ');
-    		System.out.println("  "+Symbol.get(Long.parseLong(txt.substring(2, space), 16)));
+    		int owner = Integer.parseInt(txt.substring(0, space));
+    		System.out.print("cross corruption: chare "+chare+" accessed memory location "+address+" owned by chare "+owner);
+    		txt = txt.substring(space+1);
+    		space = txt.indexOf(' ');
+    		int count = Integer.parseInt(txt.substring(0, space));
+    		if (count > 0) System.out.println(": {");
+    		for (int i=0; i<count; ++i) {
+    			txt = txt.substring(space+1);
+    			space = txt.indexOf(' ');
+    			System.out.println("  "+Symbol.get(Long.parseLong(txt.substring(2, space), 16)));
+    		}
+    		if (count > 0) System.out.print("}");
+    		txt = txt.substring(space+1);
+    		space = txt.indexOf(' ');
+    		count = Integer.parseInt(txt.substring(0, space));
+    		if (count > 0) System.out.println(" Stack trace of corruption: {");
+    		for (int i=0; i<count; ++i) {
+    			txt = txt.substring(space+1);
+    			space = txt.indexOf(' ');
+    			System.out.println("  "+Symbol.get(Long.parseLong(txt.substring(2, space), 16)));
+    		}
+    		if (count > 0) System.out.print("}");
+    		System.out.println();
     	}
-    	if (count > 0) System.out.print("}");
-    	System.out.println();
-		for (int i=0; i<notificationListeners.size(); ++i) ((NotifyListener)notificationListeners.get(i)).receiveNotification(new NotifyEvent(NotifyEvent.CORRUPTION, pe, txt));
     }
 
     public Dimension getPreferredSize() {
@@ -895,6 +922,9 @@ DEPRECATED!! The correct implementation is in CpdList.java
         addedRunParameter();
         //if (exec.executable!="")
         //  startProgram();
+        
+        notificationListeners = new Vector();
+        addNotifyListener(new NotifyGUI());
     }
 
 	public void updateRecentConfig() {

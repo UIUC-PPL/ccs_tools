@@ -7,6 +7,7 @@ import java.nio.channels.ClosedByInterruptException;
 import javax.swing.SwingUtilities;
 
 import charm.ccs.CcsServer;
+import charm.debug.event.NotifyEvent;
 import charm.debug.preference.Execution;
 //import java.security.*;
 
@@ -285,51 +286,31 @@ public abstract class ServThread extends Thread {
 			outlinechunk.delete(cpdStart, cpdEnd+1);
 			int pe = Integer.parseInt(outline.substring(0, outline.indexOf(' ')));
 			outline = outline.substring(outline.indexOf(' ')+1);
-			if (outline.indexOf("BP", 0) != -1)
-			{
-				mainThread.setStatusMessage(outline);
-				Runnable doWorkRunnable = new Notify(pe, outline.substring(3)) {
-					public void run() { mainThread.notifyBreakpoint(pe, text); }
-				};
-				SwingUtilities.invokeLater(doWorkRunnable);
-				//mainThread.notifyBreakpoint(outline);
-			}
-			else if (outline.indexOf("Freeze") != -1) {
-				mainThread.setStatusMessage(outline);
-				Runnable doWorkRunnable = new Notify(pe, outline.substring(7)) {
-					public void run() { mainThread.notifyFreeze(pe, text); }
-				};
-				SwingUtilities.invokeLater(doWorkRunnable);
-			}
-			else if (outline.indexOf("Abort") != -1) {
-				mainThread.setStatusMessage(outline.substring(5));
-				Runnable doWorkRunnable = new Notify(pe, outline.substring(6)) {
-					public void run() { mainThread.notifyAbort(pe, text); }
-				};
-				SwingUtilities.invokeLater(doWorkRunnable);
-			}
-			else if (outline.indexOf("Signal") != -1) {
-				mainThread.setStatusMessage(outline.substring(5));
-				Runnable doWorkRunnable = new Notify(pe, outline.substring(7)) {
-					public void run() { mainThread.notifySignal(pe, text); }
-				};
-				SwingUtilities.invokeLater(doWorkRunnable);
+			mainThread.setStatusMessage(outline);
+			int type = 0, begin = 0;
+
+			if (outline.indexOf("BP", 0) != -1) {
+				type = NotifyEvent.BREAKPOINT;
+				begin = 3;
+			} else if (outline.indexOf("Freeze") != -1) {
+				type = NotifyEvent.FREEZE;
+				begin = 7;
+			} else if (outline.indexOf("Abort") != -1) {
+				type = NotifyEvent.ABORT;
+				begin = 6;
+			} else if (outline.indexOf("Signal") != -1) {
+				type = NotifyEvent.SIGNAL;
+				begin = 7;
 			} else if (outline.indexOf("Cross") != -1) {
-				Runnable doWorkRunnable = new Notify(pe, outline.substring(6)) {
-					public void run() { mainThread.notifyCorruption(pe, text); }
-				};
-				SwingUtilities.invokeLater(doWorkRunnable);
+				type = NotifyEvent.CORRUPTION;
+				begin = 6;
 			} else {
 				System.out.println("ServThread: error while processing string '"+outline+"'");
 			}
+
+			Runnable doWorkRunnable = new Notify(new NotifyEvent(type, pe, outline.substring(begin)));
+			SwingUtilities.invokeLater(doWorkRunnable);
 		}
-		/*else if (outline.indexOf("CPD: Object") != -1) {
-		mainThread.setStatusMessage(outline.substring(5));
-		Runnable doWorkRunnable = new Notify(outline) {
-			public void run() { mainThread.notifyObjectViolation(text); }
-		};
-		SwingUtilities.invokeLater(doWorkRunnable);
-	}*/
 		if (outlinechunk.length() > 0) {
 			System.out.println("Parallel program printed: "+outlinechunk.toString());
 			mainThread.displayProgramOutput(outlinechunk.toString());
@@ -338,10 +319,12 @@ public abstract class ServThread extends Thread {
 
 	public int getFlag() { return flag; }
 	
-	public abstract class Notify implements Runnable {
-		public int pe;
-		public String text;
-		public Notify(int p, String txt) {pe = p; text = txt;}
+	public class Notify implements Runnable {
+		private NotifyEvent e;
+		public Notify(NotifyEvent e_) {e = e_;}
+		public void run() {
+			mainThread.notify(e);
+		}
 	}
 };
 
