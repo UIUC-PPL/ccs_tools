@@ -23,6 +23,7 @@ import charm.util.ReflectiveXML;
 import javax.swing.*;
 
 import java.io.*;
+import java.text.ParseException;
 import java.util.*;
 import java.awt.*;
 import java.awt.event.*;
@@ -1280,7 +1281,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
     		if (pe == -1) pe = 0;
     		byte[] data = new byte[1];
     		data[0] = (e.getActionCommand().equals("memorymark") ? (byte)1 : 0);
-    		ParDebug.server.sendCcsRequestBytes("converse_memory_mark", data, pe, false);
+    		debugger.server.sendCcsRequestBytes("converse_memory_mark", data, pe, false);
     	}
     	else if (e.getActionCommand().equals("memstat")) {
     		String input = JOptionPane.showInputDialog("Processor to load (-1 for all)");
@@ -1466,12 +1467,10 @@ DEPRECATED!! The correct implementation is in CpdList.java
     		String command = (String)commands.elementAt(i);
     		System.out.println("applying command: "+command);
     		if (command.equals("start")) {
-    			attachMode = false;
-    			startProgram();
+    			startProgram(false);
     		}
     		else if (command.equals("attach")) {
-    			attachMode = true;
-    			startProgram();
+    			startProgram(true);
     		}
     		else if (command.startsWith("python")) {
     			command = command.substring(command.indexOf(' ')).trim();
@@ -1517,7 +1516,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
 				String input = command.substring(command.indexOf(' ')).trim();
 				int pe = Integer.parseInt(input);;
 				if (pe == -1) pe = 0;
-	    		byte[] buf = ParDebug.server.sendCcsRequestBytes("ccs_debug_memStat", input, pe);
+	    		byte[] buf = debugger.server.sendCcsRequestBytes("ccs_debug_memStat", input, pe);
 	    		PConsumer cons=new PConsumer();
 	    		cons.decode(buf);
 	    		PList stat = cons.getList();
