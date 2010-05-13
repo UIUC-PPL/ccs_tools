@@ -1088,13 +1088,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
     	}
     	else if (e.getActionCommand().equals("unfreeze")){ 
     		// start running again
-    		server.bcastCcsRequest("ccs_continue_break_point", "", ((PeSet)peList.getSelectedValue()).frozenIterator());
-    		Iterator iter = ((PeSet)peList.getSelectedValue()).frozenIterator();
-    		while (iter.hasNext()) {
-    			((Processor)iter.next()).setRunning();
-    		}
-			enableButtons();
-			setStatusMessage("Program is running on selected pes");
+    		command_continue();
 			peList.repaint();
     	}
     	else if (e.getActionCommand().equals("step")) {
@@ -1185,35 +1179,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
     		//JCheckBox chkbox = (JCheckBox)e.getSource();
     		//String entryPointName = chkbox.getText();
     		EpCheckBox chkbox = (EpCheckBox)e.getSource();
-    		int breakpointIndex = chkbox.ep.getEpIndex();
-    		String entryPointName = ""+breakpointIndex;
-    		if (chkbox.isSelected())
-    		{
-    			chkbox.ep.addBP(((PeSet)peList.getSelectedValue()).getList());
-    			byte []reply = server.bcastCcsRequest("ccs_set_break_point", entryPointName,((PeSet)peList.getSelectedValue()).toIDsArray());
-    			//stepButton.setEnabled(true);
-    			//continueButton.setEnabled(true);
-    			//freezeButton.setEnabled(false);
-    			if (reply[0] != 0) setStatusMessage ("Break Point set at entry point " +entryPointName);
-    			else JOptionPane.showInternalMessageDialog(this, "Could not set breakpoint!", "Error", JOptionPane.ERROR_MESSAGE);
-    		}
-    		else
-    		{
-    			chkbox.ep.removeBP(((PeSet)peList.getSelectedValue()).getList());
-    			byte []reply = server.bcastCcsRequest("ccs_remove_break_point", entryPointName,((PeSet)peList.getSelectedValue()).toIDsArray());
-    			//stepButton.setEnabled(true);
-    			//continueButton.setEnabled(true);   
-    			//freezeButton.setEnabled(true);
-    			if (reply[0] != 0) setStatusMessage ("Break Point removed at entry point " +entryPointName+" on selected Pes");
-    			else JOptionPane.showInternalMessageDialog(this, "Could not remove breakpoint!", "Error", JOptionPane.ERROR_MESSAGE);
-    		}
-    		PeSet set = (PeSet)peList.getSelectedValue();
-    		if (set != null) chkbox.setCoverageColor(set.getList());
-    		CpdListInfo list = cpdLists[listsbox.getSelectedIndex()];
-    		if (list.list == messageQueue) {
-    			int forPE=Integer.parseInt((String)pesbox.getSelectedItem());
-    			populateNewList(listsbox.getSelectedIndex(),forPE, listModel);
-    		}
+    		command_breakpoint(chkbox);
     	}
     	else if (e.getActionCommand().equals("memory")) {
     		// ask the user for input
@@ -1435,14 +1401,62 @@ DEPRECATED!! The correct implementation is in CpdList.java
     	}
     	else if (e.getActionCommand().equals("exitDebugger")) {
     		if (isRunning) {
-    			server.bcastCcsRequest("ccs_debug_quit", "", getNumPes());
+    			server.bcastCcsRequest("ccs_debug_quit", "");
     			quitProgram();
     		}
             preferences.save();
     		System.exit(0);
     	}
     } // end of actionPerformed
-     
+
+    public void command_continue() {
+		server.bcastCcsRequest("ccs_continue_break_point", "", ((PeSet)peList.getSelectedValue()).frozenIterator());
+		Iterator iter = ((PeSet)peList.getSelectedValue()).frozenIterator();
+		while (iter.hasNext()) {
+			((Processor)iter.next()).setRunning();
+		}
+		enableButtons();
+		setStatusMessage("Program is running on selected pes");
+    }
+    
+    public void command_breakpoint(int epIdx) {
+    	EpCheckBox chkbox = epItems.getEntryFor(epIdx).getCheckBox();
+    	chkbox.doClick();
+    	//command_breakpoint(chkbox);
+    }
+    public void command_breakpoint(EpCheckBox chkbox) {
+		int breakpointIndex = chkbox.ep.getEpIndex();
+		String entryPointName = ""+breakpointIndex;
+		if (chkbox.isSelected())
+		{
+			chkbox.ep.addBP(((PeSet)peList.getSelectedValue()).getList());
+			byte []reply = server.bcastCcsRequest("ccs_set_break_point", entryPointName,((PeSet)peList.getSelectedValue()).toIDsArray());
+			//stepButton.setEnabled(true);
+			//continueButton.setEnabled(true);
+			//freezeButton.setEnabled(false);
+			if (reply[0] != 0) setStatusMessage ("Break Point set at entry point " +entryPointName);
+			else JOptionPane.showInternalMessageDialog(this, "Could not set breakpoint!", "Error", JOptionPane.ERROR_MESSAGE);
+		}
+		else
+		{
+			chkbox.ep.removeBP(((PeSet)peList.getSelectedValue()).getList());
+			byte []reply = server.bcastCcsRequest("ccs_remove_break_point", entryPointName,((PeSet)peList.getSelectedValue()).toIDsArray());
+			//stepButton.setEnabled(true);
+			//continueButton.setEnabled(true);   
+			//freezeButton.setEnabled(true);
+			if (reply[0] != 0) setStatusMessage ("Break Point removed at entry point " +entryPointName+" on selected Pes");
+			else JOptionPane.showInternalMessageDialog(this, "Could not remove breakpoint!", "Error", JOptionPane.ERROR_MESSAGE);
+		}
+		PeSet set = (PeSet)peList.getSelectedValue();
+		if (set != null) chkbox.setCoverageColor(set.getList());
+		CpdListInfo list = cpdLists[listsbox.getSelectedIndex()];
+		if (list.list == messageQueue) {
+			int forPE=Integer.parseInt((String)pesbox.getSelectedItem());
+			populateNewList(listsbox.getSelectedIndex(),forPE, listModel);
+		}
+		System.out.println("breakpoint triggered");
+    }
+    
     public void valueChanged(ListSelectionEvent e) {
       
       if(e.getValueIsAdjusting()) return;
