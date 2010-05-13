@@ -49,7 +49,17 @@ public class Commands implements NotifyListener {
 		String command;
     	while ((command = getNext()) != null) {
     		System.out.println("applying command: "+command);
-    		if (command.equals("start")) {
+    		if (command.startsWith("sleep")) {
+    			long time = Integer.parseInt(command.substring(command.indexOf(' ')).trim());
+    			long end = (new Date()).getTime() + time;
+    			long now;
+    			while ((now=(new Date()).getTime()) < end) {
+    				try {
+    					Thread.sleep(end - now);
+    				} catch (InterruptedException e) {/* Ignore exception */}
+    			}
+    		}
+    		else if (command.equals("start")) {
     			debugger.startProgram(false);
     		}
     		else if (command.equals("attach")) {
