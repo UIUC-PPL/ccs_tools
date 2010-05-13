@@ -2,6 +2,8 @@ package charm.debug.pdata;
 
 import charm.debug.fmt.*;
 import javax.swing.DefaultListModel;
+
+import java.util.Iterator;
 import java.util.Vector;
 
 // Extract entry-point information from the entry point PList
@@ -10,6 +12,42 @@ public class EpPList extends GenericPList implements Cloneable {
     protected Vector userEps;
     private ChareTypePList chareList;
 
+    public class EpInfoIterator implements Iterator {
+    	int index, counter;
+    	Vector[] list;
+    	public EpInfoIterator() {
+    		list = new Vector[2];
+    		list[0] = getUserEps();
+    		list[1] = getSystemEps();
+    		counter = 0;
+    		index = 0;
+    	}
+    	
+		public boolean hasNext() {
+			return (counter < 2);
+		}
+
+		public Object next() {
+			System.out.println("EpInfoIterator: accessing list["+counter+"].["+index+"]");
+			Object result = list[counter].elementAt(index);
+			index ++;
+			if (index == list[counter].size()) {
+				index = 0;
+				counter ++;
+			}
+			return result;
+		}
+
+		public void remove() {
+			return;
+		}
+    	
+    }
+    
+    public Iterator iterate() {
+    	return new EpInfoIterator();
+    }
+    
     public Vector getUserEps() {
         return userEps;
     }
