@@ -30,6 +30,9 @@ public class EpInfo extends GenericInfo implements Cloneable {
     public int getChareType() {
         return chare.getIndex();
     }
+    public String getChareName() {
+    	return chare.name;
+    }
     public int getEpIndex() {
     	return epIdx;
     }
@@ -57,6 +60,11 @@ public class EpInfo extends GenericInfo implements Cloneable {
     
     public Object clone() {
     	return new EpInfo(name, epIdx, msgIdx, chare);
+    }
+    
+    public boolean equals(String chareName, String epName) {
+    	//System.out.println("EpInfo.equal: "+chare.getType()+"=="+chareName+" and "+name+"=="+epName);
+    	return (chare.getType().equals(chareName) && name.startsWith(epName));
     }
 }
 
