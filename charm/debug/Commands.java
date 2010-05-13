@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.Date;
+import java.util.Iterator;
 import java.util.Vector;
 import java.text.ParseException;
 
@@ -12,6 +13,8 @@ import charm.debug.event.NotifyEvent;
 import charm.debug.event.NotifyListener;
 import charm.debug.fmt.PConsumer;
 import charm.debug.fmt.PList;
+import charm.debug.pdata.EpInfo;
+import charm.debug.pdata.EpPList;
 
 public class Commands implements NotifyListener {
 	ParDebug debugger;
@@ -103,7 +106,8 @@ public class Commands implements NotifyListener {
         		debugger.quitProgram(); 
     		}
 			else if (command.equals("continue")) {
-				debugger.server.bcastCcsRequest("ccs_continue_break_point", "", debugger.getExecution().npes);
+				//debugger.server.bcastCcsRequest("ccs_continue_break_point", "", debugger.getExecution().npes);
+				debugger.command_continue();
 			}
 			else if (command.startsWith("memstat")) {
 				String input = command.substring(command.indexOf(' ')).trim();
@@ -117,6 +121,28 @@ public class Commands implements NotifyListener {
 			}
 			else if (command.equals("allocation")) {
 				
+			}
+			else if (command.startsWith("breakpoint")) {
+				String condition = command.substring(command.indexOf(' ')).trim();
+				String chareName = condition.substring(0, condition.indexOf(' '));
+				String epName = condition.substring(condition.indexOf(' ')).trim();
+				EpPList eps = ParDebug.debugger.getEpItems();
+				Iterator it = eps.iterate();
+				EpInfo info = null;
+				boolean found = false;
+				while (it.hasNext()) {
+					info = (EpInfo)it.next();
+					if (info.equals(chareName, epName)) {
+						found = true;
+						break;
+					}
+				}
+				if (found) {
+					System.out.println("Setting breakpoint: "+info.getChareName()+"::"+info.toString()+" ("+info.getEpIndex()+")");
+					debugger.command_breakpoint(info.getEpIndex());
+					//ParDebug.debugger.server.bcastCcsRequest("ccs_set_break_point", ""+info.getEpIndex());
+					//info.getCheckBox().click();
+				}
 			}
 			else if (command.startsWith("wait")) {
 				String condition = command.substring(command.indexOf(' ')).trim();
