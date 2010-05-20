@@ -36,6 +36,9 @@ import org.xml.sax.SAXException;
 public class ParDebug extends JPanel
      implements ActionListener,ListSelectionListener{
    
+	public final static int MAJOR = 10;
+	public final static int MINOR =  0;
+	
     // ******* VARIABLES ************   
     //  FIXME: make these not be static, by moving main's command line
     //   handling into a regular function called by the constructor.
