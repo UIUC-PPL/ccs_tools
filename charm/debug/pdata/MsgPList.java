@@ -1,24 +1,52 @@
 package charm.debug.pdata;
 
+import java.awt.Component;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.util.Arrays;
+
+import javax.swing.JList;
+import javax.swing.JMenuItem;
+import javax.swing.JPopupMenu;
+
+import charm.debug.ParDebug;
 import charm.debug.fmt.*;
 
 // Extract messages from the converse/localqueue PList
-public class MsgPList extends GenericPList {
+public class MsgPList extends GenericPList implements ActionListener {
     EpPList epList;
     MsgTypePList msgList;
     ChareTypePList chareList;
+    PopupListener popup;
+    JList list;
+    JPopupMenu jp;
 
     public MsgInfo elementAt(int i) {
         if (i >= data.size()) return null;
         return (MsgInfo)data.elementAt(i);
     }
 
-    public MsgPList() { }
+    public MsgPList() {
+    	createPopupMenu();
+    }
     
     public MsgPList(MsgPList msg) {
     	epList = msg.epList;
     	msgList = msg.msgList;
     	chareList = msg.chareList;
+    	createPopupMenu();
+    }
+    
+    private void createPopupMenu() {
+        jp = new JPopupMenu();
+		JMenuItem empty= new JMenuItem("Deliver now");
+		empty.setActionCommand("deliver");
+		empty.addActionListener(this);
+		jp.add(empty);
+		//MouseListener popupListener = new PopupListener(popup);
+		popup = new PopupListener(jp);
     }
     
     public boolean needRefresh() {
@@ -126,5 +154,39 @@ public class MsgPList extends GenericPList {
 		*/
         }
     }
- 
+
+    public void addPopupMenu(JList l) {
+    	list = l;
+    	if (! Arrays.asList(list.getMouseListeners()).contains(popup))
+    		list.addMouseListener(popup);
+    	//list.setComponentPopupMenu(jp);
+    }
+    
+    public class PopupListener extends MouseAdapter {
+    	JPopupMenu popup;
+    	
+    	PopupListener(JPopupMenu p) {
+    		popup = p;
+    	}
+        public void mousePressed(MouseEvent e) {
+        	Component c = list.getComponentAt(e.getX(), e.getY());
+        	int idx = list.locationToIndex(e.getPoint());
+        	list.setSelectedIndex(idx);
+        	MsgInfo mi = (MsgInfo)list.getModel().getElementAt(idx);
+        	System.out.println("mousePressed");
+        	if (e.isPopupTrigger()) {
+        		popup.show(e.getComponent(), e.getX(), e.getY());
+        	}
+        }
+    }
+
+	public void actionPerformed(ActionEvent e) {
+		if (e.getActionCommand().equals("deliver")) {
+			int idx = list.getSelectedIndex();
+			//MsgInfo mi = (MsgInfo)list.getSelectedValue();
+			//Component c = list.getComponentAt(e.getX(), e.getY());
+			ParDebug.debugger.server.sendCcsRequestBytes("deliverMessage", ""+idx, ParDebug.debugger.getSelectedPe());
+			ParDebug.debugger.messageDelivered();
+		}
+	}
 }

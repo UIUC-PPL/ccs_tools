@@ -37,7 +37,7 @@ public class ParDebug extends JPanel
      implements ActionListener,ListSelectionListener{
    
 	public final static int MAJOR = 10;
-	public final static int MINOR =  0;
+	public final static int MINOR =  1;
 	
     // ******* VARIABLES ************   
     //  FIXME: make these not be static, by moving main's command line
@@ -503,7 +503,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
 
     	if (list != null) {
     		if (list.needRefresh()) list.load(listItems);
-    		list.populate(dest);
+    		list.populate(dest, listItemNames);
     	} else {
     		for (PAbstract cur=listItems.elementAt(0);cur!=null;cur=cur.getNext()) {
     			dest.addElement(cur.getDeepName());
@@ -883,6 +883,14 @@ DEPRECATED!! The correct implementation is in CpdList.java
         //  startProgram();
     }
 
+    public void messageDelivered() {
+		CpdListInfo list = cpdLists[listsbox.getSelectedIndex()];
+		if (list.list == messageQueue) {
+			int forPE=Integer.parseInt((String)pesbox.getSelectedItem());
+			populateNewList(listsbox.getSelectedIndex(),forPE, listModel);
+		}    		setStatusMessage("Single message delivered");
+    }
+    
 	public void updateRecentConfig() {
 		Object []files = preferences.getRecent();
 		menuRecent.removeAll();
@@ -1058,11 +1066,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
     	else if (e.getActionCommand().equals("step")) {
     		// deliver a single message
     		server.bcastCcsRequest("ccs_single_step", "", ((PeSet)peList.getSelectedValue()).iterator());
-    		CpdListInfo list = cpdLists[listsbox.getSelectedIndex()];
-    		if (list.list == messageQueue) {
-    			int forPE=Integer.parseInt((String)pesbox.getSelectedItem());
-    			populateNewList(listsbox.getSelectedIndex(),forPE, listModel);
-    		}    		setStatusMessage("Single message delivered");
+    		messageDelivered();
     	}
     	else if (e.getActionCommand().equals("disconnect")) {
     		servthread.terminate();
