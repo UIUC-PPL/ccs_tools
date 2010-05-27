@@ -169,10 +169,10 @@ public class MsgPList extends GenericPList implements ActionListener {
     		popup = p;
     	}
         public void mousePressed(MouseEvent e) {
-        	Component c = list.getComponentAt(e.getX(), e.getY());
+        	//Component c = list.getComponentAt(e.getX(), e.getY());
         	int idx = list.locationToIndex(e.getPoint());
         	list.setSelectedIndex(idx);
-        	MsgInfo mi = (MsgInfo)list.getModel().getElementAt(idx);
+        	//MsgInfo mi = (MsgInfo)list.getModel().getElementAt(idx);
         	System.out.println("mousePressed");
         	if (e.isPopupTrigger()) {
         		popup.show(e.getComponent(), e.getX(), e.getY());
@@ -185,7 +185,10 @@ public class MsgPList extends GenericPList implements ActionListener {
 			int idx = list.getSelectedIndex();
 			//MsgInfo mi = (MsgInfo)list.getSelectedValue();
 			//Component c = list.getComponentAt(e.getX(), e.getY());
-			ParDebug.debugger.server.sendCcsRequestBytes("deliverMessage", ""+idx, ParDebug.debugger.getSelectedPe());
+			String method = null;
+			if (idx == 0) method = "ccs_single_step";
+			else method = "deliverMessage";
+			ParDebug.server.sendCcsRequestBytes(method, ""+idx, ParDebug.debugger.getSelectedPe());
 			ParDebug.debugger.messageDelivered();
 		}
 	}
