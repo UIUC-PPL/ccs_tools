@@ -41,10 +41,14 @@ public class MsgPList extends GenericPList implements ActionListener {
     
     private void createPopupMenu() {
         jp = new JPopupMenu();
-		JMenuItem empty= new JMenuItem("Deliver now");
-		empty.setActionCommand("deliver");
-		empty.addActionListener(this);
-		jp.add(empty);
+		JMenuItem deliver= new JMenuItem("Deliver now");
+		deliver.setActionCommand("deliver");
+		deliver.addActionListener(this);
+		jp.add(deliver);
+		JMenuItem conditional= new JMenuItem("Deliver conditional");
+		conditional.setActionCommand("conditional");
+		conditional.addActionListener(this);
+		jp.add(conditional);
 		//MouseListener popupListener = new PopupListener(popup);
 		popup = new PopupListener(jp);
     }
@@ -190,6 +194,8 @@ public class MsgPList extends GenericPList implements ActionListener {
 			else method = "deliverMessage";
 			ParDebug.server.sendCcsRequestBytes(method, ""+idx, ParDebug.debugger.getSelectedPe());
 			ParDebug.debugger.messageDelivered();
+		} else if (e.getActionCommand().equals("conditional")) {
+			
 		}
 	}
 }
