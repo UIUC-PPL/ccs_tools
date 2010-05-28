@@ -16,7 +16,7 @@ public class Processor implements Comparable {
 	
 	public Processor(int i) {
 		id = i;
-		status = FROZEN;
+		status = REQUESTED_FREEZE;
 		sets = new HashSet();
 	}
 	
