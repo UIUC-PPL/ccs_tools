@@ -1065,7 +1065,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
     	}
     	else if (e.getActionCommand().equals("step")) {
     		// deliver a single message
-    		server.bcastCcsRequest("ccs_single_step", "", ((PeSet)peList.getSelectedValue()).iterator());
+    		server.bcastCcsRequest("ccs_single_step", "", ((PeSet)peList.getSelectedValue()).frozenIterator());
     		messageDelivered();
     	}
     	else if (e.getActionCommand().equals("disconnect")) {
