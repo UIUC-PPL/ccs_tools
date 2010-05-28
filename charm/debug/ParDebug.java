@@ -1073,7 +1073,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
     		servthread.interrupt();
     	}
     	else if (e.getActionCommand().equals("quit")) {
-    		server.bcastCcsRequest("ccs_debug_quit", "", getNumPes());
+    		server.bcastCcsRequest("ccs_debug_quit", "");
     		servthread.terminate();
     	}
     	else if (e.getActionCommand().equals("startgdb")) 
@@ -1397,7 +1397,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
     	}
     	else if (e.getActionCommand().equals("exitDebugger")) {
     		if (isRunning) {
-    			server.bcastCcsRequest("ccs_debug_quit", "", getNumPes());
+    			server.bcastCcsRequest("ccs_debug_quit", "");
     			quitProgram();
     		}
             preferences.save();
