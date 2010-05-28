@@ -9,6 +9,8 @@ public class Processor implements Comparable {
 	public static final int FROZEN = 2;
 	public static final int REQUESTED_FREEZE = 3;
 	public static final int DEAD = 4;
+	public static final int CONDITIONAL = 5;
+	private static final char codes[] = {'R', 'F', 'f', 'D', 'C'};
 	
 	int status;
 	int id;
@@ -35,6 +37,7 @@ public class Processor implements Comparable {
 	public boolean isRunning() {return status == RUNNING;}
 	public boolean isFreezing() {return status == REQUESTED_FREEZE;}
 	public boolean isDead() {return status == DEAD;}
+	public boolean isConditional() {return status == CONDITIONAL;}
 	
 	public void setFrozen() {
 		if (status != DEAD) {
@@ -60,8 +63,11 @@ public class Processor implements Comparable {
 		}
 		status = DEAD;
 	}
+	public void setConditional() {
+		status = CONDITIONAL;
+	}
 	
 	public String toString() {
-		return ""+id+"("+(status==RUNNING?"R":(status==DEAD?"D":status==FROZEN?"F":"f"))+")";
+		return ""+id+"("+codes[status]+")";
 	}
 }
