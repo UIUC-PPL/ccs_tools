@@ -1069,7 +1069,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
     	}
     	else if (e.getActionCommand().equals("step")) {
     		// deliver a single message
-    		server.bcastCcsRequest("ccs_single_step", "", ((PeSet)peList.getSelectedValue()).iterator());
+    		server.bcastCcsRequest("ccs_single_step", "", ((PeSet)peList.getSelectedValue()).frozenIterator());
     		messageDelivered();
     	}
     	else if (e.getActionCommand().equals("disconnect")) {
@@ -1077,7 +1077,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
     		servthread.interrupt();
     	}
     	else if (e.getActionCommand().equals("quit")) {
-    		server.bcastCcsRequest("ccs_debug_quit", "", getNumPes());
+    		server.bcastCcsRequest("ccs_debug_quit", "");
     		servthread.terminate();
     	}
     	else if (e.getActionCommand().equals("startgdb")) 
@@ -1401,7 +1401,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
     	}
     	else if (e.getActionCommand().equals("exitDebugger")) {
     		if (isRunning) {
-    			server.bcastCcsRequest("ccs_debug_quit", "", getNumPes());
+    			server.bcastCcsRequest("ccs_debug_quit", "");
     			quitProgram();
     		}
             preferences.save();
