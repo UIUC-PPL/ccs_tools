@@ -216,7 +216,7 @@ public class MsgPList extends GenericPList implements ActionListener {
 			ParDebug.server.sendCcsRequestBytes(method, ""+(idx-hasBpMessage), ParDebug.debugger.getSelectedPe());
 			ParDebug.debugger.messageDelivered();
 		} else if (e.getActionCommand().equals("conditional")) {
-			ParDebug.debugger.deliverConditional(idx);
+			ParDebug.debugger.deliverConditional(idx-hasBpMessage);
 		} else if (e.getActionCommand().equals("end")) {
 			ParDebug.debugger.endConditional();
 		}
