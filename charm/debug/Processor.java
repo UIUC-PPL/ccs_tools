@@ -42,9 +42,15 @@ public class Processor implements Comparable {
 	public void setFrozen() {
 		if (status != DEAD) {
 			System.out.println("Processor "+id+" frozen");
+			int oldstatus = status;
 			status = FROZEN;
-			Iterator iter = sets.iterator();
-			while (iter.hasNext()) ((PeSet)iter.next()).setFrozen();
+			if (oldstatus == CONDITIONAL) {
+				Iterator iter = sets.iterator();
+				while (iter.hasNext()) ((PeSet)iter.next()).unsetConditional();
+			} else {
+				Iterator iter = sets.iterator();
+				while (iter.hasNext()) ((PeSet)iter.next()).setFrozen();
+			}
 		}
 	}
 	public void setRunning() {
@@ -68,6 +74,10 @@ public class Processor implements Comparable {
 	public void setConditional() {
 		System.out.println("Processor "+id+" conditional");
 		status = CONDITIONAL;
+		Iterator iter = sets.iterator();
+		while (iter.hasNext()) {
+			((PeSet)iter.next()).setConditional();
+		}
 	}
 	
 	public String toString() {
