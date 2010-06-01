@@ -170,36 +170,49 @@ public class MsgPList extends GenericPList implements ActionListener {
     
     public class PopupListener extends MouseAdapter {
     	JPopupMenu popupNormal;
-    	JPopupMenu popupConditional;
+    	JPopupMenu popupConditional1;
+    	JPopupMenu popupConditional2;
     	
     	PopupListener(MsgPList parent) {
             popupNormal = new JPopupMenu();
-    		JMenuItem deliver1= new JMenuItem("Deliver now");
-    		deliver1.setActionCommand("deliver");
-    		deliver1.addActionListener(parent);
-    		popupNormal.add(deliver1);
+    		JMenuItem delivernow= new JMenuItem("Deliver now");
+    		delivernow.setActionCommand("deliver");
+    		delivernow.addActionListener(parent);
+    		popupNormal.add(delivernow);
     		JMenuItem conditional1= new JMenuItem("Deliver conditional");
     		conditional1.setActionCommand("conditional");
     		conditional1.addActionListener(parent);
     		popupNormal.add(conditional1);
-    		popupConditional = new JPopupMenu();
-    		JMenuItem deliver2= new JMenuItem("Deliver conditional");
-    		deliver2.setActionCommand("deliver");
-    		deliver2.addActionListener(parent);
-    		popupConditional.add(deliver2);
-    		JMenuItem conditional2= new JMenuItem("End conditional");
-    		conditional2.setActionCommand("end");
+    		popupConditional1 = new JPopupMenu();
+    		JMenuItem conditional2= new JMenuItem("Deliver conditional");
+    		conditional2.setActionCommand("deliver");
     		conditional2.addActionListener(parent);
-    		popupConditional.add(conditional2);
+    		popupConditional1.add(conditional2);
+    		JMenuItem end1= new JMenuItem("End conditional");
+    		end1.setActionCommand("end");
+    		end1.addActionListener(parent);
+    		popupConditional1.add(end1);
+    		popupConditional2 = new JPopupMenu();
+    		JMenuItem undeliver= new JMenuItem("Undeliver");
+    		undeliver.setActionCommand("undeliver");
+    		undeliver.addActionListener(parent);
+    		popupConditional2.add(undeliver);
+    		JMenuItem end2= new JMenuItem("End conditional");
+    		end2.setActionCommand("end");
+    		end2.addActionListener(parent);
+    		popupConditional2.add(end2);
     	}
         public void mousePressed(MouseEvent e) {
         	//Component c = list.getComponentAt(e.getX(), e.getY());
         	int idx = list.locationToIndex(e.getPoint());
         	list.setSelectedIndex(idx);
-        	//MsgInfo mi = (MsgInfo)list.getModel().getElementAt(idx);
+        	MsgInfo mi = (MsgInfo)list.getModel().getElementAt(idx);
         	System.out.println("mousePressed");
         	if (e.isPopupTrigger()) {
-        		if (ParDebug.debugger.getSelectedProcessor().isConditional()) popupConditional.show(e.getComponent(), e.getX(), e.getY());
+        		if (ParDebug.debugger.getSelectedProcessor().isConditional()) {
+        			if (mi.isConditional()) popupConditional2.show(e.getComponent(), e.getX(), e.getY());
+        			else popupConditional1.show(e.getComponent(), e.getX(), e.getY());
+        		}
         		else popupNormal.show(e.getComponent(), e.getX(), e.getY());
         	}
         }

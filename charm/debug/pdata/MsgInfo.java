@@ -104,6 +104,8 @@ public class MsgInfo extends GenericInfo {
     	destPtr = ptr;
     }
     
+    public boolean isConditional() {return (flags & CONDITIONAL) != 0;}
+    
     public String toString() {
     	StringBuffer buf = new StringBuffer("<html><body");
     	if ((flags & CONDITIONAL) != 0) buf.append(" bgcolor=\"#b545ff\"");
