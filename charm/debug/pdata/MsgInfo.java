@@ -36,6 +36,7 @@ public class MsgInfo extends GenericInfo {
     }
     
     public static final int BREAKPOINT = 0x1;
+    public static final int CONDITIONAL = 0x10;
 
     public static final int NewChareMsg    =1;
     public static final int NewVChareMsg   =2;
@@ -105,7 +106,8 @@ public class MsgInfo extends GenericInfo {
     
     public String toString() {
     	StringBuffer buf = new StringBuffer("<html><body");
-    	if ((flags & BREAKPOINT) != 0) buf.append(" bgcolor=\"#FF3333\"");
+    	if ((flags & CONDITIONAL) != 0) buf.append(" bgcolor=\"#b545ff\"");
+    	else if ((flags & BREAKPOINT) != 0) buf.append(" bgcolor=\"#FF3333\"");
     	else if (ep.checkBox.isSelected()) buf.append(" bgcolor=\"#EEAA55\"");
     	buf.append(">");
     	buf.append(chare.getType()+"::"+ep.toString());

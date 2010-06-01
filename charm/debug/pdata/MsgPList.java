@@ -21,7 +21,8 @@ public class MsgPList extends GenericPList implements ActionListener {
     ChareTypePList chareList;
     PopupListener popup;
     JList list;
-    JPopupMenu jp;
+    int numConditional;
+    int hasBpMessage;
 
     public MsgInfo elementAt(int i) {
         if (i >= data.size()) return null;
@@ -40,17 +41,8 @@ public class MsgPList extends GenericPList implements ActionListener {
     }
     
     private void createPopupMenu() {
-        jp = new JPopupMenu();
-		JMenuItem deliver= new JMenuItem("Deliver now");
-		deliver.setActionCommand("deliver");
-		deliver.addActionListener(this);
-		jp.add(deliver);
-		JMenuItem conditional= new JMenuItem("Deliver conditional");
-		conditional.setActionCommand("conditional");
-		conditional.addActionListener(this);
-		jp.add(conditional);
 		//MouseListener popupListener = new PopupListener(popup);
-		popup = new PopupListener(jp);
+		popup = new PopupListener(this);
     }
     
     public boolean needRefresh() {
@@ -66,6 +58,8 @@ public class MsgPList extends GenericPList implements ActionListener {
     public void load(PList list) {
         data.clear();
 	if (list==null) System.out.println("list is null!");
+	numConditional = 0;
+	hasBpMessage = 0;
 	for (PAbstract cur=list.elementAt(0);cur!=null;cur=cur.getNext()) {
             PList lcur=(PList)cur; // because cur is itself an object
             
@@ -80,7 +74,15 @@ public class MsgPList extends GenericPList implements ActionListener {
                 PList msgData = (PList)msg.elementNamed("data");
                 EpInfo epEntry = epList.getEntryFor(ep);
                 int flags = 0;
-                if (((PString)lcur.elementNamed("name")).getString().equals("Breakpoint")) flags |= MsgInfo.BREAKPOINT;
+                //System.out.println("name: "+((PString)lcur.elementNamed("name")).getString());
+                if (((PString)lcur.elementNamed("name")).getString().equals("Breakpoint")) {
+                	flags |= MsgInfo.BREAKPOINT;
+                	hasBpMessage = 1;
+                }
+                if (((PString)lcur.elementNamed("name")).getString().contains("Conditional")) {
+                	flags |= MsgInfo.CONDITIONAL;
+                	numConditional ++;
+                }
                 MsgInfo info = new MsgInfo(from, prioBits, userSize, msgList.elementAt(msgType), envType, chareList.elementAt(epEntry.getChareType()), epEntry, msgData, flags);
                 data.add(info);
                 if (msg.elementNamed("arrID") != null) {
@@ -167,10 +169,28 @@ public class MsgPList extends GenericPList implements ActionListener {
     }
     
     public class PopupListener extends MouseAdapter {
-    	JPopupMenu popup;
+    	JPopupMenu popupNormal;
+    	JPopupMenu popupConditional;
     	
-    	PopupListener(JPopupMenu p) {
-    		popup = p;
+    	PopupListener(MsgPList parent) {
+            popupNormal = new JPopupMenu();
+    		JMenuItem deliver1= new JMenuItem("Deliver now");
+    		deliver1.setActionCommand("deliver");
+    		deliver1.addActionListener(parent);
+    		popupNormal.add(deliver1);
+    		JMenuItem conditional1= new JMenuItem("Deliver conditional");
+    		conditional1.setActionCommand("conditional");
+    		conditional1.addActionListener(parent);
+    		popupNormal.add(conditional1);
+    		popupConditional = new JPopupMenu();
+    		JMenuItem deliver2= new JMenuItem("Deliver conditional");
+    		deliver2.setActionCommand("deliver");
+    		deliver2.addActionListener(parent);
+    		popupConditional.add(deliver2);
+    		JMenuItem conditional2= new JMenuItem("End conditional");
+    		conditional2.setActionCommand("end");
+    		conditional2.addActionListener(parent);
+    		popupConditional.add(conditional2);
     	}
         public void mousePressed(MouseEvent e) {
         	//Component c = list.getComponentAt(e.getX(), e.getY());
@@ -179,24 +199,26 @@ public class MsgPList extends GenericPList implements ActionListener {
         	//MsgInfo mi = (MsgInfo)list.getModel().getElementAt(idx);
         	System.out.println("mousePressed");
         	if (e.isPopupTrigger()) {
-        		popup.show(e.getComponent(), e.getX(), e.getY());
+        		if (ParDebug.debugger.getSelectedProcessor().isConditional()) popupConditional.show(e.getComponent(), e.getX(), e.getY());
+        		else popupNormal.show(e.getComponent(), e.getX(), e.getY());
         	}
         }
     }
 
 	public void actionPerformed(ActionEvent e) {
+		int idx = list.getSelectedIndex() - numConditional;
 		if (e.getActionCommand().equals("deliver")) {
-			int idx = list.getSelectedIndex();
 			//MsgInfo mi = (MsgInfo)list.getSelectedValue();
 			//Component c = list.getComponentAt(e.getX(), e.getY());
 			String method = null;
 			if (idx == 0) method = "ccs_single_step";
 			else method = "deliverMessage";
-			ParDebug.server.sendCcsRequestBytes(method, ""+idx, ParDebug.debugger.getSelectedPe());
+			ParDebug.server.sendCcsRequestBytes(method, ""+(idx-hasBpMessage), ParDebug.debugger.getSelectedPe());
 			ParDebug.debugger.messageDelivered();
 		} else if (e.getActionCommand().equals("conditional")) {
-			int idx = list.getSelectedIndex();
 			ParDebug.debugger.deliverConditional(idx);
+		} else if (e.getActionCommand().equals("end")) {
+			ParDebug.debugger.endConditional(idx);
 		}
 	}
 }

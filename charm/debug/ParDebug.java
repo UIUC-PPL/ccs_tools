@@ -37,7 +37,7 @@ public class ParDebug extends JPanel
      implements ActionListener,ListSelectionListener{
    
 	public final static int MAJOR = 10;
-	public final static int MINOR =  2;
+	public final static int MINOR =  3;
 	
     // ******* VARIABLES ************   
     //  FIXME: make these not be static, by moving main's command line
@@ -349,6 +349,9 @@ DEPRECATED!! The correct implementation is in CpdList.java
     }
     public int getSelectedPe() {
     	return Integer.parseInt((String)pesbox.getSelectedItem());
+    }
+    public Processor getSelectedProcessor() {
+    	return pes[getSelectedPe()];
     }
     private void addedRunParameter() {
        setStatusMessage("Executable: " +exec.executable+ "        number of pes: "+exec.npes);
@@ -892,7 +895,17 @@ DEPRECATED!! The correct implementation is in CpdList.java
     }
     
     public void deliverConditional(int idx) {
-    	server.sendCcsRequest("deliverConditional", ""+idx, Integer.parseInt((String)pesbox.getSelectedItem()));
+    	int pe = Integer.parseInt((String)pesbox.getSelectedItem());
+    	server.sendCcsRequest("deliverConditional", ""+idx, pe);
+    	pes[pe].setConditional();
+    	messageDelivered();
+    }
+    
+    public void endConditional(int idx) {
+    	int pe = Integer.parseInt((String)pesbox.getSelectedItem());
+    	server.sendCcsRequest("endConditional", ""+idx, pe);
+    	pes[pe].setFrozen();
+    	messageDelivered();
     }
     
 	public void updateRecentConfig() {
