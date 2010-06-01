@@ -1166,6 +1166,11 @@ DEPRECATED!! The correct implementation is in CpdList.java
     		EpCheckBox chkbox = (EpCheckBox)e.getSource();
     		int breakpointIndex = chkbox.ep.getEpIndex();
     		String entryPointName = ""+breakpointIndex;
+    		if (((PeSet)peList.getSelectedValue()).isSomeConditional()) {
+    			chkbox.setSelected(! chkbox.isSelected());
+    			JOptionPane.showMessageDialog(this, "Cannot set breakpoints while in conditional mode!", "Error", JOptionPane.ERROR_MESSAGE);
+    			return;
+    		}
     		if (chkbox.isSelected())
     		{
     			chkbox.ep.addBP(((PeSet)peList.getSelectedValue()).getList());
@@ -1174,7 +1179,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
     			//continueButton.setEnabled(true);
     			//freezeButton.setEnabled(false);
     			if (reply[0] != 0) setStatusMessage ("Break Point set at entry point " +entryPointName);
-    			else JOptionPane.showInternalMessageDialog(this, "Could not set breakpoint!", "Error", JOptionPane.ERROR_MESSAGE);
+    			else JOptionPane.showMessageDialog(this, "Could not set breakpoint!", "Error", JOptionPane.ERROR_MESSAGE);
     		}
     		else
     		{
@@ -1184,7 +1189,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
     			//continueButton.setEnabled(true);   
     			//freezeButton.setEnabled(true);
     			if (reply[0] != 0) setStatusMessage ("Break Point removed at entry point " +entryPointName+" on selected Pes");
-    			else JOptionPane.showInternalMessageDialog(this, "Could not remove breakpoint!", "Error", JOptionPane.ERROR_MESSAGE);
+    			else JOptionPane.showMessageDialog(this, "Could not remove breakpoint!", "Error", JOptionPane.ERROR_MESSAGE);
     		}
     		PeSet set = (PeSet)peList.getSelectedValue();
     		if (set != null) chkbox.setCoverageColor(set.getList());
