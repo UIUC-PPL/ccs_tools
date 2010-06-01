@@ -901,10 +901,10 @@ DEPRECATED!! The correct implementation is in CpdList.java
     	messageDelivered();
     }
     
-    public void endConditional() {
+    public void endConditional(int idx) {
     	int pe = Integer.parseInt((String)pesbox.getSelectedItem());
-    	server.sendCcsRequest("endConditional", "", pe);
-    	pes[pe].setFrozen();
+    	server.sendCcsRequest("endConditional", ""+idx, pe);
+    	if (idx==0) pes[pe].setFrozen();
     	messageDelivered();
     }
     
