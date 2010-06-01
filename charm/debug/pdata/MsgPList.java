@@ -218,7 +218,7 @@ public class MsgPList extends GenericPList implements ActionListener {
 		} else if (e.getActionCommand().equals("conditional")) {
 			ParDebug.debugger.deliverConditional(idx);
 		} else if (e.getActionCommand().equals("end")) {
-			ParDebug.debugger.endConditional(idx);
+			ParDebug.debugger.endConditional();
 		}
 	}
 }
