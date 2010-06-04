@@ -167,6 +167,9 @@ public class MsgPList extends GenericPList implements ActionListener {
     		list.addMouseListener(popup);
     	//list.setComponentPopupMenu(jp);
     }
+    public void removePopupMenu(JList l) {
+    	list.removeMouseListener(popup);
+    }
     
     public class PopupListener extends MouseAdapter {
     	JPopupMenu popupNormal;

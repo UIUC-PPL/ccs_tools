@@ -70,6 +70,7 @@ public class ParDebug extends JPanel
     private boolean isRunning = false; // True if the debugged program is running
     //private boolean[] peList = null;
     public static int currentListedPE;
+    public int currentPopulatedList;
     
     private Processor[] pes = null;
 
@@ -499,6 +500,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
     	if (lName==null) return; /* the initial empty list */
     	GenericPList list = cpdLists[cpdListIndex].list;
 
+    	if (currentPopulatedList != -1 && cpdListIndex != currentPopulatedList) cpdLists[currentPopulatedList].list.removePopupMenu(listItemNames);
     	if (list == null || list.needRefresh()) {
     		int nItems=server.getListLength(lName,forPE);
     		listItems = server.getPList(lName,forPE,0,nItems);
@@ -512,6 +514,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
     			dest.addElement(cur.getDeepName());
     		}
     	}
+    	currentPopulatedList = cpdListIndex;
     }
     
     /// The user has just selected listItem from the cpdListIndex'th list on forPE.
@@ -562,6 +565,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
     public ParDebug(Execution e) {
        isRunning = false;
        installedPythonScripts = null;
+       currentPopulatedList = -1;
        //preferences = new Preference();
        //preferences.load();
 	   preferences = Preference.load();

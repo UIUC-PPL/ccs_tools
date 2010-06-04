@@ -18,6 +18,7 @@ public abstract class GenericPList {
 
     public abstract boolean needRefresh();
     public abstract void load(PList p);
+    public void removePopupMenu(JList l) { }
     public void addPopupMenu(JList l) { }
 
     public GenericPList() {
