@@ -36,6 +36,9 @@ import org.xml.sax.SAXException;
 public class ParDebug extends JPanel
      implements ActionListener,ListSelectionListener{
    
+	public final static int MAJOR = 10;
+	public final static int MINOR =  3;
+	
     // ******* VARIABLES ************   
     //  FIXME: make these not be static, by moving main's command line
     //   handling into a regular function called by the constructor.
@@ -67,6 +70,7 @@ public class ParDebug extends JPanel
     private boolean isRunning = false; // True if the debugged program is running
     //private boolean[] peList = null;
     public static int currentListedPE;
+    public int currentPopulatedList;
     
     private Processor[] pes = null;
 
@@ -347,6 +351,9 @@ DEPRECATED!! The correct implementation is in CpdList.java
     public int getSelectedPe() {
     	return Integer.parseInt((String)pesbox.getSelectedItem());
     }
+    public Processor getSelectedProcessor() {
+    	return pes[getSelectedPe()];
+    }
     private void addedRunParameter() {
        setStatusMessage("Executable: " +exec.executable+ "        number of pes: "+exec.npes);
     }
@@ -493,6 +500,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
     	if (lName==null) return; /* the initial empty list */
     	GenericPList list = cpdLists[cpdListIndex].list;
 
+    	if (currentPopulatedList != -1 && cpdListIndex != currentPopulatedList) cpdLists[currentPopulatedList].list.removePopupMenu(listItemNames);
     	if (list == null || list.needRefresh()) {
     		int nItems=server.getListLength(lName,forPE);
     		listItems = server.getPList(lName,forPE,0,nItems);
@@ -500,12 +508,13 @@ DEPRECATED!! The correct implementation is in CpdList.java
 
     	if (list != null) {
     		if (list.needRefresh()) list.load(listItems);
-    		list.populate(dest);
+    		list.populate(dest, listItemNames);
     	} else {
     		for (PAbstract cur=listItems.elementAt(0);cur!=null;cur=cur.getNext()) {
     			dest.addElement(cur.getDeepName());
     		}
     	}
+    	currentPopulatedList = cpdListIndex;
     }
     
     /// The user has just selected listItem from the cpdListIndex'th list on forPE.
@@ -556,6 +565,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
     public ParDebug(Execution e) {
        isRunning = false;
        installedPythonScripts = null;
+       currentPopulatedList = -1;
        //preferences = new Preference();
        //preferences.load();
 	   preferences = Preference.load();
@@ -880,6 +890,28 @@ DEPRECATED!! The correct implementation is in CpdList.java
         //  startProgram();
     }
 
+    public void messageDelivered() {
+		CpdListInfo list = cpdLists[listsbox.getSelectedIndex()];
+		if (list.list == messageQueue) {
+			int forPE=Integer.parseInt((String)pesbox.getSelectedItem());
+			populateNewList(listsbox.getSelectedIndex(),forPE, listModel);
+		}    		setStatusMessage("Single message delivered");
+    }
+    
+    public void deliverConditional(int idx) {
+    	int pe = Integer.parseInt((String)pesbox.getSelectedItem());
+    	server.sendCcsRequest("deliverConditional", ""+idx, pe);
+    	pes[pe].setConditional();
+    	messageDelivered();
+    }
+    
+    public void endConditional(int idx) {
+    	int pe = Integer.parseInt((String)pesbox.getSelectedItem());
+    	server.sendCcsRequest("endConditional", ""+idx, pe);
+    	if (idx==0) pes[pe].setFrozen();
+    	messageDelivered();
+    }
+    
 	public void updateRecentConfig() {
 		Object []files = preferences.getRecent();
 		menuRecent.removeAll();
@@ -1054,19 +1086,15 @@ DEPRECATED!! The correct implementation is in CpdList.java
     	}
     	else if (e.getActionCommand().equals("step")) {
     		// deliver a single message
-    		server.bcastCcsRequest("ccs_single_step", "", ((PeSet)peList.getSelectedValue()).iterator());
-    		CpdListInfo list = cpdLists[listsbox.getSelectedIndex()];
-    		if (list.list == messageQueue) {
-    			int forPE=Integer.parseInt((String)pesbox.getSelectedItem());
-    			populateNewList(listsbox.getSelectedIndex(),forPE, listModel);
-    		}    		setStatusMessage("Single message delivered");
+    		server.bcastCcsRequest("ccs_single_step", "", ((PeSet)peList.getSelectedValue()).frozenIterator());
+    		messageDelivered();
     	}
     	else if (e.getActionCommand().equals("disconnect")) {
     		servthread.terminate();
     		servthread.interrupt();
     	}
     	else if (e.getActionCommand().equals("quit")) {
-    		server.bcastCcsRequest("ccs_debug_quit", "", getNumPes());
+    		server.bcastCcsRequest("ccs_debug_quit", "");
     		servthread.terminate();
     	}
     	else if (e.getActionCommand().equals("startgdb")) 
@@ -1142,6 +1170,11 @@ DEPRECATED!! The correct implementation is in CpdList.java
     		EpCheckBox chkbox = (EpCheckBox)e.getSource();
     		int breakpointIndex = chkbox.ep.getEpIndex();
     		String entryPointName = ""+breakpointIndex;
+    		if (((PeSet)peList.getSelectedValue()).isSomeConditional()) {
+    			chkbox.setSelected(! chkbox.isSelected());
+    			JOptionPane.showMessageDialog(this, "Cannot set breakpoints while in conditional mode!", "Error", JOptionPane.ERROR_MESSAGE);
+    			return;
+    		}
     		if (chkbox.isSelected())
     		{
     			chkbox.ep.addBP(((PeSet)peList.getSelectedValue()).getList());
@@ -1150,7 +1183,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
     			//continueButton.setEnabled(true);
     			//freezeButton.setEnabled(false);
     			if (reply[0] != 0) setStatusMessage ("Break Point set at entry point " +entryPointName);
-    			else JOptionPane.showInternalMessageDialog(this, "Could not set breakpoint!", "Error", JOptionPane.ERROR_MESSAGE);
+    			else JOptionPane.showMessageDialog(this, "Could not set breakpoint!", "Error", JOptionPane.ERROR_MESSAGE);
     		}
     		else
     		{
@@ -1160,7 +1193,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
     			//continueButton.setEnabled(true);   
     			//freezeButton.setEnabled(true);
     			if (reply[0] != 0) setStatusMessage ("Break Point removed at entry point " +entryPointName+" on selected Pes");
-    			else JOptionPane.showInternalMessageDialog(this, "Could not remove breakpoint!", "Error", JOptionPane.ERROR_MESSAGE);
+    			else JOptionPane.showMessageDialog(this, "Could not remove breakpoint!", "Error", JOptionPane.ERROR_MESSAGE);
     		}
     		PeSet set = (PeSet)peList.getSelectedValue();
     		if (set != null) chkbox.setCoverageColor(set.getList());
@@ -1390,7 +1423,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
     	}
     	else if (e.getActionCommand().equals("exitDebugger")) {
     		if (isRunning) {
-    			server.bcastCcsRequest("ccs_debug_quit", "", getNumPes());
+    			server.bcastCcsRequest("ccs_debug_quit", "");
     			quitProgram();
     		}
             preferences.save();

@@ -14,6 +14,7 @@ public class PeSet {
 	
 	int numRunning;
 	int numDead;
+	int numConditional;
 	
 	public PeSet(String n, Processor l[]) {
 		numRunning = 0;
@@ -67,11 +68,14 @@ public class PeSet {
 	void setRunning() {numRunning++;}
 	void setFrozen() {numRunning--;}
 	void setDead() {numDead++;}
+	void setConditional() {numConditional++;}
+	void unsetConditional() {numConditional--;}
 	
 	public boolean isAllRunning() {return numRunning == list.size();}
 	public boolean isAllFrozen() {return numRunning == 0;}
 	public boolean isSomeDead() {return numDead > 0;}
-	
+	public boolean isSomeConditional() {return numConditional > 0;}
+
 	public Iterator iterator() {return list.iterator();}
 	public Iterator runningIterator() {return new Running();}
 	public Iterator frozenIterator() {return new Frozen();}

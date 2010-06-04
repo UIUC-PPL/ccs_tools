@@ -1,24 +1,48 @@
 package charm.debug.pdata;
 
+import java.awt.Component;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.util.Arrays;
+
+import javax.swing.JList;
+import javax.swing.JMenuItem;
+import javax.swing.JPopupMenu;
+
+import charm.debug.ParDebug;
 import charm.debug.fmt.*;
 
 // Extract messages from the converse/localqueue PList
-public class MsgPList extends GenericPList {
+public class MsgPList extends GenericPList implements ActionListener {
     EpPList epList;
     MsgTypePList msgList;
     ChareTypePList chareList;
+    PopupListener popup;
+    JList list;
+    int numConditional;
+    int hasBpMessage;
 
     public MsgInfo elementAt(int i) {
         if (i >= data.size()) return null;
         return (MsgInfo)data.elementAt(i);
     }
 
-    public MsgPList() { }
+    public MsgPList() {
+    	createPopupMenu();
+    }
     
     public MsgPList(MsgPList msg) {
     	epList = msg.epList;
     	msgList = msg.msgList;
     	chareList = msg.chareList;
+    	createPopupMenu();
+    }
+    
+    private void createPopupMenu() {
+		//MouseListener popupListener = new PopupListener(popup);
+		popup = new PopupListener(this);
     }
     
     public boolean needRefresh() {
@@ -34,6 +58,8 @@ public class MsgPList extends GenericPList {
     public void load(PList list) {
         data.clear();
 	if (list==null) System.out.println("list is null!");
+	numConditional = 0;
+	hasBpMessage = 0;
 	for (PAbstract cur=list.elementAt(0);cur!=null;cur=cur.getNext()) {
             PList lcur=(PList)cur; // because cur is itself an object
             
@@ -48,7 +74,15 @@ public class MsgPList extends GenericPList {
                 PList msgData = (PList)msg.elementNamed("data");
                 EpInfo epEntry = epList.getEntryFor(ep);
                 int flags = 0;
-                if (((PString)lcur.elementNamed("name")).getString().equals("Breakpoint")) flags |= MsgInfo.BREAKPOINT;
+                //System.out.println("name: "+((PString)lcur.elementNamed("name")).getString());
+                if (((PString)lcur.elementNamed("name")).getString().equals("Breakpoint")) {
+                	flags |= MsgInfo.BREAKPOINT;
+                	hasBpMessage = 1;
+                }
+                if (((PString)lcur.elementNamed("name")).getString().contains("Conditional")) {
+                	flags |= MsgInfo.CONDITIONAL;
+                	numConditional ++;
+                }
                 MsgInfo info = new MsgInfo(from, prioBits, userSize, msgList.elementAt(msgType), envType, chareList.elementAt(epEntry.getChareType()), epEntry, msgData, flags);
                 data.add(info);
                 if (msg.elementNamed("arrID") != null) {
@@ -126,5 +160,83 @@ public class MsgPList extends GenericPList {
 		*/
         }
     }
- 
+
+    public void addPopupMenu(JList l) {
+    	list = l;
+    	if (! Arrays.asList(list.getMouseListeners()).contains(popup))
+    		list.addMouseListener(popup);
+    	//list.setComponentPopupMenu(jp);
+    }
+    public void removePopupMenu(JList l) {
+    	list.removeMouseListener(popup);
+    }
+    
+    public class PopupListener extends MouseAdapter {
+    	JPopupMenu popupNormal;
+    	JPopupMenu popupConditional1;
+    	JPopupMenu popupConditional2;
+    	
+    	PopupListener(MsgPList parent) {
+            popupNormal = new JPopupMenu();
+    		JMenuItem delivernow= new JMenuItem("Deliver now");
+    		delivernow.setActionCommand("deliver");
+    		delivernow.addActionListener(parent);
+    		popupNormal.add(delivernow);
+    		JMenuItem conditional1= new JMenuItem("Deliver conditional");
+    		conditional1.setActionCommand("conditional");
+    		conditional1.addActionListener(parent);
+    		popupNormal.add(conditional1);
+    		popupConditional1 = new JPopupMenu();
+    		JMenuItem conditional2= new JMenuItem("Deliver conditional");
+    		conditional2.setActionCommand("deliver");
+    		conditional2.addActionListener(parent);
+    		popupConditional1.add(conditional2);
+    		JMenuItem end1= new JMenuItem("End conditional");
+    		end1.setActionCommand("end");
+    		end1.addActionListener(parent);
+    		popupConditional1.add(end1);
+    		popupConditional2 = new JPopupMenu();
+    		JMenuItem undeliver= new JMenuItem("Undeliver");
+    		undeliver.setActionCommand("undeliver");
+    		undeliver.addActionListener(parent);
+    		popupConditional2.add(undeliver);
+    		JMenuItem end2= new JMenuItem("End conditional");
+    		end2.setActionCommand("end");
+    		end2.addActionListener(parent);
+    		popupConditional2.add(end2);
+    	}
+        public void mousePressed(MouseEvent e) {
+        	//Component c = list.getComponentAt(e.getX(), e.getY());
+        	int idx = list.locationToIndex(e.getPoint());
+        	list.setSelectedIndex(idx);
+        	MsgInfo mi = (MsgInfo)list.getModel().getElementAt(idx);
+        	System.out.println("mousePressed");
+        	if (e.isPopupTrigger()) {
+        		if (ParDebug.debugger.getSelectedProcessor().isConditional()) {
+        			if (mi.isConditional()) popupConditional2.show(e.getComponent(), e.getX(), e.getY());
+        			else popupConditional1.show(e.getComponent(), e.getX(), e.getY());
+        		}
+        		else popupNormal.show(e.getComponent(), e.getX(), e.getY());
+        	}
+        }
+    }
+
+	public void actionPerformed(ActionEvent e) {
+		int idx = list.getSelectedIndex() - numConditional;
+		if (e.getActionCommand().equals("deliver")) {
+			//MsgInfo mi = (MsgInfo)list.getSelectedValue();
+			//Component c = list.getComponentAt(e.getX(), e.getY());
+			String method = null;
+			if (idx == 0) method = "ccs_single_step";
+			else method = "deliverMessage";
+			ParDebug.server.sendCcsRequestBytes(method, ""+(idx-hasBpMessage), ParDebug.debugger.getSelectedPe());
+			ParDebug.debugger.messageDelivered();
+		} else if (e.getActionCommand().equals("conditional")) {
+			ParDebug.debugger.deliverConditional(idx-hasBpMessage);
+		} else if (e.getActionCommand().equals("end")) {
+			ParDebug.debugger.endConditional(0);
+		} else if (e.getActionCommand().equals("undeliver")) {
+			ParDebug.debugger.endConditional(list.getSelectedIndex());
+		}
+	}
 }
