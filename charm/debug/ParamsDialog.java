@@ -15,11 +15,11 @@ public class ParamsDialog extends JDialog implements ActionListener, ChangeListe
 	Execution exec = null;
 
 	private JTextField  clParams, numPes, portno, sshport, hostname, username, filename, dir, inputFile, virtualPes, recordPes, replayPe;
-	private JCheckBox suspendOnStart, sshTunnel, waitFile, virtualDebug, recplayActive, recplayDetail;
+	private JCheckBox suspendOnStart, sshTunnel, waitFile, virtualDebug, recplayActive, recplayDetail, recplayChecksum;
 	private JButton chooser, dirchooser;
 	private JLabel virtualPeslabel;
-	private JRadioButton record, replay, recordDetail, replayDetail;
-	private JPanel recplayEnabled, fullEnabled;
+	private JRadioButton record, replay, recordDetail, replayDetail, checksumXOR, checksumCRC;
+	private JPanel recplayEnabled, fullEnabled, checksumEnabled;
 
 	public ParamsDialog(Frame parent, boolean modal, Execution obj) {
 		super (parent, modal);
@@ -417,14 +417,6 @@ public class ParamsDialog extends JDialog implements ActionListener, ChangeListe
 		recplayGrid.setConstraints(fullEnabled, recplayConstraint);
 		recplay.add(fullEnabled);
 		
-		JPanel empty1 = new JPanel();
-		recplayConstraint.gridx=0;
-		recplayConstraint.gridy=3;
-		recplayConstraint.weightx=1;
-		recplayConstraint.weighty=1;
-		recplayGrid.setConstraints(empty1, recplayConstraint);
-		recplay.add(empty1);
-
 		JPanel fullPanel = new JPanel();
 		GridBagLayout fullPanelGrid = new GridBagLayout();
 		GridBagConstraints c1 = new GridBagConstraints();
@@ -475,6 +467,61 @@ public class ParamsDialog extends JDialog implements ActionListener, ChangeListe
 		//fullPanel.add(rightPanel);
 		fullEnabled.add(fullPanel);
 		
+		// Buttons for Checksum checking
+		recplayChecksum = new JCheckBox("Enable checksum error detection");
+		recplayConstraint.gridx=1;
+		recplayConstraint.gridy=0;
+		recplayGrid.setConstraints(recplayChecksum, recplayConstraint);
+		recplay.add(recplayChecksum);
+		recplayChecksum.addChangeListener(this);
+		checksumEnabled = new JPanel();
+		checksumEnabled.setBorder(BorderFactory.createEmptyBorder(0, 40, 0, 0));
+		checksumEnabled.setLayout(new BoxLayout(checksumEnabled, BoxLayout.Y_AXIS));
+		recplayConstraint.gridx=1;
+		recplayConstraint.gridy=1;
+		recplayGrid.setConstraints(checksumEnabled, recplayConstraint);
+		recplay.add(checksumEnabled);
+		
+		JPanel checksumPanel = new JPanel();
+		GridBagLayout checksumPanelGrid = new GridBagLayout();
+		GridBagConstraints c2 = new GridBagConstraints();
+		c2.gridwidth = 1;
+		c2.fill = GridBagConstraints.NONE;
+		c2.anchor = GridBagConstraints.WEST;
+		checksumPanel.setLayout(checksumPanelGrid);
+		ButtonGroup checksumGroup = new ButtonGroup();
+		checksumXOR = new JRadioButton("Record selected processors", true);
+		checksumXOR.addChangeListener(this);
+		checksumGroup.add(checksumXOR);
+		c2.gridx=0;
+		c2.gridy=0;
+		checksumPanelGrid.setConstraints(checksumXOR, c2);
+		checksumPanel.add(checksumXOR);
+		checksumCRC = new JRadioButton("Replay selected processor", false);
+		checksumCRC.addChangeListener(this);
+		checksumGroup.add(checksumCRC);
+		c2.gridx=0;
+		c2.gridy=1;
+		checksumPanelGrid.setConstraints(checksumCRC, c2);
+		checksumPanel.add(checksumCRC);
+		c2.gridx=1;
+		c2.gridy=2;
+		c2.weightx=1;
+		c2.weighty=1;
+		JPanel empty2 = new JPanel();
+		checksumPanelGrid.setConstraints(empty2, c2);
+		checksumPanel.add(empty2);
+		checksumEnabled.add(checksumPanel);
+		
+		// Add an empty panel for filling the space
+		JPanel empty1 = new JPanel();
+		recplayConstraint.gridx=0;
+		recplayConstraint.gridy=5;
+		recplayConstraint.weightx=1;
+		recplayConstraint.weighty=1;
+		recplayGrid.setConstraints(empty1, recplayConstraint);
+		recplay.add(empty1);
+		
 		tabbedPane.addTab("Record/Replay", recplay);
 		getContentPane().add(tabbedPane);
 		getContentPane().add(buttonPanel);
@@ -503,6 +550,11 @@ public class ParamsDialog extends JDialog implements ActionListener, ChangeListe
 		if (exec.replayDetail) replayDetail.setSelected(true);
 		if (recordDetail.isSelected()) recordPes.setText(exec.selectedPes);
 		else if (replayDetail.isSelected()) replayPe.setText(exec.selectedPes);
+		if (exec.recplayChecksum != Execution.CHECKSUM_NONE) {
+			recplayChecksum.setSelected(true);
+			if (exec.recplayChecksum == Execution.CHECKSUM_XOR) checksumXOR.setSelected(true);
+			else if (exec.recplayChecksum == Execution.CHECKSUM_CRC) checksumCRC.setSelected(true);
+		}
 
 		enableRecplay();
 	}
@@ -585,6 +637,14 @@ public class ParamsDialog extends JDialog implements ActionListener, ChangeListe
 				if (recordDetail.isSelected()) exec.selectedPes = recordPes.getText();
 				else if (replayDetail.isSelected()) exec.selectedPes = replayPe.getText();
 			}
+			if (recplayChecksum.isSelected()) {
+				if (checksumXOR.isSelected()) exec.recplayChecksum = Execution.CHECKSUM_XOR;
+				else if (checksumCRC.isSelected()) exec.recplayChecksum = Execution.CHECKSUM_CRC;
+				else {
+					exec.recplayChecksum = Execution.CHECKSUM_NONE;
+					JOptionPane.showMessageDialog(this, "Error", "The selected checksum option is not acceptable\nPlease contact a Charm++ developer", JOptionPane.ERROR_MESSAGE);
+				}
+			} else exec.recplayChecksum = Execution.CHECKSUM_NONE;
 			closeWindow = true;
 		} 
 		if (closeWindow) {
@@ -600,6 +660,8 @@ public class ParamsDialog extends JDialog implements ActionListener, ChangeListe
 		record.setForeground(color);
 		replay.setEnabled(status);
 		replay.setForeground(color);
+		recplayChecksum.setEnabled(status);
+		recplayChecksum.setForeground(color);
 		
 		status = status && replay.isSelected();
 		color = status ? Color.BLACK : Color.GRAY;
@@ -614,6 +676,13 @@ public class ParamsDialog extends JDialog implements ActionListener, ChangeListe
 		replayDetail.setEnabled(status);
 		replayDetail.setForeground(color);
 		replayPe.setEnabled(status && replayDetail.isSelected());
+		
+		status = recplayActive.isSelected() && recplayChecksum.isSelected();
+		color = status ? Color.BLACK : Color.GRAY;
+		checksumXOR.setEnabled(status);
+		checksumXOR.setForeground(color);
+		checksumCRC.setEnabled(status);
+		checksumCRC.setForeground(color);
     }
     
 	public void stateChanged(ChangeEvent e) {
@@ -630,7 +699,8 @@ public class ParamsDialog extends JDialog implements ActionListener, ChangeListe
 				 e.getSource()==recplayDetail ||
 				 e.getSource()==replay ||
 				 e.getSource()==recordDetail ||
-				 e.getSource()==replayDetail) enableRecplay();
+				 e.getSource()==replayDetail ||
+				 e.getSource()==recplayChecksum) enableRecplay();
     }
 
     /*

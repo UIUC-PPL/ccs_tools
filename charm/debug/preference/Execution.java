@@ -25,6 +25,10 @@ public class Execution implements Serializable {
 	public int virtualNpes;
 	
 	public boolean recplayActive, recplayDetailActive, record, replay, recordDetail, replayDetail;
+	public int recplayChecksum;
+	public static final int CHECKSUM_NONE = 0;
+	public static final int CHECKSUM_XOR = 1;
+	public static final int CHECKSUM_CRC = 2;
 	public String selectedPes;
 
 	public static Execution load(File filename) throws IOException, ClassNotFoundException, SAXException {
