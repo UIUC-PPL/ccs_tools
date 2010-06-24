@@ -490,14 +490,14 @@ public class ParamsDialog extends JDialog implements ActionListener, ChangeListe
 		c2.anchor = GridBagConstraints.WEST;
 		checksumPanel.setLayout(checksumPanelGrid);
 		ButtonGroup checksumGroup = new ButtonGroup();
-		checksumXOR = new JRadioButton("Record selected processors", true);
+		checksumXOR = new JRadioButton("XOR-based checksum", true);
 		checksumXOR.addChangeListener(this);
 		checksumGroup.add(checksumXOR);
 		c2.gridx=0;
 		c2.gridy=0;
 		checksumPanelGrid.setConstraints(checksumXOR, c2);
 		checksumPanel.add(checksumXOR);
-		checksumCRC = new JRadioButton("Replay selected processor", false);
+		checksumCRC = new JRadioButton("CRC-32 checksum", false);
 		checksumCRC.addChangeListener(this);
 		checksumGroup.add(checksumCRC);
 		c2.gridx=0;

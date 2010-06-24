@@ -1583,6 +1583,15 @@ DEPRECATED!! The correct implementation is in CpdList.java
     				else totCommandLine += " +replay-detail "+exec.selectedPes+"/"+exec.npes;
     			}
     		}
+    		switch (exec.recplayChecksum) {
+    		case Execution.CHECKSUM_XOR:
+    			totCommandLine += " +recplay-xor";
+    			break;
+    		case Execution.CHECKSUM_CRC:
+    			totCommandLine += " +recplay-crc";
+    			break;
+    		default:
+    		}
     	}
     	if (exec.port.length() != 0)
     		totCommandLine += " ++server-port " + exec.port;
