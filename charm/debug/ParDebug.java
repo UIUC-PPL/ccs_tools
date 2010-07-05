@@ -1064,7 +1064,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
     		startProgram();
     	} else if (e.getActionCommand().equals("freeze")) {
     		// stop program
-    		server.bcastCcsRequest("ccs_debug", "freeze", ((PeSet)peList.getSelectedValue()).runningIterator());
+    		server.bcastCcsRequest("ccs_debug", "freeze", ((PeSet)peList.getSelectedValue()).runningIterator().toIDs());
     		Iterator iter = ((PeSet)peList.getSelectedValue()).runningIterator();
     		while (iter.hasNext()) {
     			((Processor)iter.next()).setFreezing();
@@ -1075,7 +1075,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
     	}
     	else if (e.getActionCommand().equals("unfreeze")){ 
     		// start running again
-    		server.bcastCcsRequest("ccs_continue_break_point", "", ((PeSet)peList.getSelectedValue()).frozenIterator());
+    		server.bcastCcsRequest("ccs_continue_break_point", "", ((PeSet)peList.getSelectedValue()).frozenIterator().toIDs());
     		Iterator iter = ((PeSet)peList.getSelectedValue()).frozenIterator();
     		while (iter.hasNext()) {
     			((Processor)iter.next()).setRunning();
@@ -1086,7 +1086,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
     	}
     	else if (e.getActionCommand().equals("step")) {
     		// deliver a single message
-    		server.bcastCcsRequest("ccs_single_step", "", ((PeSet)peList.getSelectedValue()).frozenIterator());
+    		server.bcastCcsRequest("ccs_single_step", "", ((PeSet)peList.getSelectedValue()).frozenIterator().toIDs());
     		messageDelivered();
     	}
     	else if (e.getActionCommand().equals("disconnect")) {
