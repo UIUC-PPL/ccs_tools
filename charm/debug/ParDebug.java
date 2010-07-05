@@ -1526,11 +1526,11 @@ DEPRECATED!! The correct implementation is in CpdList.java
     			System.out.println(command.substring(5)+" "+now+" ("+now.getTime()+")");
     		}
     		else if (command.equals("quit")) {
-        		server.bcastCcsRequest("ccs_debug_quit", "", getNumPes());
+        		server.bcastCcsRequest("ccs_debug_quit", "");
         		quitProgram(); 
     		}
 			else if (command.equals("continue")) {
-				server.bcastCcsRequest("ccs_continue_break_point", "", getNumPes());
+				server.bcastCcsRequest("ccs_continue_break_point", "");
 			}
 			else if (command.startsWith("memstat")) {
 				String input = command.substring(command.indexOf(' ')).trim();
@@ -2257,7 +2257,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
     		public void windowClosing(WindowEvent e) {
     			if (debugger.isRunning)
     			{
-    				ParDebug.server.bcastCcsRequest("ccs_debug_quit", "",-1,ParDebug.debugger.getNumPes(),null);
+    				ParDebug.server.bcastCcsRequest("ccs_debug_quit", "");
     				debugger.quitProgram();
     			} 
     			debugger.preferences.save();
