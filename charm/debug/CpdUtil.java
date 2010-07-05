@@ -187,7 +187,6 @@ public class CpdUtil {
     			return resp;
     		}
     		else {
-    			ccs.close(r);
     			return null;
     		}
     	} catch (IOException e) {
