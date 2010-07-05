@@ -912,6 +912,13 @@ DEPRECATED!! The correct implementation is in CpdList.java
     	messageDelivered();
     }
     
+    public void commitConditional(int idx, int numConditional) {
+    	int pe = Integer.parseInt((String)pesbox.getSelectedItem());
+    	server.sendCcsRequest("commitConditional", ""+idx, pe);
+    	if (idx==numConditional) pes[pe].setFrozen();
+    	messageDelivered();
+    }
+    
 	public void updateRecentConfig() {
 		Object []files = preferences.getRecent();
 		menuRecent.removeAll();

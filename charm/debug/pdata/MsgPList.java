@@ -204,6 +204,10 @@ public class MsgPList extends GenericPList implements ActionListener {
     		end2.setActionCommand("end");
     		end2.addActionListener(parent);
     		popupConditional2.add(end2);
+    		JMenuItem confirm = new JMenuItem("Permanently deliver");
+    		confirm.setActionCommand("confirm");
+    		confirm.addActionListener(parent);
+    		popupConditional2.add(confirm);
     	}
         public void mousePressed(MouseEvent e) {
         	//Component c = list.getComponentAt(e.getX(), e.getY());
@@ -237,6 +241,8 @@ public class MsgPList extends GenericPList implements ActionListener {
 			ParDebug.debugger.endConditional(0);
 		} else if (e.getActionCommand().equals("undeliver")) {
 			ParDebug.debugger.endConditional(list.getSelectedIndex());
+		} else if (e.getActionCommand().equals("confirm")) {
+			ParDebug.debugger.commitConditional(list.getSelectedIndex(), numConditional);
 		}
 	}
 }
