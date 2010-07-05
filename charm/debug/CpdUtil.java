@@ -172,10 +172,7 @@ public class CpdUtil {
 		int reqLen = reqStr+1;
 		byte[] req=new byte[reqLen];
 		CcsServer.writeString(req,0,reqStr+1,parameterName);
-		boolean waiting = ! (parameterName.equalsIgnoreCase("freeze") ||
-				ccsHandlerName.equalsIgnoreCase("ccs_debug_quit") ||
-				ccsHandlerName.equalsIgnoreCase("ccs_continue_break_point") ||
-				ccsHandlerName.equalsIgnoreCase("ccs_single_step"));
+		boolean waiting = isWaitForReply(parameterName);
 		return sendCcsRequestBytes(ccsHandlerName, req, destPE, waiting);
     }
     public byte[] sendCcsRequestBytes(String ccsHandlerName, byte[] req, int destPE, boolean waitForReply) {
@@ -220,9 +217,16 @@ public class CpdUtil {
     	}
     }
     
+    public boolean isWaitForReply(String type) {
+    	return ! (type.equalsIgnoreCase("freeze") ||
+				type.equalsIgnoreCase("ccs_debug_quit") ||
+				type.equalsIgnoreCase("ccs_continue_break_point") ||
+				type.equalsIgnoreCase("ccs_single_step"));
+    }
+    
     public byte[] bcastCcsRequest(String ccsHandlerName, String parameterName, int []peList) {
     	if (peList.length == ParDebug.debugger.getNumPes()) return bcastCcsRequest(ccsHandlerName, parameterName);
-    	boolean waitForReply = true;
+    	boolean waitForReply = isWaitForReply(parameterName);
 		int reqStr=parameterName.length();
 		int reqLen = reqStr+1;
 		byte[] req=new byte[reqLen];
