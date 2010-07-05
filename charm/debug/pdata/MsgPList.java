@@ -178,14 +178,14 @@ public class MsgPList extends GenericPList implements ActionListener {
     	
     	PopupListener(MsgPList parent) {
             popupNormal = new JPopupMenu();
-    		JMenuItem delivernow= new JMenuItem("Deliver now");
-    		delivernow.setActionCommand("deliver");
-    		delivernow.addActionListener(parent);
-    		popupNormal.add(delivernow);
     		JMenuItem conditional1= new JMenuItem("Deliver conditional");
     		conditional1.setActionCommand("conditional");
     		conditional1.addActionListener(parent);
     		popupNormal.add(conditional1);
+    		JMenuItem delivernow= new JMenuItem("Deliver now");
+    		delivernow.setActionCommand("deliver");
+    		delivernow.addActionListener(parent);
+    		popupNormal.add(delivernow);
     		popupConditional1 = new JPopupMenu();
     		JMenuItem conditional2= new JMenuItem("Deliver conditional");
     		conditional2.setActionCommand("deliver");
