@@ -194,6 +194,9 @@ public class CpdUtil {
     }
 
     //if parameter forSelectedPes <= 0, ccs message sent to all pes
+    /** @deprecated This function does a broadcast by sending a request to every
+     * processor individually, which is bad. It is still in use by older functions
+     * that do not support yet the CCS broadcast mechanism.  */
     public void bcastCcsRequest(String ccsHandlerName, String parameterName, int forSelectedPes, int numberPes, boolean[] peList)
     {
 	if (forSelectedPes <= 0)
@@ -211,6 +214,9 @@ public class CpdUtil {
 	    }
     }
     
+    /** @deprecated This function does a broadcast by sending a request to every
+     * processor individually, which is bad. It is still in use by older functions
+     * that do not support yet the CCS broadcast mechanism.  */
     public void bcastCcsRequest(String ccsHandlerName, String parameterName, Iterator peList) {
     	while (peList.hasNext()) {
     		sendCcsRequest(ccsHandlerName, parameterName, ((Processor)peList.next()).getId());
