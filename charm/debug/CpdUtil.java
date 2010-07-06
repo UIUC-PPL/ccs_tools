@@ -172,10 +172,7 @@ public class CpdUtil {
 		int reqLen = reqStr+1;
 		byte[] req=new byte[reqLen];
 		CcsServer.writeString(req,0,reqStr+1,parameterName);
-		boolean waiting = ! (parameterName.equalsIgnoreCase("freeze") ||
-				ccsHandlerName.equalsIgnoreCase("ccs_debug_quit") ||
-				ccsHandlerName.equalsIgnoreCase("ccs_continue_break_point") ||
-				ccsHandlerName.equalsIgnoreCase("ccs_single_step"));
+		boolean waiting = isWaitForReply(ccsHandlerName, parameterName);
 		return sendCcsRequestBytes(ccsHandlerName, req, destPE, waiting);
     }
     public byte[] sendCcsRequestBytes(String ccsHandlerName, byte[] req, int destPE, boolean waitForReply) {
@@ -187,7 +184,6 @@ public class CpdUtil {
     			return resp;
     		}
     		else {
-    			ccs.close(r);
     			return null;
     		}
     	} catch (IOException e) {
@@ -198,6 +194,9 @@ public class CpdUtil {
     }
 
     //if parameter forSelectedPes <= 0, ccs message sent to all pes
+    /** @deprecated This function does a broadcast by sending a request to every
+     * processor individually, which is bad. It is still in use by older functions
+     * that do not support yet the CCS broadcast mechanism.  */
     public void bcastCcsRequest(String ccsHandlerName, String parameterName, int forSelectedPes, int numberPes, boolean[] peList)
     {
 	if (forSelectedPes <= 0)
@@ -215,15 +214,25 @@ public class CpdUtil {
 	    }
     }
     
+    /** @deprecated This function does a broadcast by sending a request to every
+     * processor individually, which is bad. It is still in use by older functions
+     * that do not support yet the CCS broadcast mechanism.  */
     public void bcastCcsRequest(String ccsHandlerName, String parameterName, Iterator peList) {
     	while (peList.hasNext()) {
     		sendCcsRequest(ccsHandlerName, parameterName, ((Processor)peList.next()).getId());
     	}
     }
     
+    public boolean isWaitForReply(String ccsHandlerName, String parameterName) {
+    	return ! (parameterName.equalsIgnoreCase("freeze") ||
+				ccsHandlerName.equalsIgnoreCase("ccs_debug_quit") ||
+				ccsHandlerName.equalsIgnoreCase("ccs_continue_break_point") ||
+				ccsHandlerName.equalsIgnoreCase("ccs_single_step"));
+    }
+    
     public byte[] bcastCcsRequest(String ccsHandlerName, String parameterName, int []peList) {
     	if (peList.length == ParDebug.debugger.getNumPes()) return bcastCcsRequest(ccsHandlerName, parameterName);
-    	boolean waitForReply = true;
+    	boolean waitForReply = isWaitForReply(ccsHandlerName, parameterName);
 		int reqStr=parameterName.length();
 		int reqLen = reqStr+1;
 		byte[] req=new byte[reqLen];

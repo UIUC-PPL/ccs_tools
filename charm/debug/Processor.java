@@ -9,6 +9,8 @@ public class Processor implements Comparable {
 	public static final int FROZEN = 2;
 	public static final int REQUESTED_FREEZE = 3;
 	public static final int DEAD = 4;
+	public static final int CONDITIONAL = 5;
+	private static final char codes[] = {' ', 'R', 'F', 'f', 'D', 'C'};
 	
 	int status;
 	int id;
@@ -16,7 +18,7 @@ public class Processor implements Comparable {
 	
 	public Processor(int i) {
 		id = i;
-		status = FROZEN;
+		status = REQUESTED_FREEZE;
 		sets = new HashSet();
 	}
 	
@@ -35,12 +37,20 @@ public class Processor implements Comparable {
 	public boolean isRunning() {return status == RUNNING;}
 	public boolean isFreezing() {return status == REQUESTED_FREEZE;}
 	public boolean isDead() {return status == DEAD;}
+	public boolean isConditional() {return status == CONDITIONAL;}
 	
 	public void setFrozen() {
 		if (status != DEAD) {
+			System.out.println("Processor "+id+" frozen");
+			int oldstatus = status;
 			status = FROZEN;
-			Iterator iter = sets.iterator();
-			while (iter.hasNext()) ((PeSet)iter.next()).setFrozen();
+			if (oldstatus == CONDITIONAL) {
+				Iterator iter = sets.iterator();
+				while (iter.hasNext()) ((PeSet)iter.next()).unsetConditional();
+			} else {
+				Iterator iter = sets.iterator();
+				while (iter.hasNext()) ((PeSet)iter.next()).setFrozen();
+			}
 		}
 	}
 	public void setRunning() {
@@ -49,6 +59,7 @@ public class Processor implements Comparable {
 		while (iter.hasNext()) ((PeSet)iter.next()).setRunning();
 	}
 	public void setFreezing() {
+		System.out.println("Processor "+id+" freezing");
 		status = REQUESTED_FREEZE;
 	}
 	public void setDead() {
@@ -60,8 +71,16 @@ public class Processor implements Comparable {
 		}
 		status = DEAD;
 	}
+	public void setConditional() {
+		System.out.println("Processor "+id+" conditional");
+		status = CONDITIONAL;
+		Iterator iter = sets.iterator();
+		while (iter.hasNext()) {
+			((PeSet)iter.next()).setConditional();
+		}
+	}
 	
 	public String toString() {
-		return ""+id+"("+(status==RUNNING?"R":(status==DEAD?"D":status==FROZEN?"F":"f"))+")";
+		return ""+id+"("+codes[status]+")";
 	}
 }

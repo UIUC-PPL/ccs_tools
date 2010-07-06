@@ -8,6 +8,7 @@ public class Execution implements Serializable {
 	//private static final long serialVersionUID = -6713359626743543537L;
 	public String executable;
 	public String parameters;
+	public boolean doNotSuspend;
 	public int npes;
 	public String ccshost;
 	public String port;
@@ -22,6 +23,13 @@ public class Execution implements Serializable {
 	
 	public boolean virtualDebug;
 	public int virtualNpes;
+	
+	public boolean recplayActive, recplayDetailActive, record, replay, recordDetail, replayDetail;
+	public int recplayChecksum;
+	public static final int CHECKSUM_NONE = 0;
+	public static final int CHECKSUM_XOR = 1;
+	public static final int CHECKSUM_CRC = 2;
+	public String selectedPes;
 
 	public static Execution load(File filename) throws IOException, ClassNotFoundException, SAXException {
 		//try {

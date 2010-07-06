@@ -2,6 +2,7 @@ package charm.debug;
 
 import java.awt.*;
 import java.awt.event.*;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -14,6 +15,7 @@ public class PeSet {
 	
 	int numRunning;
 	int numDead;
+	int numConditional;
 	
 	public PeSet(String n, Processor l[]) {
 		numRunning = 0;
@@ -67,14 +69,17 @@ public class PeSet {
 	void setRunning() {numRunning++;}
 	void setFrozen() {numRunning--;}
 	void setDead() {numDead++;}
+	void setConditional() {numConditional++;}
+	void unsetConditional() {numConditional--;}
 	
 	public boolean isAllRunning() {return numRunning == list.size();}
 	public boolean isAllFrozen() {return numRunning == 0;}
 	public boolean isSomeDead() {return numDead > 0;}
-	
+	public boolean isSomeConditional() {return numConditional > 0;}
+
 	public Iterator iterator() {return list.iterator();}
-	public Iterator runningIterator() {return new Running();}
-	public Iterator frozenIterator() {return new Frozen();}
+	public PeSetIterator runningIterator() {return new Running();}
+	public PeSetIterator frozenIterator() {return new Frozen();}
 	
 	public int[] toIDsArray() {
 		int []result = new int[list.size()];
@@ -83,8 +88,22 @@ public class PeSet {
 		return result;
 	}
 	
-	public class Running implements Iterator {
+	public abstract class PeSetIterator implements Iterator {
 		Iterator iter;
+		public int[] toIDs() {
+			int size = list.size();
+			int []result = new int[size];
+			int count=0;
+			Processor p;
+			while ((p=(Processor)next()) != null) result[count++] = p.getId();
+			if (count != size) {
+				result = Arrays.copyOf(result, count);
+			}
+			return result;
+		}
+	}
+
+	public class Running extends PeSetIterator {
 		Object next;
 		
 		public Running() {
@@ -116,8 +135,7 @@ public class PeSet {
         }
 	}
 
-	public class Frozen implements Iterator {
-		Iterator iter;
+	public class Frozen extends PeSetIterator {
 		Object next;
 		
 		public Frozen() {

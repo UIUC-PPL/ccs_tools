@@ -1,8 +1,12 @@
 package charm.debug.inspect;
 
 import charm.debug.CpdUtil;
+import charm.debug.ParDebug;
+
 import java.util.Hashtable;
 import java.nio.ByteOrder;
+
+import javax.swing.JOptionPane;
 
 /** This class has the capability to inspect a region of memory given its type,
     and return different representations of it
@@ -36,18 +40,25 @@ public class Inspector {
 
         /* Gather the information about the machine from the running application */
         byte[] machineType = server.sendCcsRequestBytes("ccs_machine_architecture", "", 0);
+        System.out.println("Major = "+machineType[0]+", minor = "+machineType[1]);
+        if (machineType[0] != ParDebug.MAJOR || machineType[1] != ParDebug.MINOR) {
+        	System.err.println("Warning: incompatible version of Charm++ found!!!!");
+        	int n = JOptionPane.showConfirmDialog(ParDebug.debugger, "The version of Charm++ used does not match that of CharmDebug\nContinue anyway?", "Version mismatch!", JOptionPane.YES_NO_OPTION, JOptionPane.ERROR_MESSAGE);
+        	if (n == JOptionPane.NO_OPTION) System.exit(0);
+        }
+        
         System.out.print("Machine is ");
-        if (machineType[0] == 1) {
+        if (machineType[2] == 1) {
             System.out.print("32 bit, ");
             addressSpace64 = false;
-        } else if (machineType[0] == 2) {
+        } else if (machineType[2] == 2) {
             System.out.print("64 bit, ");
             addressSpace64 = true;
         } else System.out.print("unknown pointer size, ");
-        if ((machineType[1] & 0x3) == 1) {
+        if ((machineType[3] & 0x3) == 1) {
             System.out.println("little endian");
             byteOrder = ByteOrder.LITTLE_ENDIAN;
-        } else if ((machineType[1] & 0x3) == 2) {
+        } else if ((machineType[3] & 0x3) == 2) {
             System.out.println("big endian");
             byteOrder = ByteOrder.BIG_ENDIAN;
         } else {
@@ -55,13 +66,13 @@ public class Inspector {
         	System.exit(1);
         }
         bigEmulator = false;
-        if ((machineType[1] & 0x4) != 0) {
+        if ((machineType[3] & 0x4) != 0) {
         	bigEmulator = true;
         }
-        sizeInt = machineType[2];
-        sizeLong = machineType[3];
-        sizeLongLong = machineType[4];
-        sizeBool = machineType[5];
+        sizeInt = machineType[4];
+        sizeLong = machineType[5];
+        sizeLongLong = machineType[6];
+        sizeBool = machineType[7];
     }
 
     public static ByteOrder getByteOrder() {return byteOrder;}

@@ -14,10 +14,12 @@ public class ParamsDialog extends JDialog implements ActionListener, ChangeListe
 	//ParDebug mainObject = null;
 	Execution exec = null;
 
-	private JTextField  clParams, numPes, portno, sshport, hostname, username, filename, dir, inputFile, virtualPes;
-	private JCheckBox sshTunnel, waitFile, virtualDebug;
+	private JTextField  clParams, numPes, portno, sshport, hostname, username, filename, dir, inputFile, virtualPes, recordPes, replayPe;
+	private JCheckBox suspendOnStart, sshTunnel, waitFile, virtualDebug, recplayActive, recplayDetail, recplayChecksum;
 	private JButton chooser, dirchooser;
 	private JLabel virtualPeslabel;
+	private JRadioButton record, replay, recordDetail, replayDetail, checksumXOR, checksumCRC;
+	private JPanel recplayEnabled, fullEnabled, checksumEnabled;
 
 	public ParamsDialog(Frame parent, boolean modal, Execution obj) {
 		super (parent, modal);
@@ -156,6 +158,15 @@ public class ParamsDialog extends JDialog implements ActionListener, ChangeListe
 		c.insets = new Insets(12,8,0,0);
 		grid.setConstraints(numPes,c); 
 
+		c.gridx = 1;
+		c.gridy = ++nextLine;
+		c.gridwidth = 1;
+		c.fill = GridBagConstraints.NONE;
+		c.anchor = GridBagConstraints.WEST;
+		c.insets = new Insets(0,4,0,0);
+		suspendOnStart = new JCheckBox("Suspend execution at startup");
+		grid.setConstraints(suspendOnStart, c);
+		
 		c.gridx = 0;
 		c.gridy = ++nextLine;
 		c.anchor = GridBagConstraints.WEST;
@@ -327,6 +338,7 @@ public class ParamsDialog extends JDialog implements ActionListener, ChangeListe
 		contents.add(inputFile);
 		contents.add(waitFile);
 		contents.add(sshTunnel);
+		contents.add(suspendOnStart);
 
 		JPanel buttonPanel = new JPanel();
 		buttonPanel.setLayout(new BoxLayout(buttonPanel, 0));
@@ -346,6 +358,7 @@ public class ParamsDialog extends JDialog implements ActionListener, ChangeListe
 		cancelButton.addActionListener(this);
 		buttonPanel.add(cancelButton);
 
+		/*
 		c.gridx = 1;
 		c.gridy = nextLine;
 		c.gridwidth = 7;
@@ -356,11 +369,166 @@ public class ParamsDialog extends JDialog implements ActionListener, ChangeListe
 		grid.setConstraints(buttonPanel, c);
 
 		contents.add(buttonPanel);
-
-		getContentPane().add(contents);
+		 */
+		
+		JTabbedPane tabbedPane = new JTabbedPane();
+		tabbedPane.addTab("Basic", contents);
+		
+		JPanel recplay = new JPanel();
+		//recplay.setLayout(new BoxLayout(recplay, BoxLayout.Y_AXIS));
+		GridBagLayout recplayGrid = new GridBagLayout();
+		GridBagConstraints recplayConstraint = new GridBagConstraints();
+		recplayConstraint.gridwidth = 1;
+		recplayConstraint.fill = GridBagConstraints.NONE;
+		recplayConstraint.anchor = GridBagConstraints.WEST;
+		recplay.setLayout(recplayGrid);
+		recplayActive = new JCheckBox("Enable Record/Replay");
+		recplayActive.addChangeListener(this);
+		recplayConstraint.gridx=0;
+		recplayConstraint.gridy=0;
+		recplayGrid.setConstraints(recplayActive, recplayConstraint);
+		recplay.add(recplayActive);
+		recplayEnabled = new JPanel();
+		recplayEnabled.setBorder(BorderFactory.createEmptyBorder(0, 20, 0, 0));
+		recplayEnabled.setLayout(new BoxLayout(recplayEnabled, BoxLayout.Y_AXIS));
+		recplayConstraint.gridx=0;
+		recplayConstraint.gridy=1;
+		recplayGrid.setConstraints(recplayEnabled, recplayConstraint);
+		recplay.add(recplayEnabled);
+		
+		
+		ButtonGroup msgOrder = new ButtonGroup();
+		record = new JRadioButton("Record the ordering of the messages", true);
+		msgOrder.add(record);
+		recplayEnabled.add(record);
+		replay = new JRadioButton("Replay the message ordering", false);
+		replay.addChangeListener(this);
+		msgOrder.add(replay);
+		recplayEnabled.add(replay);
+		
+		recplayDetail = new JCheckBox("Enable detailed Record/Replay");
+		recplayEnabled.add(recplayDetail);
+		recplayDetail.addChangeListener(this);
+		fullEnabled = new JPanel();
+		fullEnabled.setBorder(BorderFactory.createEmptyBorder(0, 40, 0, 0));
+		fullEnabled.setLayout(new BoxLayout(fullEnabled, BoxLayout.Y_AXIS));
+		recplayConstraint.gridx=0;
+		recplayConstraint.gridy=2;
+		recplayGrid.setConstraints(fullEnabled, recplayConstraint);
+		recplay.add(fullEnabled);
+		
+		JPanel fullPanel = new JPanel();
+		GridBagLayout fullPanelGrid = new GridBagLayout();
+		GridBagConstraints c1 = new GridBagConstraints();
+		c1.gridwidth = 1;
+		c1.fill = GridBagConstraints.NONE;
+		c1.anchor = GridBagConstraints.WEST;
+		fullPanel.setLayout(fullPanelGrid);
+		//fullPanel.setLayout(new GridLayout(2, 2, 10, 10));
+		ButtonGroup fullRecord = new ButtonGroup();
+		//JPanel leftPanel = new JPanel();
+		//leftPanel.setLayout(new BoxLayout(leftPanel, BoxLayout.Y_AXIS));
+		//JPanel rightPanel = new JPanel();
+		//rightPanel.setLayout(new BoxLayout(rightPanel, BoxLayout.Y_AXIS));
+		recordDetail = new JRadioButton("Record selected processors", true);
+		recordDetail.addChangeListener(this);
+		fullRecord.add(recordDetail);
+		c1.gridx=0;
+		c1.gridy=0;
+		fullPanelGrid.setConstraints(recordDetail, c1);
+		fullPanel.add(recordDetail);
+		recordPes = new JTextField(15);
+		//recordPes.setMaximumSize(new Dimension(60, 12));
+		c1.gridx=1;
+		c1.gridy=0;
+		fullPanelGrid.setConstraints(recordPes, c1);
+		fullPanel.add(recordPes);
+		replayDetail = new JRadioButton("Replay selected processor", false);
+		replayDetail.addChangeListener(this);
+		fullRecord.add(replayDetail);
+		c1.gridx=0;
+		c1.gridy=1;
+		fullPanelGrid.setConstraints(replayDetail, c1);
+		fullPanel.add(replayDetail);
+		replayPe = new JTextField(5);
+		//replayPe.setMaximumSize(new Dimension(40, 16));
+		c1.gridx=1;
+		c1.gridy=1;
+		fullPanelGrid.setConstraints(replayPe, c1);
+		fullPanel.add(replayPe);
+		c1.gridx=2;
+		c1.gridy=2;
+		c1.weightx=1;
+		c1.weighty=1;
+		JPanel empty = new JPanel();
+		fullPanelGrid.setConstraints(empty, c1);
+		fullPanel.add(empty);
+		//fullPanel.add(leftPanel);
+		//fullPanel.add(rightPanel);
+		fullEnabled.add(fullPanel);
+		
+		// Buttons for Checksum checking
+		recplayChecksum = new JCheckBox("Enable checksum error detection");
+		recplayConstraint.gridx=1;
+		recplayConstraint.gridy=0;
+		recplayGrid.setConstraints(recplayChecksum, recplayConstraint);
+		recplay.add(recplayChecksum);
+		recplayChecksum.addChangeListener(this);
+		checksumEnabled = new JPanel();
+		checksumEnabled.setBorder(BorderFactory.createEmptyBorder(0, 40, 0, 0));
+		checksumEnabled.setLayout(new BoxLayout(checksumEnabled, BoxLayout.Y_AXIS));
+		recplayConstraint.gridx=1;
+		recplayConstraint.gridy=1;
+		recplayGrid.setConstraints(checksumEnabled, recplayConstraint);
+		recplay.add(checksumEnabled);
+		
+		JPanel checksumPanel = new JPanel();
+		GridBagLayout checksumPanelGrid = new GridBagLayout();
+		GridBagConstraints c2 = new GridBagConstraints();
+		c2.gridwidth = 1;
+		c2.fill = GridBagConstraints.NONE;
+		c2.anchor = GridBagConstraints.WEST;
+		checksumPanel.setLayout(checksumPanelGrid);
+		ButtonGroup checksumGroup = new ButtonGroup();
+		checksumXOR = new JRadioButton("XOR-based checksum", true);
+		checksumXOR.addChangeListener(this);
+		checksumGroup.add(checksumXOR);
+		c2.gridx=0;
+		c2.gridy=0;
+		checksumPanelGrid.setConstraints(checksumXOR, c2);
+		checksumPanel.add(checksumXOR);
+		checksumCRC = new JRadioButton("CRC-32 checksum", false);
+		checksumCRC.addChangeListener(this);
+		checksumGroup.add(checksumCRC);
+		c2.gridx=0;
+		c2.gridy=1;
+		checksumPanelGrid.setConstraints(checksumCRC, c2);
+		checksumPanel.add(checksumCRC);
+		c2.gridx=1;
+		c2.gridy=2;
+		c2.weightx=1;
+		c2.weighty=1;
+		JPanel empty2 = new JPanel();
+		checksumPanelGrid.setConstraints(empty2, c2);
+		checksumPanel.add(empty2);
+		checksumEnabled.add(checksumPanel);
+		
+		// Add an empty panel for filling the space
+		JPanel empty1 = new JPanel();
+		recplayConstraint.gridx=0;
+		recplayConstraint.gridy=5;
+		recplayConstraint.weightx=1;
+		recplayConstraint.weighty=1;
+		recplayGrid.setConstraints(empty1, recplayConstraint);
+		recplay.add(empty1);
+		
+		tabbedPane.addTab("Record/Replay", recplay);
+		getContentPane().add(tabbedPane);
+		getContentPane().add(buttonPanel);
 
 		filename.setText(exec.executable);
 		clParams.setText(exec.parameters);
+		if (!exec.doNotSuspend) suspendOnStart.setSelected(true);  
 		numPes.setText(""+exec.npes);
 		portno.setText(""+exec.port);
 		sshport.setText(""+exec.sshport);
@@ -376,6 +544,19 @@ public class ParamsDialog extends JDialog implements ActionListener, ChangeListe
 			virtualPes.setEnabled(true);
 		}
 		virtualPes.setText(""+exec.virtualNpes);
+		if (exec.recplayActive) recplayActive.setSelected(true);
+		if (exec.recplayDetailActive) recplayDetail.setSelected(true);
+		if (exec.replay) replay.setSelected(true);
+		if (exec.replayDetail) replayDetail.setSelected(true);
+		if (recordDetail.isSelected()) recordPes.setText(exec.selectedPes);
+		else if (replayDetail.isSelected()) replayPe.setText(exec.selectedPes);
+		if (exec.recplayChecksum != Execution.CHECKSUM_NONE) {
+			recplayChecksum.setSelected(true);
+			if (exec.recplayChecksum == Execution.CHECKSUM_XOR) checksumXOR.setSelected(true);
+			else if (exec.recplayChecksum == Execution.CHECKSUM_CRC) checksumCRC.setSelected(true);
+		}
+
+		enableRecplay();
 	}
 
     public void actionPerformed(ActionEvent e) {
@@ -416,8 +597,24 @@ public class ParamsDialog extends JDialog implements ActionListener, ChangeListe
 				JOptionPane.showMessageDialog(this, "All values must be positive integers", "Error", JOptionPane.ERROR_MESSAGE);
 				return;
 			}
+			if (recplayActive.isSelected() && recplayDetail.isSelected()) {
+				if (replayDetail.isSelected()) {
+					int pe;
+					try {
+						pe = Integer.parseInt(replayPe.getText());
+					} catch (NumberFormatException nfe) {
+						JOptionPane.showMessageDialog(this, "Only one processor may be selected", "Error", JOptionPane.ERROR_MESSAGE);
+						return;
+					}
+					if (pe < 0 || pe >= numberPes) {
+						JOptionPane.showMessageDialog(this, "The selected processor must be between 0 and the number of processors selected in the basic tab", "Error", JOptionPane.ERROR_MESSAGE);
+						return;
+					}
+				}
+			}
 			exec.executable = filename.getText();
 			exec.parameters = clParams.getText();
+			exec.doNotSuspend = ! suspendOnStart.isSelected();
 			exec.npes = numberPes;
 			exec.port = portno.getText();
 			exec.sshport = sshportNumber;
@@ -429,6 +626,25 @@ public class ParamsDialog extends JDialog implements ActionListener, ChangeListe
 			exec.workingDir = dir.getText();
 			exec.virtualDebug = virtualDebug.isSelected();
 			exec.virtualNpes = vPes;
+			exec.recplayActive = recplayActive.isSelected();
+			exec.recplayDetailActive = recplayDetail.isSelected();
+			exec.record = record.isSelected();
+			exec.replay = replay.isSelected();
+			exec.recordDetail = recordDetail.isSelected();
+			exec.replayDetail = replayDetail.isSelected();
+			exec.selectedPes = "";
+			if (recplayActive.isSelected() && recplayDetail.isSelected()) {
+				if (recordDetail.isSelected()) exec.selectedPes = recordPes.getText();
+				else if (replayDetail.isSelected()) exec.selectedPes = replayPe.getText();
+			}
+			if (recplayChecksum.isSelected()) {
+				if (checksumXOR.isSelected()) exec.recplayChecksum = Execution.CHECKSUM_XOR;
+				else if (checksumCRC.isSelected()) exec.recplayChecksum = Execution.CHECKSUM_CRC;
+				else {
+					exec.recplayChecksum = Execution.CHECKSUM_NONE;
+					JOptionPane.showMessageDialog(this, "Error", "The selected checksum option is not acceptable\nPlease contact a Charm++ developer", JOptionPane.ERROR_MESSAGE);
+				}
+			} else exec.recplayChecksum = Execution.CHECKSUM_NONE;
 			closeWindow = true;
 		} 
 		if (closeWindow) {
@@ -437,6 +653,38 @@ public class ParamsDialog extends JDialog implements ActionListener, ChangeListe
 		}
     }
 
+    private void enableRecplay() {
+    	boolean status = recplayActive.isSelected();
+		Color color = status ? Color.BLACK : Color.GRAY;
+		record.setEnabled(status);
+		record.setForeground(color);
+		replay.setEnabled(status);
+		replay.setForeground(color);
+		recplayChecksum.setEnabled(status);
+		recplayChecksum.setForeground(color);
+		
+		status = status && replay.isSelected();
+		color = status ? Color.BLACK : Color.GRAY;
+		recplayDetail.setEnabled(status);
+		recplayDetail.setForeground(color);
+
+    	status = recplayActive.isSelected() && recplayDetail.isSelected() && replay.isSelected();
+		color = status ? Color.BLACK : Color.GRAY;
+		recordDetail.setEnabled(status);
+		recordDetail.setForeground(color);
+		recordPes.setEnabled(status && recordDetail.isSelected());
+		replayDetail.setEnabled(status);
+		replayDetail.setForeground(color);
+		replayPe.setEnabled(status && replayDetail.isSelected());
+		
+		status = recplayActive.isSelected() && recplayChecksum.isSelected();
+		color = status ? Color.BLACK : Color.GRAY;
+		checksumXOR.setEnabled(status);
+		checksumXOR.setForeground(color);
+		checksumCRC.setEnabled(status);
+		checksumCRC.setForeground(color);
+    }
+    
 	public void stateChanged(ChangeEvent e) {
 		if (e.getSource()==virtualDebug) {
 			if (virtualDebug.isSelected()) {
@@ -447,6 +695,12 @@ public class ParamsDialog extends JDialog implements ActionListener, ChangeListe
 				virtualPes.setEnabled(false);
 			}
 		}
+		else if (e.getSource()==recplayActive ||
+				 e.getSource()==recplayDetail ||
+				 e.getSource()==replay ||
+				 e.getSource()==recordDetail ||
+				 e.getSource()==replayDetail ||
+				 e.getSource()==recplayChecksum) enableRecplay();
     }
 
     /*

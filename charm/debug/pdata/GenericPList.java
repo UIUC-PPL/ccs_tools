@@ -2,6 +2,9 @@ package charm.debug.pdata;
 
 import charm.debug.fmt.PList;
 import javax.swing.DefaultListModel;
+import javax.swing.JList;
+
+import java.awt.event.MouseListener;
 import java.util.Vector;
 
 /**
@@ -15,6 +18,8 @@ public abstract class GenericPList {
 
     public abstract boolean needRefresh();
     public abstract void load(PList p);
+    public void removePopupMenu(JList l) { }
+    public void addPopupMenu(JList l) { }
 
     public GenericPList() {
         data = new Vector();
@@ -22,10 +27,12 @@ public abstract class GenericPList {
     
     public int size() { return data.size(); }
 
-    public void populate(DefaultListModel model) {
+    public void populate(DefaultListModel model, JList list) {
         for (int i=0; i<data.size(); ++i) {
             model.addElement(data.elementAt(i));
         }
-    }
+        list.setComponentPopupMenu(null);
+        addPopupMenu(list);
+   }
 
 }

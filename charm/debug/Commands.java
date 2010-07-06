@@ -102,7 +102,7 @@ public class Commands implements NotifyListener {
     			System.out.println(command.substring(5)+" "+now+" ("+now.getTime()+")");
     		}
     		else if (command.equals("quit")) {
-        		debugger.server.bcastCcsRequest("ccs_debug_quit", "", debugger.getExecution().npes);
+        		debugger.server.bcastCcsRequest("ccs_debug_quit", "");
         		debugger.quitProgram(); 
     		}
 			else if (command.equals("continue")) {

@@ -26,7 +26,7 @@ public class PeSetDialog extends JDialog implements ActionListener {
 		JPanel topPane = new JPanel();
 		topPane.setLayout(new GridLayout(2, 2));
 
-		JLabel textName = new JLabel("Name: ");
+		JLabel textName = new JLabel("Name (optional): ");
 		topPane.add(textName);
 		name = new JTextField("");
 		name.addActionListener(this);
@@ -65,6 +65,7 @@ public class PeSetDialog extends JDialog implements ActionListener {
 	public SortedSet getPes() {return pesList;}
 	
 	private boolean parsePes() {
+		if (pes.getText().length() <= 0) return false;
 		pesList = pes.getValue(numPes);
 		return pesList != null;
 	}
@@ -75,13 +76,10 @@ public class PeSetDialog extends JDialog implements ActionListener {
 				e.getSource() == pes) {
 			// check correctness of input
 			try {
-				if (name.getText().length() > 0 &&
-						parsePes()) {
+				if (parsePes()) {
+					if (name.getText().length() <= 0) name.setText(pes.getText());
 					confirmed=true;
 					setVisible(false);
-				} else if (name.getText().length() <= 0) {
-					JOptionPane.showMessageDialog(this, "Must specify a name for the subset", "Error", JOptionPane.ERROR_MESSAGE);
-					name.requestFocus();
 				} else {
 					JOptionPane.showMessageDialog(this, "Invalid specification of processors", "Error", JOptionPane.ERROR_MESSAGE);
 					pes.requestFocus();					}
