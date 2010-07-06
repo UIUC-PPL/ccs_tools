@@ -52,6 +52,7 @@ public class Commands implements NotifyListener {
 		String command;
     	while ((command = getNext()) != null) {
     		System.out.println("applying command: "+command);
+    		if (command.charAt(0)=='#') continue;
     		if (command.startsWith("sleep")) {
     			long time = Integer.parseInt(command.substring(command.indexOf(' ')).trim());
     			long end = (new Date()).getTime() + time;
@@ -181,6 +182,7 @@ public class Commands implements NotifyListener {
 	
 	public void receiveNotification(NotifyEvent e) {
 		events.add(e);
+		System.out.println("Received notification "+e);
 		if (waiting) {
 			waiting = false;
 			apply();
