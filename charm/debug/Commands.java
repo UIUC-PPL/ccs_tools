@@ -101,6 +101,12 @@ public class Commands implements NotifyListener {
     			Date now = new Date();
     			System.out.println(command.substring(5)+" "+now+" ("+now.getTime()+")");
     		}
+    		else if (command.startsWith("peset")) {
+    			PeSet pes = debugger.getSelectedPeSet();
+        		String bufTitle = new String("Details for set \""+pes.getName()+"\"");
+        		String buf = pes.getDetail();
+        		System.out.println(bufTitle+": {"+buf+" }");
+    		}
     		else if (command.equals("quit")) {
         		debugger.server.bcastCcsRequest("ccs_debug_quit", "");
         		debugger.quitProgram(); 

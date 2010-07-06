@@ -356,6 +356,9 @@ DEPRECATED!! The correct implementation is in CpdList.java
     public int getSelectedPe() {
     	return Integer.parseInt((String)pesbox.getSelectedItem());
     }
+    public PeSet getSelectedPeSet() {
+    	return (PeSet)peList.getSelectedValue();
+    }
     public Processor getSelectedProcessor() {
     	return pes[getSelectedPe()];
     }
@@ -1404,13 +1407,11 @@ DEPRECATED!! The correct implementation is in CpdList.java
     		if (idx > 0) peListModel.remove(idx);
     	}
     	else if (e.getActionCommand().equals("peSetDetails")) {
-    		PeSet set = (PeSet)peList.getSelectedValue();
-    		String bufTitle = new String("Details for set \""+set.getName()+"\"");
-    		StringBuffer buf = new StringBuffer();
-    		Iterator iter = set.getList().iterator();
-    		while (iter.hasNext()) buf.append(" "+iter.next());
-    		System.out.println(bufTitle+": {"+buf.toString()+" }");
-    		JOptionPane.showMessageDialog(this, buf.toString(), bufTitle, JOptionPane.INFORMATION_MESSAGE);
+    		PeSet pes = (PeSet)peList.getSelectedValue();
+    		String bufTitle = new String("Details for set \""+pes.getName()+"\"");
+    		String buf = pes.getDetail();
+    		System.out.println(bufTitle+": {"+buf+" }");
+    		JOptionPane.showMessageDialog(this, buf, bufTitle, JOptionPane.INFORMATION_MESSAGE);
     	}
     	/*
     	else if (e.getActionCommand().equals("pecheck")) 

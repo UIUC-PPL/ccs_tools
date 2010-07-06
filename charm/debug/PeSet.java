@@ -63,6 +63,12 @@ public class PeSet {
 		//return "<html><body bgcolor=\""+color+"\">"+name+"</body></html>";
 		return name;
 	}
+	public String getDetail() {
+		StringBuffer buf = new StringBuffer();
+		Iterator iter = getList().iterator();
+		while (iter.hasNext()) buf.append(" "+iter.next());
+		return buf.toString();
+	}
 	public String getName() {return name;}
 	public SortedSet getList() {return list;}
 
