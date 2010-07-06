@@ -914,8 +914,8 @@ DEPRECATED!! The correct implementation is in CpdList.java
     
     public void commitConditional(int idx, int numConditional) {
     	int pe = Integer.parseInt((String)pesbox.getSelectedItem());
-    	server.sendCcsRequest("commitConditional", ""+idx, pe);
-    	if (idx==numConditional) pes[pe].setFrozen();
+    	server.sendCcsRequest("commitConditional", ""+(idx+1), pe);
+    	if (idx == numConditional-1) pes[pe].setFrozen();
     	messageDelivered();
     }
     
