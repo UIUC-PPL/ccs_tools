@@ -2266,7 +2266,8 @@ DEPRECATED!! The correct implementation is in CpdList.java
     	}
     	if (commands != null) {
     		Commands cmds = new Commands(commands, debugger);
-    		cmds.apply();
+    		debugger.addNotifyListener(cmds);
+    		SwingUtilities.invokeLater(cmds);
     	}
     }
 }

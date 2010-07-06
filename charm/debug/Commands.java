@@ -16,7 +16,7 @@ import charm.debug.fmt.PList;
 import charm.debug.pdata.EpInfo;
 import charm.debug.pdata.EpPList;
 
-public class Commands implements NotifyListener {
+public class Commands implements NotifyListener, Runnable {
 	ParDebug debugger;
 	Vector list;
 	int position;
@@ -38,6 +38,10 @@ public class Commands implements NotifyListener {
 			System.out.println("Could not open command file ");
 			ioe.printStackTrace();
 		}
+	}
+	
+	public void run() {
+		apply();
 	}
 	
 	public String getNext() {
