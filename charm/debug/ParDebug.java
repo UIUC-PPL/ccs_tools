@@ -37,7 +37,7 @@ public class ParDebug extends JPanel
      implements ActionListener,ListSelectionListener{
    
 	public final static int MAJOR = 10;
-	public final static int MINOR =  3;
+	public final static int MINOR =  4;
 	
     // ******* VARIABLES ************   
     //  FIXME: make these not be static, by moving main's command line
@@ -909,6 +909,13 @@ DEPRECATED!! The correct implementation is in CpdList.java
     	int pe = Integer.parseInt((String)pesbox.getSelectedItem());
     	server.sendCcsRequest("endConditional", ""+idx, pe);
     	if (idx==0) pes[pe].setFrozen();
+    	messageDelivered();
+    }
+    
+    public void commitConditional(int idx, int numConditional) {
+    	int pe = Integer.parseInt((String)pesbox.getSelectedItem());
+    	server.sendCcsRequest("commitConditional", ""+(idx+1), pe);
+    	if (idx == numConditional-1) pes[pe].setFrozen();
     	messageDelivered();
     }
     
