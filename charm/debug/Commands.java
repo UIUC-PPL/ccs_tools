@@ -180,11 +180,26 @@ public class Commands implements NotifyListener, Runnable {
 			}
 			else if (command.startsWith("repeat")) {
 				int count = 1;
+				int start = command.indexOf(' ');
+				int end = command.indexOf(' ', start+1);
+				if (end == -1) end = command.length();
 				try {
-					count = Integer.parseInt(command.substring(command.indexOf(' ')).trim());
+					count = Integer.parseInt(command.substring(start+1, end));
 				} catch (NumberFormatException nfe) { System.out.println("Could not understand how many times to repeat... defaulting to 1"); }
+				String terminator = command.substring(end).trim();
+				int match = position + 1;
+				if (terminator.length() > 0) {
+					while (match < list.size() && ! terminator.equals(list.elementAt(match))) match ++;
+					if (match == list.size()) {
+						System.err.println("Commands: Could not find a match for repeat string \""+terminator+"\"");
+						System.exit(1);
+					}
+					list.removeElementAt(match);
+				}
 				for (int i=1; i<count; ++i) {
-					list.insertElementAt(list.elementAt(position), position);
+					for (int j=match-1; j>=position; --j) {
+						list.insertElementAt(list.elementAt(j), match);
+					}
 				}
 			}
     		else {
