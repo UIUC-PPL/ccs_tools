@@ -174,6 +174,15 @@ public class Commands implements NotifyListener {
 					break;
 				}
 			}
+			else if (command.startsWith("repeat")) {
+				int count = 1;
+				try {
+					count = Integer.parseInt(command.substring(command.indexOf(' ')).trim());
+				} catch (NumberFormatException nfe) { System.out.println("Could not understand how many times to repeat... defaulting to 1"); }
+				for (int i=1; i<count; ++i) {
+					list.insertElementAt(list.elementAt(position), position);
+				}
+			}
     		else {
     			System.out.println("Command not recognized: "+command);
     		}
