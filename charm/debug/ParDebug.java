@@ -118,6 +118,7 @@ public class ParDebug extends JPanel
 
     // ********* GUI ITEMS ************
     private static JFrame appFrame = null;
+    private static boolean noWindow;
    
     private JButton startButton;
     private JButton continueButton;
@@ -1557,7 +1558,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
     	gdb.terminate();
     	isRunning = true;
         interpreterHandle = 0;
-        installedPythonScripts = new PythonInstalledCode(false);
+        if (!noWindow) installedPythonScripts = new PythonInstalledCode(false);
     	programOutputArea.setText("");
     	String executable = new File(getFilename()).getAbsolutePath();
     	String charmrunDir = new File(executable).getParent();
@@ -2121,7 +2122,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
     	envDisplay = "";
     	exec.sshTunnel = false;
     	sshTunnel = null;
-    	boolean noWindow = false;
+    	noWindow = false;
     	File commands = null;
 
     	// parsing command-line parameters
