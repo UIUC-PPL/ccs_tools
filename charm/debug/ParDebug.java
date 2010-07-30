@@ -1546,7 +1546,11 @@ DEPRECATED!! The correct implementation is in CpdList.java
     		}
     	}
     }
-    
+
+    public void setCcsParameters(String host, String port) {
+    	exec.ccshost = host;
+    	exec.port = port;
+    }
 /*************** Program Control ***********************/
     /// Start the program from scratch.
     public void startProgram(boolean attachMode) {

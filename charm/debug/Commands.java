@@ -70,7 +70,13 @@ public class Commands implements NotifyListener, Runnable {
     		else if (command.equals("start")) {
     			debugger.startProgram(false);
     		}
-    		else if (command.equals("attach")) {
+    		else if (command.startsWith("attach")) {
+    			if (! command.equals("attach")) {
+    				String parameters = command.substring(command.indexOf(' ')+1);
+    				String hostname = parameters.substring(0, parameters.indexOf(' '));
+    				String port = parameters.substring(parameters.indexOf(' ')+1);
+    				debugger.setCcsParameters(hostname, port);
+    			}
     			debugger.startProgram(true);
     		}
     		else if (command.startsWith("python")) {
