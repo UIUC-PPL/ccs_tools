@@ -2237,25 +2237,26 @@ DEPRECATED!! The correct implementation is in CpdList.java
 
 		PeSet.CellRenderer.initIcons();
 
-    	appFrame = new JFrame("Charm Parallel Debugger");
-    	appFrame.setSize(1000, 1000);
     	debugger = new ParDebug(exec);
 
-    	appFrame.addWindowListener(new WindowAdapter() {
-    		public void windowClosing(WindowEvent e) {
-    			if (debugger.isRunning)
-    			{
-    				debugger.server.bcastCcsRequest("ccs_debug_quit", "");
-    				debugger.quitProgram();
-    			} 
-    			debugger.preferences.save();
-    			System.exit(0); /* main window closed */
-    		}
-    	});
-
-    	appFrame.getContentPane().add(debugger, BorderLayout.CENTER);
-
     	if (! noWindow) {
+    		appFrame = new JFrame("Charm Parallel Debugger");
+    		appFrame.setSize(1000, 1000);
+
+    		appFrame.addWindowListener(new WindowAdapter() {
+    			public void windowClosing(WindowEvent e) {
+    				if (debugger.isRunning)
+    				{
+    					debugger.server.bcastCcsRequest("ccs_debug_quit", "");
+    					debugger.quitProgram();
+    				} 
+    				debugger.preferences.save();
+    				System.exit(0); /* main window closed */
+    			}
+    		});
+
+    		appFrame.getContentPane().add(debugger, BorderLayout.CENTER);
+
     		Rectangle bounds = (appFrame.getGraphicsConfiguration()).getBounds(); 
     		appFrame.setLocation(50 +bounds.x, 50 + bounds.y);
     		appFrame.setJMenuBar(debugger.menuBar);
