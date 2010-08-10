@@ -75,6 +75,7 @@ public class PeSet {
 	void setRunning() {numRunning++;}
 	void setFrozen() {numRunning--;}
 	void setDead() {numDead++;}
+	void unsetDead() {numDead--;}
 	void setConditional() {numConditional++;}
 	void unsetConditional() {numConditional--;}
 	

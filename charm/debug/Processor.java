@@ -10,7 +10,8 @@ public class Processor implements Comparable {
 	public static final int REQUESTED_FREEZE = 3;
 	public static final int DEAD = 4;
 	public static final int CONDITIONAL = 5;
-	private static final char codes[] = {' ', 'R', 'F', 'f', 'D', 'C'};
+	public static final int CONDITIONAL_DEAD = 6;
+	private static final char codes[] = {' ', 'R', 'F', 'f', 'D', 'C', 'd'};
 	
 	int status;
 	int id;
@@ -36,8 +37,8 @@ public class Processor implements Comparable {
 	public boolean isFrozen() {return status == FROZEN;}
 	public boolean isRunning() {return status == RUNNING;}
 	public boolean isFreezing() {return status == REQUESTED_FREEZE;}
-	public boolean isDead() {return status == DEAD;}
-	public boolean isConditional() {return status == CONDITIONAL;}
+	public boolean isDead() {return status == DEAD || status == CONDITIONAL_DEAD;}
+	public boolean isConditional() {return status == CONDITIONAL || status == CONDITIONAL_DEAD;}
 	
 	public void setFrozen() {
 		if (status != DEAD) {
@@ -47,6 +48,13 @@ public class Processor implements Comparable {
 			if (oldstatus == CONDITIONAL) {
 				Iterator iter = sets.iterator();
 				while (iter.hasNext()) ((PeSet)iter.next()).unsetConditional();
+			} else if (oldstatus == CONDITIONAL_DEAD) {
+				Iterator iter = sets.iterator();
+				while (iter.hasNext()) {
+					PeSet pe = (PeSet)iter.next();
+					pe.unsetConditional();
+					pe.unsetDead();
+				}
 			} else {
 				Iterator iter = sets.iterator();
 				while (iter.hasNext()) ((PeSet)iter.next()).setFrozen();
@@ -69,7 +77,8 @@ public class Processor implements Comparable {
 			if (!isFrozen()) p.setFrozen();
 			p.setDead();
 		}
-		status = DEAD;
+		if (status == CONDITIONAL) status = CONDITIONAL_DEAD;
+		else status = DEAD;
 	}
 	public void setConditional() {
 		System.out.println("Processor "+id+" conditional");
