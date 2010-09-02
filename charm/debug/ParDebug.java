@@ -535,6 +535,9 @@ DEPRECATED!! The correct implementation is in CpdList.java
 	public MsgPList getMessageList() {
 		return new MsgPList(messageQueue);
 	}
+	public void deliverMessage(int index, String command) {
+		messageQueue.deliverActionPerformed(index, command);
+	}
     
     /// The user has just selected the cpdListIndex'th list on forPE.
     ///  Expand a list of the contents into dest.

@@ -226,8 +226,11 @@ public class MsgPList extends GenericPList implements ActionListener {
     }
 
 	public void actionPerformed(ActionEvent e) {
-		int idx = list.getSelectedIndex() - numConditional;
-		if (e.getActionCommand().equals("deliver")) {
+		deliverActionPerformed(list.getSelectedIndex(), e.getActionCommand());
+	}
+	public void deliverActionPerformed(int index, String command) {
+		int idx = index - numConditional;
+		if (command.equals("deliver")) {
 			//MsgInfo mi = (MsgInfo)list.getSelectedValue();
 			//Component c = list.getComponentAt(e.getX(), e.getY());
 			String method = null;
@@ -235,13 +238,13 @@ public class MsgPList extends GenericPList implements ActionListener {
 			else method = "deliverMessage";
 			ParDebug.debugger.server.sendCcsRequestBytes(method, ""+(idx-hasBpMessage), ParDebug.debugger.getSelectedPe());
 			ParDebug.debugger.messageDelivered();
-		} else if (e.getActionCommand().equals("conditional")) {
+		} else if (command.equals("conditional")) {
 			ParDebug.debugger.deliverConditional(idx-hasBpMessage);
-		} else if (e.getActionCommand().equals("end")) {
+		} else if (command.equals("end")) {
 			ParDebug.debugger.endConditional(0);
-		} else if (e.getActionCommand().equals("undeliver")) {
+		} else if (command.equals("undeliver")) {
 			ParDebug.debugger.endConditional(list.getSelectedIndex());
-		} else if (e.getActionCommand().equals("confirm")) {
+		} else if (command.equals("confirm")) {
 			ParDebug.debugger.commitConditional(list.getSelectedIndex(), numConditional);
 		}
 	}
