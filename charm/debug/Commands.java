@@ -184,6 +184,15 @@ public class Commands implements NotifyListener, Runnable {
 					break;
 				}
 			}
+			else if (command.startsWith("deliver") || command.startsWith("conditional") ||
+					 command.startsWith("undeliver") || command.startsWith("confirm")) {
+				int separator = command.indexOf(' ');
+				int index = 0;
+				try {
+					index = Integer.parseInt(command.substring(separator+1));
+				} catch (NumberFormatException nfe) { System.out.println("Incorrect delivery index"); }
+				debugger.deliverMessage(index, command.substring(0, separator));
+			}
 			else if (command.startsWith("repeat")) {
 				int count = 1;
 				int start = command.indexOf(' ');
