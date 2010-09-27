@@ -124,7 +124,7 @@ public class MsgInfo extends GenericInfo {
         System.out.println(Inspector.getTypeCreate(chare.getType()));
         StringBuffer buf = new StringBuffer();
         if (userData.elementNamed("Bytes") != null) {
-        	panel.load(new VariableElement(type.type, "", 1, 0, 0), ByteBuffer.wrap(((PString)userData.elementNamed("Bytes")).getBytes()), 0);
+        	panel.load(new VariableElement(type.type, "", 1, 0, 0), ByteBuffer.wrap(((PString)userData.elementNamed("Bytes")).getBytes()).order(Inspector.getByteOrder()), 0);
         	DefaultMutableTreeNode envelope = new DefaultMutableTreeNode("envelope");
         	DefaultMutableTreeNode destination;
         	envelope.add(new DefaultMutableTreeNode("Sender processor: "+from));
