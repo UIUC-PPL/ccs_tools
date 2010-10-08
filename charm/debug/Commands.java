@@ -126,6 +126,9 @@ public class Commands implements NotifyListener, Runnable {
 				//debugger.server.bcastCcsRequest("ccs_continue_break_point", "", debugger.getExecution().npes);
 				debugger.command_continue();
 			}
+			else if (command.equals("step")) {
+				debugger.deliverSingle();
+			}
 			else if (command.startsWith("memstat")) {
 				String input = command.substring(command.indexOf(' ')).trim();
 				int pe = Integer.parseInt(input);;

@@ -952,6 +952,12 @@ DEPRECATED!! The correct implementation is in CpdList.java
 		}    		setStatusMessage("Single message delivered");
     }
     
+    public void deliverSingle() {
+		// deliver a single message
+		server.bcastCcsRequest("ccs_single_step", "", ((PeSet)peList.getSelectedValue()).frozenIterator().toIDs());
+		messageDelivered();
+    }
+    
     public void deliverConditional(int idx) {
     	int pe = Integer.parseInt((String)pesbox.getSelectedItem());
     	server.sendCcsRequest("deliverConditional", ""+idx, pe);
@@ -1138,9 +1144,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
 			peList.repaint();
     	}
     	else if (e.getActionCommand().equals("step")) {
-    		// deliver a single message
-    		server.bcastCcsRequest("ccs_single_step", "", ((PeSet)peList.getSelectedValue()).frozenIterator().toIDs());
-    		messageDelivered();
+    		deliverSingle();
     	}
     	else if (e.getActionCommand().equals("disconnect")) {
     		servthread.terminate();
