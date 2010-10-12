@@ -38,6 +38,8 @@ public class MsgInfo extends GenericInfo {
     public static final int BREAKPOINT = 0x1;
     public static final int CONDITIONAL = 0x10;
 
+    // The following list is exactly the same as that found in Charm++ source code
+    // regarding CkEnvelopeType (in charm.h)
     public static final int NewChareMsg    =1;
     public static final int NewVChareMsg   =2;
     public static final int BocInitMsg     =3;
@@ -48,13 +50,14 @@ public class MsgInfo extends GenericInfo {
     public static final int DeleteVidMsg   =8;
     public static final int RODataMsg      =9;
     public static final int ROMsgMsg       =10;
-    public static final int ExitMsg        =11;
-    public static final int ReqStatMsg     =12;
-    public static final int StatMsg        =13;
-    public static final int NodeBocInitMsg =14;
-    public static final int ForNodeBocMsg  =15;
-    public static final int ArrayEltInitMsg =16;
-    public static final int ForArrayEltMsg  =17;
+    public static final int StartExitMsg   =11;
+    public static final int ExitMsg        =12;
+    public static final int ReqStatMsg     =13;
+    public static final int StatMsg        =14;
+    public static final int NodeBocInitMsg =15;
+    public static final int ForNodeBocMsg  =16;
+    public static final int ArrayEltInitMsg =17;
+    public static final int ForArrayEltMsg  =18;
     public static final String[] envTypes = {
     	"",
     	"NewChareMsg",
@@ -67,6 +70,7 @@ public class MsgInfo extends GenericInfo {
     	"DeleteVidMsg",
     	"RODataMsg",
     	"ROMsgMsg",
+    	"StartExitMsg",
     	"ExitMsg",
     	"ReqStatMsg",
     	"StatMsg",
