@@ -73,6 +73,7 @@ public class Inspector {
         sizeLong = machineType[5];
         sizeLongLong = machineType[6];
         sizeBool = machineType[7];
+        System.out.println("Data size: int="+sizeInt+", long="+sizeLong+", long long="+sizeLongLong+", boolean="+sizeBool);
     }
 
     public static ByteOrder getByteOrder() {return byteOrder;}
