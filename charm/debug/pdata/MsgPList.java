@@ -234,8 +234,8 @@ public class MsgPList extends GenericPList implements ActionListener {
 			//MsgInfo mi = (MsgInfo)list.getSelectedValue();
 			//Component c = list.getComponentAt(e.getX(), e.getY());
 			String method = null;
-			if (idx == 0) method = "ccs_single_step";
-			else method = "deliverMessage";
+			if (idx == 0) method = "debug/charm/next";
+			else method = "debug/charm/deliver";
 			ParDebug.debugger.server.sendCcsRequestBytes(method, ""+(idx-hasBpMessage), ParDebug.debugger.getSelectedPe());
 			ParDebug.debugger.messageDelivered();
 		} else if (command.equals("conditional")) {

@@ -82,9 +82,9 @@ public class ScrollableMemory extends JLabel implements Scrollable {
 			//list = ParDebug.server.getPList("converse/memory/leak", pe, low, 1, ParDebug.globals);
 			CcsServer.writeInt(ParDebug.globals, ParDebug.globals.length-8, low);
 			CcsServer.writeInt(ParDebug.globals, ParDebug.globals.length-4, pe);
-			ParDebug.debugger.server.sendCcsRequestBytes("converse_memory_leak", ParDebug.globals, pe, true);
+			ParDebug.debugger.server.sendCcsRequestBytes("debug/memory/leak", ParDebug.globals, pe, true);
 		}
-		list = ParDebug.debugger.server.getPList("converse/memory", pe);
+		list = ParDebug.debugger.server.getPList("memory/list", pe);
 		// System.out.println("received data from server ("+list.size()+")
 		// "+(new Date()).toString());
 		data = new MemoryPList();

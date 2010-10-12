@@ -317,12 +317,12 @@ public class MemoryPanel extends JPanel
 		System.out.println("Marking all memory currently allocated as clean");
 		byte[] data = new byte[1];
 		data[0] = 1;
-		ParDebug.debugger.server.sendCcsRequestBytes("converse_memory_mark", data, memoryData.getPe(), false);
+		ParDebug.debugger.server.sendCcsRequestBytes("debug/memory/mark", data, memoryData.getPe(), false);
 	} else if (e.getSource() == menuLeakUnmark) {
 		System.out.println("Removing previous markings of memory clean in the system");
 		byte[] data = new byte[1];
 		data[0] = 0;
-		ParDebug.debugger.server.sendCcsRequestBytes("converse_memory_mark", data, memoryData.getPe(), false);
+		ParDebug.debugger.server.sendCcsRequestBytes("debug/memory/mark", data, memoryData.getPe(), false);
 	} else if (e.getSource() == menuStat) {
 	    JOptionPane.showMessageDialog(this, memoryData.memoryStatString(), "Memory Statistics", JOptionPane.INFORMATION_MESSAGE);
 	} else if (e.getSource() == menuInspect || e.getSource() == menuInspectAs) {

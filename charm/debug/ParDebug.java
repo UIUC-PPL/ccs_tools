@@ -39,7 +39,7 @@ public class ParDebug extends JPanel
      implements ActionListener,ListSelectionListener{
    
 	public final static int MAJOR = 10;
-	public final static int MINOR =  5;
+	public final static int MINOR =  6;
 	
     // ******* VARIABLES ************   
     //  FIXME: make these not be static, by moving main's command line
@@ -954,27 +954,27 @@ DEPRECATED!! The correct implementation is in CpdList.java
     
     public void deliverSingle() {
 		// deliver a single message
-		server.bcastCcsRequest("ccs_single_step", "", ((PeSet)peList.getSelectedValue()).frozenIterator().toIDs());
+		server.bcastCcsRequest("debug/charm/next", "", ((PeSet)peList.getSelectedValue()).frozenIterator().toIDs());
 		messageDelivered();
     }
     
     public void deliverConditional(int idx) {
     	int pe = Integer.parseInt((String)pesbox.getSelectedItem());
-    	server.sendCcsRequest("deliverConditional", ""+idx, pe);
+    	server.sendCcsRequest("debug/provisional/deliver", ""+idx, pe);
     	pes[pe].setConditional();
     	messageDelivered();
     }
     
     public void endConditional(int idx) {
     	int pe = Integer.parseInt((String)pesbox.getSelectedItem());
-    	server.sendCcsRequest("endConditional", ""+idx, pe);
+    	server.sendCcsRequest("debug/provisional/end", ""+idx, pe);
     	if (idx==0) pes[pe].setFrozen();
     	messageDelivered();
     }
     
     public void commitConditional(int idx, int numConditional) {
     	int pe = Integer.parseInt((String)pesbox.getSelectedItem());
-    	server.sendCcsRequest("commitConditional", ""+(idx+1), pe);
+    	server.sendCcsRequest("debug/provisional/commit", ""+(idx+1), pe);
     	if (idx == numConditional-1) pes[pe].setFrozen();
     	messageDelivered();
     }
@@ -1129,7 +1129,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
     		startProgram(true);
     	} else if (e.getActionCommand().equals("freeze")) {
     		// stop program
-    		server.bcastCcsRequest("ccs_debug", "freeze", ((PeSet)peList.getSelectedValue()).runningIterator().toIDs());
+    		server.bcastCcsRequest("debug/converse/freeze", "", ((PeSet)peList.getSelectedValue()).runningIterator().toIDs());
     		Iterator iter = ((PeSet)peList.getSelectedValue()).runningIterator();
     		while (iter.hasNext()) {
     			((Processor)iter.next()).setFreezing();
@@ -1151,7 +1151,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
     		servthread.interrupt();
     	}
     	else if (e.getActionCommand().equals("quit")) {
-    		server.bcastCcsRequest("ccs_debug_quit", "");
+    		server.bcastCcsRequest("debug/converse/quit", "");
     		servthread.terminate();
     	}
     	else if (e.getActionCommand().equals("startgdb")) 
@@ -1300,7 +1300,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
     		if (inputValue == -1) pe = 0;
     		CcsServer.writeInt(ParDebug.globals, ParDebug.globals.length-8, e.getActionCommand().equals("leakquick") ? 1 : 0);
     		CcsServer.writeInt(ParDebug.globals, ParDebug.globals.length-4, inputValue);
-    		debugger.server.sendCcsRequestBytes("converse_memory_leak", ParDebug.globals, pe, true);
+    		debugger.server.sendCcsRequestBytes("debug/memory/leak", ParDebug.globals, pe, true);
 
     		/*
     		if (inputValue == -1) frame.setTitle("Combined Allocation Tree");
@@ -1323,7 +1323,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
     		if (pe == -1) pe = 0;
     		byte[] data = new byte[1];
     		data[0] = (e.getActionCommand().equals("memorymark") ? (byte)1 : 0);
-    		debugger.server.sendCcsRequestBytes("converse_memory_mark", data, pe, false);
+    		debugger.server.sendCcsRequestBytes("debug/memory/mark", data, pe, false);
     	}
     	else if (e.getActionCommand().equals("memstat")) {
     		String input = JOptionPane.showInputDialog("Processor to load (-1 for all)");
@@ -1338,7 +1338,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
     			return;
     		}
     		if (pe == -1) pe = 0;
-    		byte[] buf = debugger.server.sendCcsRequestBytes("ccs_debug_memStat", input, pe);
+    		byte[] buf = debugger.server.sendCcsRequestBytes("debug/memory/stat", input, pe);
     		PConsumer cons=new PConsumer();
     		cons.decode(buf);
     		PList stat = cons.getList();
@@ -1445,7 +1445,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
     	}
     	else if (e.getActionCommand().equals("exitDebugger")) {
     		if (isRunning) {
-    			server.bcastCcsRequest("ccs_debug_quit", "");
+    			server.bcastCcsRequest("debug/converse/quit", "");
     			quitProgram();
     		}
             preferences.save();
@@ -1454,7 +1454,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
     } // end of actionPerformed
 
     public void command_continue() {
-		server.bcastCcsRequest("ccs_continue_break_point", "", ((PeSet)peList.getSelectedValue()).frozenIterator().toIDs());
+		server.bcastCcsRequest("debug/charm/continue", "", ((PeSet)peList.getSelectedValue()).frozenIterator().toIDs());
 		Iterator iter = ((PeSet)peList.getSelectedValue()).frozenIterator();
 		while (iter.hasNext()) {
 			((Processor)iter.next()).setRunning();
@@ -1479,7 +1479,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
 		if (chkbox.isSelected())
 		{
 			chkbox.ep.addBP(((PeSet)peList.getSelectedValue()).getList());
-			byte []reply = server.bcastCcsRequest("ccs_set_break_point", entryPointName,((PeSet)peList.getSelectedValue()).toIDsArray());
+			byte []reply = server.bcastCcsRequest("debug/charm/bp/set", entryPointName,((PeSet)peList.getSelectedValue()).toIDsArray());
 			//stepButton.setEnabled(true);
 			//continueButton.setEnabled(true);
 			//freezeButton.setEnabled(false);
@@ -1489,7 +1489,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
 		else
 		{
 			chkbox.ep.removeBP(((PeSet)peList.getSelectedValue()).getList());
-			byte []reply = server.bcastCcsRequest("ccs_remove_break_point", entryPointName,((PeSet)peList.getSelectedValue()).toIDsArray());
+			byte []reply = server.bcastCcsRequest("debug/charm/bp/remove", entryPointName,((PeSet)peList.getSelectedValue()).toIDsArray());
 			//stepButton.setEnabled(true);
 			//continueButton.setEnabled(true);   
 			//freezeButton.setEnabled(true);
@@ -1734,7 +1734,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
     		if (attachMode) {
     			if (exec.virtualDebug) JOptionPane.showInternalMessageDialog(this, "Warning, attach mode does not yet support virtual debugging!");
     			Date start = new Date();
-    			byte[] stat = server.bcastCcsRequest("ccs_debug", "status");
+    			byte[] stat = server.bcastCcsRequest("debug/converse/status", "");
     			System.out.println("status: received "+stat.length+" bytes");
     			exec.virtualDebug = Inspector.isEmulated();
     			exec.npes = stat.length / 8;
@@ -1770,7 +1770,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
     			Processor fakePE[] = new Processor[exec.npes];
     			Date start = new Date();
     			// gather the status of the processes
-    			byte[][] status = server.bcastCcsRequest("ccs_debug", "status", exec.npes);
+    			byte[][] status = server.bcastCcsRequest("debug/converse/status", "", exec.npes);
     			for (int i=0; i<exec.npes; ++i) {
         			IntBuffer buf = ByteBuffer.wrap(status[i]).asIntBuffer();
     				if (buf.get(1) == 1) {
@@ -2094,6 +2094,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
         System.out.println("  -sshtunnel          tunnel CCS requests though ssh");
         System.out.println("  -config <file>      read configuration parameters from file");
         System.out.println("  -commands <file>    execute commands read from file at startup");
+        System.out.println("  -virtual <num>      number of virtual processors to use (must use Charm++ built with bigsim support)");
         //System.out.println("  -host    ");
         //System.out.println("  -host    ");
         //		" [[-file <charm program name>] [[-param \"<charm program parameters>\"][-pes <number of pes>]] [-host <hostname>] " +
@@ -2259,7 +2260,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
     			public void windowClosing(WindowEvent e) {
     				if (debugger.isRunning)
     				{
-    					debugger.server.bcastCcsRequest("ccs_debug_quit", "");
+    					debugger.server.bcastCcsRequest("debug/converse/quit", "");
     					debugger.quitProgram();
     				} 
     				debugger.preferences.save();

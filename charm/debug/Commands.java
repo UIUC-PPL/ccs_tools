@@ -119,7 +119,7 @@ public class Commands implements NotifyListener, Runnable {
         		System.out.println(bufTitle+": {"+buf+" }");
     		}
     		else if (command.equals("quit")) {
-        		debugger.server.bcastCcsRequest("ccs_debug_quit", "");
+        		debugger.server.bcastCcsRequest("debug/converse/quit", "");
         		debugger.quitProgram(); 
     		}
 			else if (command.equals("continue")) {
@@ -133,7 +133,7 @@ public class Commands implements NotifyListener, Runnable {
 				String input = command.substring(command.indexOf(' ')).trim();
 				int pe = Integer.parseInt(input);;
 				if (pe == -1) pe = 0;
-	    		byte[] buf = ParDebug.debugger.server.sendCcsRequestBytes("ccs_debug_memStat", input, pe);
+	    		byte[] buf = ParDebug.debugger.server.sendCcsRequestBytes("debug/memory/stat", input, pe);
 	    		PConsumer cons=new PConsumer();
 	    		cons.decode(buf);
 	    		PList stat = cons.getList();

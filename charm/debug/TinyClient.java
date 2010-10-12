@@ -32,7 +32,7 @@ public class TinyClient
 	for (int i=0;i<bitems.length;++i) System.out.println(bitems[i]+" "+(char)bitems[i]);
 	System.out.println("}");
 	decodeList(bitems);
-	System.out.println("string={"+listName+"}"+listName.equals("converse/memory"));
+	System.out.println("string={"+listName+"}"+listName.equals("memory/list"));
     }
     
     public static void main(String args[]) {

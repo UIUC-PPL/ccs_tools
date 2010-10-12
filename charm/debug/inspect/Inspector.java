@@ -39,7 +39,7 @@ public class Inspector {
         allTypes.put("bool", new PrimitiveType("bool"));
 
         /* Gather the information about the machine from the running application */
-        byte[] machineType = server.sendCcsRequestBytes("ccs_machine_architecture", "", 0);
+        byte[] machineType = server.sendCcsRequestBytes("debug/converse/arch", "", 0);
         System.out.println("Major = "+machineType[0]+", minor = "+machineType[1]);
         if (machineType[0] != ParDebug.MAJOR || machineType[1] != ParDebug.MINOR) {
         	System.err.println("Warning: incompatible version of Charm++ found!!!!");

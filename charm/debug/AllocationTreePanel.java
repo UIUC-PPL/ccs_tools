@@ -36,7 +36,7 @@ public class AllocationTreePanel extends JPanel {
 		if (inputValue == -1) frame.setTitle("Combined Allocation Tree");
 		else frame.setTitle("Allocation Tree Processor "+input);
 		if (inputValue == -1) inputValue = 0; /* Send request to 0 */
-		byte[] allocationTree = ParDebug.debugger.server.sendCcsRequestBytes("ccs_debug_allocationTree", input, inputValue);
+		byte[] allocationTree = ParDebug.debugger.server.sendCcsRequestBytes("debug/memory/allocationTree", input, inputValue);
 		buf = ByteBuffer.wrap(allocationTree).order(Inspector.getByteOrder());
 		root = new AllocationPoint(null);
 		root.readPuppedBuffer(buf);

@@ -224,10 +224,10 @@ public class CpdUtil {
     }
     
     public boolean isWaitForReply(String ccsHandlerName, String parameterName) {
-    	return ! (parameterName.equalsIgnoreCase("freeze") ||
-				ccsHandlerName.equalsIgnoreCase("ccs_debug_quit") ||
-				ccsHandlerName.equalsIgnoreCase("ccs_continue_break_point") ||
-				ccsHandlerName.equalsIgnoreCase("ccs_single_step"));
+    	return ! (ccsHandlerName.equalsIgnoreCase("debug/converse/freeze") ||
+				ccsHandlerName.equalsIgnoreCase("debug/converse/quit") ||
+				ccsHandlerName.equalsIgnoreCase("debug/charm/continue") ||
+				ccsHandlerName.equalsIgnoreCase("debug/charm/next"));
     }
     
     public byte[] bcastCcsRequest(String ccsHandlerName, String parameterName, int []peList) {

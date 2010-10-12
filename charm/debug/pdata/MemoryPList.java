@@ -7,7 +7,7 @@ import charm.debug.Symbol;
 import java.util.Vector;
 import java.util.Collections;
 
-// Extract memory information from the converse/memory PList
+// Extract memory information from the memory/list PList
 public class MemoryPList {
 
     // contains Vector of Slot
