@@ -42,12 +42,14 @@ author = idooley2
 -->
 
   <!-- Compile the java code. Put class files into "classes" directory -->
-  <target name="compile" depends="init" description="compile the source" >
+  <target name="compilecharmdebug" depends="init" description="compile the source" >
 
     <javac sourcepath="" srcdir="." destdir="classes" debug="true" debuglevel="lines,vars,source" >
       <include name="charm/debug/**"/>
       <include name="charm/ccs/**"/>
       <include name="charm/util/**"/>
+      <include name="charm/liveViz/**"/>
+      <include name="charm/lvClient/**"/>
     </javac>
     <copy todir="classes/charm/debug/">
       <fileset dir="charm/debug" casesensitive="no">
@@ -57,16 +59,18 @@ author = idooley2
   </target>
 
 
+  <!-- Compile the java code. Put class files into "classes" directory -->
+  <target name="compileLvClient" depends="init" description="compile the source" >
+    <javac sourcepath="" srcdir="." destdir="classes" debug="true" debuglevel="lines,vars,source" >
+      <include name="charm/lvClient/**"/>
+      <include name="charm/ccs/**"/>
+      <include name="charm/util/**"/>
+    </javac>
+  </target>
+
   <!-- Make the jar file from the files in "build" -->
-  <target name="dist" depends="compile" description="generate the jar file" >
+  <target name="charmdebug" depends="compilecharmdebug" description="generate the jar file" >
    
-    <!-- Copy images over -->
-<!--
-  	<mkdir dir="build/projections/images"/>
-    <copy file="projections/images/bgimage.jpg" tofile="build/projections/images/bgimage.jpg" />
-    <copy file="projections/images/ZoomIn24.gif" tofile="build/projections/images/ZoomIn24.gif" />
-    <copy file="projections/images/ZoomOut24.gif" tofile="build/projections/images/ZoomOut24.gif" />
--->
     <jar jarfile="bin/charmdebug.jar" basedir="classes">
       <include name="charm/debug/**"/>
       <include name="charm/ccs/**"/>
@@ -76,11 +80,27 @@ author = idooley2
   </target>
 
 
+
+  <!-- Make the jar file from the files in "build" -->
+  <target name="lvClient" depends="compileLvClient" description="generate the jar file" >
+   
+    <jar jarfile="bin/lvClient.jar" basedir="classes">
+      <include name="charm/lvClient/**"/>
+      <include name="charm/ccs/**"/>
+      <include name="charm/util/**"/>
+    </jar>
+
+  </target>
+
+<target name="dist" depends="lvClient,charmdebug">
+</target>
+
   <!-- Cleanup -->
   <target name="clean" description="clean up" >
     <!-- Delete the build directory -->
     <delete dir="classes"/>
     <delete file="bin/charmdebug.jar"/>
+    <delete file="bin/lvClient.jar"/>
   </target>
 
   <target name="doc" description="build the documentation" >
