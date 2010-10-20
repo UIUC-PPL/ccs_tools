@@ -48,8 +48,8 @@ author = idooley2
       <include name="charm/debug/**"/>
       <include name="charm/ccs/**"/>
       <include name="charm/util/**"/>
-      <include name="charm/liveViz/**"/>
       <include name="charm/lvClient/**"/>
+      <include name="charm/liveViz/**"/>
     </javac>
     <copy todir="classes/charm/debug/">
       <fileset dir="charm/debug" casesensitive="no">
@@ -63,11 +63,20 @@ author = idooley2
   <target name="compileLvClient" depends="init" description="compile the source" >
     <javac sourcepath="" srcdir="." destdir="classes" debug="true" debuglevel="lines,vars,source" >
       <include name="charm/lvClient/**"/>
+      <include name="charm/ccs/**"/>
+      <include name="charm/util/**"/>
+    </javac>
+  </target>
+
+  <!-- Compile the java code. Put class files into "classes" directory -->
+  <target name="compileLvzClient" depends="init" description="compile the source" >
+    <javac sourcepath="" srcdir="." destdir="classes" debug="true" debuglevel="lines,vars,source" >
       <include name="charm/liveViz/**"/>
       <include name="charm/ccs/**"/>
       <include name="charm/util/**"/>
     </javac>
   </target>
+
 
   <!-- Make the jar file from the files in "build" -->
   <target name="charmdebug" depends="compilecharmdebug" description="generate the jar file" >
@@ -94,7 +103,7 @@ author = idooley2
   </target>
 
   <!-- Make the jar file from the files in "build" -->
-  <target name="liveViz" depends="compileLvClient" description="generate the jar file" >
+  <target name="liveViz" depends="compileLvzClient" description="generate the jar file" >
    
     <jar jarfile="bin/liveViz.jar" basedir="classes">
       <include name="charm/liveViz/**"/>
@@ -105,7 +114,7 @@ author = idooley2
   </target>
 
 
-<target name="dist" depends="lvClient,charmdebug">
+<target name="dist" depends="lvClient,charmdebug,liveViz">
 </target>
 
   <!-- Cleanup -->
@@ -114,6 +123,7 @@ author = idooley2
     <delete dir="classes"/>
     <delete file="bin/charmdebug.jar"/>
     <delete file="bin/lvClient.jar"/>
+    <delete file="bin/liveViz.jar"/>
   </target>
 
   <target name="doc" description="build the documentation" >
