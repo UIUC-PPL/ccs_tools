@@ -63,6 +63,7 @@ author = idooley2
   <target name="compileLvClient" depends="init" description="compile the source" >
     <javac sourcepath="" srcdir="." destdir="classes" debug="true" debuglevel="lines,vars,source" >
       <include name="charm/lvClient/**"/>
+      <include name="charm/liveViz/**"/>
       <include name="charm/ccs/**"/>
       <include name="charm/util/**"/>
     </javac>
@@ -91,6 +92,18 @@ author = idooley2
     </jar>
 
   </target>
+
+  <!-- Make the jar file from the files in "build" -->
+  <target name="liveViz" depends="compileLvClient" description="generate the jar file" >
+   
+    <jar jarfile="bin/liveViz.jar" basedir="classes">
+      <include name="charm/liveViz/**"/>
+      <include name="charm/ccs/**"/>
+      <include name="charm/util/**"/>
+    </jar>
+
+  </target>
+
 
 <target name="dist" depends="lvClient,charmdebug">
 </target>
