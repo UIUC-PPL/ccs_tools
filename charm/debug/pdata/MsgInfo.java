@@ -58,6 +58,7 @@ public class MsgInfo extends GenericInfo {
     public static final int ForNodeBocMsg  =16;
     public static final int ArrayEltInitMsg =17;
     public static final int ForArrayEltMsg  =18;
+    public static final int ForIDedObjMsg  = 19;
     public static final String[] envTypes = {
     	"",
     	"NewChareMsg",
@@ -77,7 +78,8 @@ public class MsgInfo extends GenericInfo {
     	"NodeBocInitMsg",
     	"ForNodeBocMsg",
     	"ArrayEltInitMsg",
-    	"ForArrayEltMsg"
+    	"ForArrayEltMsg",
+	"ForIDedObjMsg"
     };
 
     MsgInfo(int f, int p, int s, MsgTypeInfo t, int mf, ChareTypeInfo c, EpInfo e, PList d, int fl) {
