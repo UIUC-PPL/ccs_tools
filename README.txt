@@ -1,6 +1,8 @@
 This directory contains all Charm-specific Java code.
 This includes things like debuggers, GUIs, etc.
 
+TO BUILD: make
+
 .jar files and run scripts are in the bin/ directory.
 Java source are in the charm/ directory. .class files
 are instead into the classes/ directory.
