@@ -9,7 +9,6 @@ package charm.ccs;
 import java.util.Stack;
 import java.io.*;
 import java.net.UnknownHostException;
-import java.net.SocketTimeoutException;
 //import java.awt.Label;
 
 public class CcsThread implements Runnable {
@@ -124,16 +123,10 @@ public class CcsThread implements Runnable {
 			}
 			byte[] reply;
 			try {
-			  reply=ccs.recvResponse();
-			}
-                        catch(SocketTimeoutException e1) {
-                          System.out.println("timeout!");
-		          requests.push(curReq);
-                          continue;
-                        }  
-                        catch(IOException e) {
-			  ioError(e,"Error receiving response");
-			  break;
+				reply=ccs.recvResponse();
+			} catch(IOException e) {
+				ioError(e,"Error receiving response");
+				break;
 			}
 			
 			curReq.handleReply(reply);

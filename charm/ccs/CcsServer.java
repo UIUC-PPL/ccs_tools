@@ -250,12 +250,10 @@ public class CcsServer
     * previous sendRequest, and will wait indefinitely for the response.
     * The response data will be returned as a byte array.
     */
-   public byte[] recvResponse(Request r) throws IOException,SocketTimeoutException
+   public byte[] recvResponse(Request r) throws IOException
    {
 	debug("  Waiting for response");
-        r.sock.setSoTimeout(1000);
-   	//DataInputStream i=new DataInputStream(Channels.newInputStream(r.sock.getChannel()));
-   	DataInputStream i=new DataInputStream(Channels.newInputStream(Channels.newChannel(r.sock.getInputStream())));
+   	DataInputStream i=new DataInputStream(Channels.newInputStream(r.sock.getChannel()));
 	if (isAuth) {
 	    byte[] hash=new byte[SHA_len];
 	    i.readFully(hash);

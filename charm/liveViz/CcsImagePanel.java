@@ -99,7 +99,7 @@ class CcsImagePanel extends MemImagePanel
 	    wid=lastWid; ht=lastHt;
 	    ByteArrayOutputStream bs=new ByteArrayOutputStream();
 	    DataOutputStream os=new DataOutputStream(bs);
-	    //System.out.println("Sending request for ("+wid+"x"+ht+")");
+	    //	System.out.println("Sending request for ("+wid+"x"+ht+")");
 	    try {
 		os.writeInt(1); /*Client version*/
 		os.writeInt(1); /*Request type*/
@@ -113,7 +113,6 @@ class CcsImagePanel extends MemImagePanel
 	    setData(bs.toByteArray());
 	}
 	public void handleReply(byte[] data) {
-	    //System.out.println("got reply");
 	    dest.gotImage(new ByteImage(data,wid,ht,config.isColor));
 	}
     }
