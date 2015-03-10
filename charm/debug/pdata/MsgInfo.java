@@ -54,7 +54,6 @@ public class MsgInfo extends GenericInfo {
     public static final int ExitMsg        =12;
     public static final int ReqStatMsg     =13;
     public static final int StatMsg        =14;
-    public static final int StatDoneMsg    =15;
     public static final int NodeBocInitMsg =15;
     public static final int ForNodeBocMsg  =16;
     public static final int ArrayEltInitMsg =17;
@@ -76,7 +75,6 @@ public class MsgInfo extends GenericInfo {
     	"ExitMsg",
     	"ReqStatMsg",
     	"StatMsg",
-	"StatDoneMsg",
     	"NodeBocInitMsg",
     	"ForNodeBocMsg",
     	"ArrayEltInitMsg",
