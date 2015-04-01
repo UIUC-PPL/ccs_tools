@@ -1955,7 +1955,16 @@ DEPRECATED!! The correct implementation is in CpdList.java
     
     private boolean getInitialInfo() {
 		String executable = new File(getFilename()).getAbsolutePath();
-		String totCommandLine = "size -A " + executable;
+		String OS = System.getProperty("os.name");
+		System.out.println("OS: " + OS);
+		boolean macOS = false;
+		if(OS.startsWith("Mac OS"))
+		   macOS = true;
+		String totCommandLine;
+		if(macOS)
+		    totCommandLine = "size -m -l " + executable;
+		else
+		    totCommandLine = "size -A " + executable;
 		System.out.println(totCommandLine);
 		String hostname = getHostname();
 		String initialInfo;
@@ -1987,29 +1996,55 @@ DEPRECATED!! The correct implementation is in CpdList.java
 
 		boolean success;
 		int dataSize=0,bssPos=0,bssSize=0; 
-		try {
-			int dataInitial = initialInfo.indexOf("\n.data ");
-			int dataFinal = initialInfo.indexOf("\n",dataInitial+1);
-			String dataValues = initialInfo.substring(dataInitial+6,dataFinal).trim();
-			int endSize = dataValues.indexOf(' ');
-			int startPos = dataValues.lastIndexOf(' ');
-			dataSize = Integer.parseInt(dataValues.substring(0,endSize));
-			dataPos = Integer.parseInt(dataValues.substring(startPos+1));
-			System.out.println("string1: |"+initialInfo.substring(dataInitial+6,dataFinal).trim()+"| "+dataSize+" "+dataPos);
-			int bssInitial = initialInfo.indexOf("\n.bss");
-			int bssFinal = initialInfo.indexOf("\n",bssInitial+1);
-			String bssValues = initialInfo.substring(bssInitial+6,bssFinal).trim();
-			endSize = bssValues.indexOf(' ');
-			startPos = bssValues.lastIndexOf(' ');
-			bssSize = Integer.parseInt(bssValues.substring(0,endSize));
-			bssPos = Integer.parseInt(bssValues.substring(startPos+1));
-			System.out.println("string1: |"+initialInfo.substring(bssInitial+5,bssFinal).trim()+"| "+bssSize+" "+bssPos);
-			success = true;
-		} catch (Exception e) {
-			System.out.println("Failed to read ELF format");
-			success = false;
+		if(!macOS){
+			try {
+				int dataInitial = initialInfo.indexOf("\n.data ");
+				int dataFinal = initialInfo.indexOf("\n",dataInitial+1);
+				String dataValues = initialInfo.substring(dataInitial+6,dataFinal).trim();
+				int endSize = dataValues.indexOf(' ');
+				int startPos = dataValues.lastIndexOf(' ');
+				dataSize = Integer.parseInt(dataValues.substring(0,endSize));
+				dataPos = Integer.parseInt(dataValues.substring(startPos+1));
+				System.out.println("string1: |"+initialInfo.substring(dataInitial+6,dataFinal).trim()+"| "+dataSize+" "+dataPos);
+				int bssInitial = initialInfo.indexOf("\n.bss");
+				int bssFinal = initialInfo.indexOf("\n",bssInitial+1);
+				String bssValues = initialInfo.substring(bssInitial+6,bssFinal).trim();
+				endSize = bssValues.indexOf(' ');
+				startPos = bssValues.lastIndexOf(' ');
+				bssSize = Integer.parseInt(bssValues.substring(0,endSize));
+				bssPos = Integer.parseInt(bssValues.substring(startPos+1));
+				System.out.println("string1: |"+initialInfo.substring(bssInitial+5,bssFinal).trim()+"| "+bssSize+" "+bssPos);
+				success = true;
+			} catch (Exception e) {
+				System.out.println("Failed to read ELF format" + e);
+				success = false;
+			}
 		}
-		
+		else{//For Mac OS X
+			try {
+				int dataInitial = initialInfo.indexOf("data:");
+				int dataFinal = initialInfo.indexOf("\n",dataInitial+1);
+				String dataValues = initialInfo.substring(dataInitial+7,dataFinal).trim();
+				int endSize = dataValues.indexOf(' ');
+				int startPos = dataValues.lastIndexOf(' ');
+				dataSize = Integer.parseInt(dataValues.substring(0,endSize));
+				dataPos = Integer.parseInt(dataValues.substring(startPos+1,dataValues.length()-1));
+				System.out.println("string1: |"+initialInfo.substring(dataInitial+6,dataFinal).trim()+"| "+dataSize+" "+dataPos);
+				int bssInitial = initialInfo.indexOf("bss:");
+				int bssFinal = initialInfo.indexOf("\n",bssInitial+1);
+				String bssValues = initialInfo.substring(bssInitial+6,bssFinal).trim();
+				endSize = bssValues.indexOf(' ');
+				startPos = bssValues.lastIndexOf(' ');
+				bssSize = Integer.parseInt(bssValues.substring(0,endSize));
+				bssPos = Integer.parseInt(bssValues.substring(startPos+1, bssValues.length()-1));
+				System.out.println("string1: |"+initialInfo.substring(bssInitial+5,bssFinal).trim()+"| "+bssSize+" "+bssPos);
+				success = true;
+			} catch (Exception e) {
+				System.out.println("Failed to read MAC format: " + e.toString());
+				success = false;
+			}
+		}
+
 		if (!success) {
 			// could not read "size -A" output, try XCOFF "dump -h"
 			totCommandLine = "dump -h -Xany " + executable;
