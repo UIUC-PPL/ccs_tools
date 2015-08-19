@@ -22,6 +22,38 @@ public class DataType extends GenericType {
 
     public void setGdbType(String s) { thisType = s; }
     
+/*
+   cleanUnwantedChar is a utility function that discards text such as
+   gdb, newline character from string, to get (integer) address from the string
+*/
+
+    public String cleanUnwantedChar(String s){
+        if(s.contains("(gdb)")) {
+            s = s.replace("(gdb)","");
+            s = s.replace("\n","");
+        }
+        return s;
+    }
+
+/*
+   This function finds the offset by identifying a valid offsetValue
+   and doing required offset calculation with pos
+*/
+    public int findOffset(String offsetValue, int pos){
+         int offset = -1;
+         if (offsetValue.indexOf(" 0x") != -1) {
+            int start = offsetValue.indexOf(" 0x")+1;
+            int end = offsetValue.indexOf(" ", start);
+            if (end == -1) end = offsetValue.length()-1;
+            String temp=cleanUnwantedChar(offsetValue.substring(start,end));
+            offset = Integer.decode(temp).intValue();
+         }
+         if(offset != -1) {
+            offset = offset - pos;
+         }
+         return offset;
+    }
+
     public GenericType build(String n, String d) {
         name = n;
         if (n == null) name = "";
@@ -112,17 +144,7 @@ public class DataType extends GenericType {
 
                     String offsetValue = ParDebug.infoCommand("print (class "+superName+"*)((class "+name+"*)"+ParDebug.dataPos+")\n");
                     System.out.println("info:print (class "+superName+"*)((class "+name+"*)"+ParDebug.dataPos+") = "+offsetValue);
-                    int offset;
-                    if (offsetValue.indexOf(" 0x") != -1) {
-                        int start = offsetValue.indexOf(" 0x")+1;
-                        int end = offsetValue.indexOf(" ", start);
-                        //if (end == -1) end = offsetValue.indexOf("\n",start);
-                        if (end == -1) end = offsetValue.length()-1;
-                        offset = Integer.decode(offsetValue.substring(start,end)).intValue() - ParDebug.dataPos;
-                    } else {
-                        offset = -1;
-                    }
-
+                    int offset = findOffset(offsetValue, ParDebug.dataPos);
                     superclasses.add(new SuperClassElement(superType, offset));
                     endCut++;
                     startCut = endCut+1;
@@ -140,13 +162,10 @@ public class DataType extends GenericType {
             typeSize = ParDebug.infoCommand("print/x sizeof("+name+")\n");
             System.out.println("info:print/x sizeof("+name+") = "+typeSize);
         }
-        if (typeSize.indexOf("=") != -1) {
-            int start = typeSize.indexOf(" 0x")+1;
-            int end = typeSize.indexOf(" ", start);
-            if (end == -1) end = typeSize.length() - 1;
-            size = Integer.decode(typeSize.substring(start,end)).intValue();
+        int tempSize = findOffset(typeSize, 0);
+        if(tempSize!=-1){
+          size = tempSize;
         }
-        
         String[] piece = desc.substring(opening).split("[{:;][\n\r]");
         for (int i=1; i<piece.length-1; ++i) {
             line = piece[i].trim();
@@ -266,15 +285,7 @@ public class DataType extends GenericType {
             		System.out.println("WARNING: Could not get base offset for data!!!!!");
             	}
             }
-            int offset;
-            if (offsetValue.indexOf(" 0x") != -1) {
-                int start = offsetValue.indexOf(" 0x")+1;
-                int end = offsetValue.indexOf(" ", start);
-                if (end == -1) end = offsetValue.length()-1;
-                offset = Integer.decode(offsetValue.substring(start,end)).intValue() - baseOffset;
-            } else {
-                offset = -1;
-            }
+            int offset = findOffset(offsetValue, baseOffset);
             variables.add(new VariableElement(dt, varName, arraySize, pointerCount, offset));
         }
         return resultType;
