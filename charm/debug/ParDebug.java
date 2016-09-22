@@ -551,7 +551,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
     	if (lName==null) return; /* the initial empty list */
     	GenericPList list = cpdLists[cpdListIndex].list;
 
-    	if (currentPopulatedList != -1 && cpdListIndex != currentPopulatedList) cpdLists[currentPopulatedList].list.removePopupMenu(listItemNames);
+    	if (currentPopulatedList != -1 && cpdListIndex != currentPopulatedList && cpdLists[currentPopulatedList].list != null) cpdLists[currentPopulatedList].list.removePopupMenu(listItemNames);
     	if (list == null || list.needRefresh()) {
     		int nItems=server.getListLength(lName,forPE);
     		listItems = server.getPList(lName,forPE,0,nItems);
