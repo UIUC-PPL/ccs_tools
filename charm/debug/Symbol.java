@@ -41,18 +41,17 @@ public class Symbol {
     		String funcName = index>=0 ? res1.substring(0, index).trim() : "??";
     		String res2 = ParDebug.infoCommand("info line *"+location+"\n");
     		index = res2.indexOf("Line");
-    		String fileName;
-    		int line;
-    		if (index == -1) {
-    			line = 0;
-    			fileName = "??";
-    		} else {
-    			int index2 = res2.indexOf(' ', index+5);
-    			//System.out.println(res2+" "+index+" "+index2);
-    			line = Integer.parseInt(res2.substring(index+5,index2));
-    			index = res2.indexOf('"');
-    			index2 = res2.indexOf('"', index+1);
-    			fileName = res2.substring(index+1,index2).trim();
+                String fileName = "??";
+                int line = 0;
+                if (index >= 0) {
+                  int index2 = res2.indexOf(' ', index+5);
+                  if (index2 >= 0) {
+                    //System.out.println(res2+" "+index+" "+index2);
+                    line = Integer.parseInt(res2.substring(index+5,index2));
+                    index = res2.indexOf('"');
+                    index2 = res2.indexOf('"', index+1);
+                    fileName = res2.substring(index+1,index2).trim();
+                  }
     		}
     		s = new Symbol(location, funcName, line, fileName);
     		Symbol.put(location, s);

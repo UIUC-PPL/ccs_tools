@@ -85,7 +85,8 @@ public class MsgPList extends GenericPList implements ActionListener {
                 }
                 MsgInfo info = new MsgInfo(from, prioBits, userSize, msgList.elementAt(msgType), envType, chareList.elementAt(epEntry.getChareType()), epEntry, msgData, flags);
                 data.add(info);
-                if (msg.elementNamed("arrID") != null) {
+                if (msg.elementNamed("arrID") != null && msg.elementNamed("nInts") != null && msg.elementNamed("dimension") != null) {
+                  System.out.println(msg);
                 	int arrayID = ((PNative)msg.elementNamed("arrID")).getIntValue(0);
                 	int nInts = ((PNative)msg.elementNamed("nInts")).getIntValue(0);
                 	int dimension = ((PNative)msg.elementNamed("dimension")).getIntValue(0);
