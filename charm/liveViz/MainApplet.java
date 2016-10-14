@@ -16,7 +16,7 @@ public class MainApplet extends Applet
 		if (args.length<2) {
 			System.out.println("Usage: demo <ccs server>" +
 			  "<ccs port>\nor:    demo <ccs server> <ccs port>" +
-			  " -w <width> -h <height>");
+			  " -w <width> -h <height> -timeout <period>");
 			System.exit(1);
 		}
 
@@ -26,18 +26,28 @@ public class MainApplet extends Applet
 
 		boolean wFlag = false;
 		boolean hFlag = false;
+		boolean tFlag = false;
+
+		String isTimeoutSet = "false";
+		String timeoutPeriod = "0";
 
 		for (int i = 2; i < args.length; i++) {
 			if (args[i].equals("-w")) {
 				wFlag = true;
 			} else if (args[i].equals("-h")) {
 				hFlag = true;
+			} else if (args[i].equals("-timeout")) {
+				tFlag = true;
 			} else if (wFlag) {
 				width = Integer.parseInt(args[i]);
 				wFlag = false;
 			} else if (hFlag) {
 				height = Integer.parseInt(args[i]);
 				hFlag = false;
+			} else if (tFlag) {
+				isTimeoutSet = "true";
+				timeoutPeriod = args[i];
+				tFlag = false;
 			}
 		}
 		if (width < 0 || height < 0) {
@@ -45,8 +55,8 @@ public class MainApplet extends Applet
 			System.exit(1);
 		}
 
-		createWindow(new MainPanel(args[0],args[1]),true, width,
-		height, maximized);
+		createWindow(new MainPanel(args[0],args[1],isTimeoutSet,timeoutPeriod),
+				true, width, height, maximized);
 	}
 
 	private static Frame createWindow(MainPanel p,boolean closeExit,
@@ -74,7 +84,7 @@ public class MainApplet extends Applet
 
 	public void start() {
 		panel=new MainPanel(getParameter("ccs_server_name"),
-			getParameter("ccs_server_port"));
+			getParameter("ccs_server_port"),getParameter("ccs_timeoutset"),getParameter("ccs_timeoutperiod"));
 		frame=createWindow(panel,false, 300, 200, false);
 		frame.addWindowListener(new WindowAdapter() {
 			public void windowClosing(WindowEvent e)

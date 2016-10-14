@@ -9,6 +9,7 @@ package charm.ccs;
 import java.util.Stack;
 import java.io.*;
 import java.net.UnknownHostException;
+import java.net.SocketTimeoutException;
 //import java.awt.Label;
 
 public class CcsThread implements Runnable {
@@ -48,6 +49,8 @@ public class CcsThread implements Runnable {
 	private Stack requests;//Keeps track of CcsRequests
 	private volatile boolean keepGoing;//To signal exit
 	private CcsServer ccs;
+	private boolean isTimeoutSet;
+	private int timeoutPeriod;
 	
 	/// Place to receive status information during communication
 
@@ -66,10 +69,26 @@ public class CcsThread implements Runnable {
 		port=port_;
 		isBad=false;
 		keepGoing=true;
+		isTimeoutSet = false;
+		timeoutPeriod = 0;
 		//Start our run method
 		myThread=new Thread(this);
 		myThread.start();
 	}
+	public CcsThread(CcsProgress status_,String hostName_,int port_, boolean isTimeoutSet_, int timeoutPeriod_) {
+		requests=new Stack();
+		status=status_;
+		hostName=hostName_;
+		port=port_;
+		isBad=false;
+		keepGoing=true;
+		isTimeoutSet = isTimeoutSet_;
+		timeoutPeriod = timeoutPeriod_;
+		//Start our run method
+		myThread=new Thread(this);
+		myThread.start();
+	}
+
 
 	public void addRequest(request req) {addRequest(req,false);}
 	public void addRequest(request req,boolean flushOld) {
@@ -94,7 +113,7 @@ public class CcsThread implements Runnable {
 	    System.out.println("Connecting to "+hostName+":"+port+"...\n");
 		status.setText("Connecting to "+hostName+":"+port+"...");
 		try {
-			ccs=new CcsServer(hostName,port);
+			ccs=new CcsServer(hostName,port,isTimeoutSet,timeoutPeriod);
 		} 
 		catch (UnknownHostException e) {ioError(e,"Bad host name");}
 		catch (IOException e) {ioError(e,"Could not connect");}
@@ -124,7 +143,16 @@ public class CcsThread implements Runnable {
 			byte[] reply;
 			try {
 				reply=ccs.recvResponse();
-			} catch(IOException e) {
+			} catch(SocketTimeoutException e1) {
+				if (isTimeoutSet) {
+					System.out.println("timeout!");
+					requests.push(curReq);
+					continue;
+				}
+				else
+					break;
+			}
+			catch(IOException e) {
 				ioError(e,"Error receiving response");
 				break;
 			}

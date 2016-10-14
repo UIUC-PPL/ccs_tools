@@ -29,12 +29,12 @@ class CcsImagePanel extends MemImagePanel
     public void setText(String s) {dest.setText(s);}
     };
 
-    public CcsImagePanel( MainPanel caller_,Label status_,Toolbar tools_,String server,int port)
+    public CcsImagePanel( MainPanel caller_,Label status_,Toolbar tools_,String server,int port, boolean isTimeoutSet, int timeoutPeriod)
     {
 	cntl=null;
 	config = null;
 	tools=tools_;
-	ccs=new CcsThread(new progressToLabel(status_),server,port);
+	ccs=new CcsThread(new progressToLabel(status_),server,port,isTimeoutSet,timeoutPeriod);
 	ccs.addRequest(new CcsConfigRequest(this,caller_));
     }
     public void stop() {

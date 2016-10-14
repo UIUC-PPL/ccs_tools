@@ -1,4 +1,4 @@
-/*
+f/*
 Java Interface file for Converse Client/Server 
 from the Parallel Programming Lab, Univ. of Illinois at Urbana-Champaign
 
@@ -45,6 +45,8 @@ public class CcsServer
    	throws IOException
    {
    	connect(address,port,secretKey);
+   	isTimeoutSet = false;
+   	timeoutPeriod = 0;
    }
    /** Establish a connection with a running Converse program.
     *
@@ -56,6 +58,8 @@ public class CcsServer
    {
    	InetAddress ip=InetAddress.getByName(host);
    	connect(ip,port,secretKey);
+   	isTimeoutSet = false;
+   	timeoutPeriod = 0;
    }
 
    /** Non-authenticated versions of the above*/
@@ -67,7 +71,15 @@ public class CcsServer
    public CcsServer(String host,int port)
    	throws IOException, UnknownHostException
    {
+	 this(host,port,null);
+   }
+	 // Specialized constructor to accept timeout related parameters
+   public CcsServer(String host,int port,boolean isTimeoutSet_,int timeoutPeriod_)
+   	throws IOException, UnknownHostException
+   {
 	this(host,port,null);
+	isTimeoutSet = isTimeoutSet_;
+	timeoutPeriod = timeoutPeriod_;
    }
 
 
@@ -240,20 +252,31 @@ public class CcsServer
    	return r;
    }
    /** Wait for a response from Converse program.  This refers to the last
-    * executed request, and will wait indefinitely for the response.
+    * executed request, and will wait indefinitely for the response unless a
+    * timeout has been specified.
     * The response data will be returned as a byte array.
     */
    public byte[] recvResponse() throws IOException
    {return recvResponse(lastRequest);}
 
    /** Wait for a response from Converse program.  This uses the returned value from any
-    * previous sendRequest, and will wait indefinitely for the response.
+    * previous sendRequest, and will wait indefinitely for the response unless a
+    * timeout has been specified.
     * The response data will be returned as a byte array.
     */
-   public byte[] recvResponse(Request r) throws IOException
+   private boolean isTimeoutSet;
+   private int timeoutPeriod;
+   public byte[] recvResponse(Request r) throws IOException,SocketTimeoutException
    {
 	debug("  Waiting for response");
-   	DataInputStream i=new DataInputStream(Channels.newInputStream(r.sock.getChannel()));
+	DataInputStream i = null;
+	if (isTimeoutSet) {
+		r.sock.setSoTimeout(timeoutPeriod);
+		i=new DataInputStream(Channels.newInputStream(Channels.newChannel(r.sock.getInputStream())));
+	}
+	else {
+		i=new DataInputStream(Channels.newInputStream(r.sock.getChannel()));
+	}
 	if (isAuth) {
 	    byte[] hash=new byte[SHA_len];
 	    i.readFully(hash);

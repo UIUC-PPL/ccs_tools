@@ -20,12 +20,14 @@ public class MainPanel extends Panel
 	source.stop();
     }
 	
-    public MainPanel(String server,String port)
+    public MainPanel(String server,String port,String isTimeoutSet_,String timeoutPeriod_)
     {
 	tools = null;
 	status=new Label();
 	String connMachine=server;
 	int connPort=Integer.parseInt(port);
+	boolean isTimeoutSet = Boolean.parseBoolean(isTimeoutSet_);
+	int timeoutPeriod = Integer.parseInt(timeoutPeriod_);
 		
 	//Build the toolbar descriptions
 	String[] toolDesc={
@@ -47,7 +49,7 @@ public class MainPanel extends Panel
 	System.out.println("The toolbar created\n");  
 	tools=new Toolbar(toolsImg,32,32,5,status,toolDesc);
 
-	source=new CcsImagePanel(this,status,tools,connMachine,connPort);
+	source=new CcsImagePanel(this,status,tools,connMachine,connPort,isTimeoutSet,timeoutPeriod);
 		
     }
     

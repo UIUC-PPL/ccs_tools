@@ -18,7 +18,7 @@ class CcsAcceptor {
 
 
   public CcsAcceptor(String servername, String port){	
-	ccsT = new CcsThread(new CcsLabel(), servername, Integer.parseInt(port));
+	ccsT = new CcsThread(new CcsLabel(), servername, Integer.parseInt(port), false, 0);
 	outstandingRequests=0;
   }
 
