@@ -1,4 +1,4 @@
-f/*
+/*
 Java Interface file for Converse Client/Server 
 from the Parallel Programming Lab, Univ. of Illinois at Urbana-Champaign
 
