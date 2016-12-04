@@ -54,11 +54,14 @@ public class MsgInfo extends GenericInfo {
     public static final int ExitMsg        =12;
     public static final int ReqStatMsg     =13;
     public static final int StatMsg        =14;
-    public static final int NodeBocInitMsg =15;
-    public static final int ForNodeBocMsg  =16;
-    public static final int ArrayEltInitMsg =17;
-    public static final int ForArrayEltMsg  =18;
-    public static final int ForIDedObjMsg  = 19;
+    public static final int StatDoneMsg    =15;
+    public static final int NodeBocInitMsg =16;
+    public static final int ForNodeBocMsg  =17;
+    public static final int ArrayEltInitMsg =18;
+    public static final int ForArrayEltMsg  =19;
+    public static final int ForIDedObjMsg  = 20;
+    public static final int WarnMsg        = 21;
+    public static final int WarnDoneMsg    = 22;
     public static final String[] envTypes = {
     	"",
     	"NewChareMsg",
@@ -75,11 +78,14 @@ public class MsgInfo extends GenericInfo {
     	"ExitMsg",
     	"ReqStatMsg",
     	"StatMsg",
+        "StatDoneMsg",
     	"NodeBocInitMsg",
     	"ForNodeBocMsg",
     	"ArrayEltInitMsg",
     	"ForArrayEltMsg",
-	"ForIDedObjMsg"
+	    "ForIDedObjMsg",
+        "WarnMsg",
+        "WarnDoneMsg"
     };
 
     MsgInfo(int f, int p, int s, MsgTypeInfo t, int mf, ChareTypeInfo c, EpInfo e, PList d, int fl) {
