@@ -24,7 +24,7 @@ public class ReadonlyPList extends GenericPList {
             
             String name = ((PString)lcur.elementNamed("name")).getString();
             String type = ((PString)lcur.elementNamed("type")).getString();
-            int size = ((PNative)lcur.elementNamed("size")).getIntValue(0);
+            long size = ((PNative)lcur.elementNamed("size")).getLongValue(0);
             byte[] memory = ((PString)lcur.elementNamed("value")).getBytes();
             data.add(new ReadonlyInfo(name, Inspector.getTypeCreate(type), size, ByteBuffer.wrap(memory).order(Inspector.getByteOrder())));
         }

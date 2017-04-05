@@ -7,11 +7,11 @@ import charm.debug.inspect.InspectPanel;
 public class ChareTypeInfo extends GenericInfo {
     int index;
     String name;
-    int size;
+    long size;
     String description;
 	boolean system;
 
-    ChareTypeInfo(int i, String n, int s, String d, boolean sys) {
+    ChareTypeInfo(int i, String n, long s, String d, boolean sys) {
         index = i;
         name = n;
         size = s;

@@ -23,7 +23,7 @@ public class ChareTypePList extends GenericPList {
             PList lcur=(PList)cur; // because cur is itself an object
 
             String name = ((PString)lcur.elementNamed("name")).getString();
-            int size = ((PNative)lcur.elementNamed("size")).getIntValue(0);
+            long size = ((PNative)lcur.elementNamed("size")).getLongValue(0);
             //System.out.println("chare info:ptype "+name+"\n");
             String desc = ParDebug.infoCommand("ptype "+name+"\n");
             //if (desc.startsWith("no symbol")) desc = null;

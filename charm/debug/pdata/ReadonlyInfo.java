@@ -7,10 +7,10 @@ import java.nio.ByteBuffer;
 public class ReadonlyInfo extends GenericInfo {
     String name;
     GenericType type;
-    int size;
+    long size;
     ByteBuffer memory;
 
-    ReadonlyInfo(String n, GenericType t, int s, ByteBuffer m) {
+    ReadonlyInfo(String n, GenericType t, long s, ByteBuffer m) {
         name = n;
         type = t;
         size = s;
