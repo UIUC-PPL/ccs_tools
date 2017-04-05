@@ -63,10 +63,10 @@ public class SetReadonly {
 	System.out.println("Old value: "+ri.value);
 	if (roValue!=null) {
 	  int val=Integer.parseInt(roValue);
-	  byte[] bval=new byte[8+4];
+	  byte[] bval=new byte[Long.SIZE/Byte.SIZE+Integer.SIZE/Byte.SIZE];
 	  int o=0,l;
-	  l=8; CcsServer.writeLong(bval,o,ri.size); o+=l;
-	  l=4; CcsServer.writeInt(bval,o,val); o+=l;
+	  l=Long.SIZE/Byte.SIZE; CcsServer.writeLong(bval,o,ri.size); o+=l;
+	  l=Integer.SIZE/Byte.SIZE; CcsServer.writeInt(bval,o,val); o+=l;
 	  for (int pe=0;pe<nPe;pe++)
 	  	cpd.setListItem(listName,pe,ri.idx,bval);
 	  System.out.println("New value: "+val);
