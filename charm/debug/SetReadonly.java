@@ -12,7 +12,7 @@ public class SetReadonly {
     public int idx; // entry in readonly cpdList
     public String name; // name of readonly (e.g., "nElements")
     public String type; // string data type of readonly (e.g., "int")
-    public int size; // native size (in bytes) of readonly
+    public long size; // native size (in bytes) of readonly
     public PAbstract value; // value of readonly
   };
   
@@ -32,7 +32,7 @@ public class SetReadonly {
          ri.idx=count;
 	 ri.name=n.getString();
 	 ri.type=((PString)(lcur.elementNamed("type"))).getString();
-	 ri.size=((PNative)(lcur.elementNamed("size"))).getIntValue(0);
+	 ri.size=((PNative)(lcur.elementNamed("size"))).getLongValue(0);
 	 ri.value=lcur.elementNamed("value");
 	 return ri;
        }
@@ -63,9 +63,9 @@ public class SetReadonly {
 	System.out.println("Old value: "+ri.value);
 	if (roValue!=null) {
 	  int val=Integer.parseInt(roValue);
-	  byte[] bval=new byte[4+4];
+	  byte[] bval=new byte[8+4];
 	  int o=0,l;
-	  l=4; CcsServer.writeInt(bval,o,ri.size); o+=l;
+	  l=8; CcsServer.writeLong(bval,o,ri.size); o+=l;
 	  l=4; CcsServer.writeInt(bval,o,val); o+=l;
 	  for (int pe=0;pe<nPe;pe++)
 	  	cpd.setListItem(listName,pe,ri.idx,bval);
