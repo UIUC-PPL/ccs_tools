@@ -13,7 +13,6 @@ import java.io.*;
 import java.net.UnknownHostException;
 import charm.ccs.*;
 import charm.util.*;
-import charm.*;
 
 class CcsImagePanel extends MemImagePanel
 {
