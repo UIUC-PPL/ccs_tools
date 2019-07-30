@@ -39,7 +39,7 @@ public class ParDebug extends JPanel
      implements ActionListener,ListSelectionListener{
    
 	public final static int MAJOR = 10;
-	public final static int MINOR =  9;
+	public final static int MINOR = 10;
 	
     // ******* VARIABLES ************   
     //  FIXME: make these not be static, by moving main's command line

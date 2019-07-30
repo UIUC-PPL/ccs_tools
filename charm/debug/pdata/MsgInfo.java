@@ -40,25 +40,29 @@ public class MsgInfo extends GenericInfo {
 
     // The following list is exactly the same as that found in Charm++ source code
     // regarding CkEnvelopeType (in charm.h)
-    public static final int NewChareMsg    =1;
-    public static final int NewVChareMsg   =2;
-    public static final int BocInitMsg     =3;
-    public static final int ForChareMsg    =4;
-    public static final int ForBocMsg      =5;
-    public static final int ForVidMsg      =6;
-    public static final int FillVidMsg     =7;
-    public static final int DeleteVidMsg   =8;
-    public static final int RODataMsg      =9;
-    public static final int ROMsgMsg       =10;
-    public static final int StartExitMsg   =11;
-    public static final int ExitMsg        =12;
-    public static final int ReqStatMsg     =13;
-    public static final int StatMsg        =14;
-    public static final int NodeBocInitMsg =15;
-    public static final int ForNodeBocMsg  =16;
-    public static final int ArrayEltInitMsg =17;
-    public static final int ForArrayEltMsg  =18;
-    public static final int ForIDedObjMsg  = 19;
+    public static final int NewChareMsg          =1;
+    public static final int NewVChareMsg         =2;
+    public static final int BocInitMsg           =3;
+    public static final int ForChareMsg          =4;
+    public static final int ForBocMsg            =5;
+    public static final int ForVidMsg            =6;
+    public static final int FillVidMsg           =7;
+    public static final int DeleteVidMsg         =8;
+    public static final int RODataMsg            =9;
+    public static final int ROMsgMsg             =10;
+    public static final int ROPeerCompletionMsg  =11;
+    public static final int ROChildCompletionMsg =12;
+    public static final int StartExitMsg         =13;
+    public static final int ExitMsg              =14;
+    public static final int ReqStatMsg           =15;
+    public static final int StatMsg              =16;
+    public static final int StatDoneMsg          =17;
+    public static final int NodeBocInitMsg       =18;
+    public static final int ForNodeBocMsg        =19;
+    public static final int ArrayEltInitMsg      =20;
+    public static final int ForArrayEltMsg       =21;
+    public static final int ForIDedObjMsg        =22;
+    public static final int BocBcastMsg          =23;
     public static final String[] envTypes = {
       "",
       "NewChareMsg",
@@ -71,15 +75,19 @@ public class MsgInfo extends GenericInfo {
       "DeleteVidMsg",
       "RODataMsg",
       "ROMsgMsg",
+      "ROPeerCompletionMsg",
+      "ROChildCompletionMsg",
       "StartExitMsg",
       "ExitMsg",
       "ReqStatMsg",
       "StatMsg",
+      "StatDoneMsg",
       "NodeBocInitMsg",
       "ForNodeBocMsg",
       "ArrayEltInitMsg",
       "ForArrayEltMsg",
       "ForIDedObjMsg",
+      "BocBcastMsg"
     };
 
     MsgInfo(int f, int p, int s, MsgTypeInfo t, int mf, ChareTypeInfo c, EpInfo e, PList d, int fl) {
