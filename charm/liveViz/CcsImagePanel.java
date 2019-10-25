@@ -104,16 +104,6 @@ class CcsImagePanel extends MemImagePanel {
     // System.out.println("liveViz client> "+state);
   }
 
-  // Full color pixel
-  private int packPixel(int a, int r, int g, int b) {
-    return ((a & 0xff) << 24) + ((r & 0xff) << 16) + ((g & 0xff) << 8) + (b & 0xff);
-  }
-
-  // Black and white pixel
-  private int packPixel(int a, int v) {
-    return ((a & 0xff) << 24) + ((v & 0xff) << 16) + ((v & 0xff) << 8) + (v & 0xff);
-  }
-
   //// Public Member Functions ////////////
   public CcsImagePanel(MainPanel caller_, Label status_, Toolbar tools_,
       String server, int port, boolean isTimeoutSet, int timeoutPeriod) {
