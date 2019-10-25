@@ -61,7 +61,7 @@ public class MainPanel extends Panel
 	gbc.anchor=GridBagConstraints.NORTHEAST;
 		
 	//display toolbar only if it is 3d
-	if(source.config.is3d) 
+	if(source.is3d())
 	    {
 		gbc.fill = GridBagConstraints.VERTICAL;
 		gbc.gridx=gbc.gridy=0;
