@@ -9,15 +9,42 @@ import java.applet.Applet;
 import java.net.URL;
 import java.awt.*;
 import java.awt.event.*;
+import java.util.*;
+import java.io.*;
+import charm.util.*;
+import charm.ccs.*;
 
 public class MainPanel extends Panel {
-  private CcsImagePanel source;
   private Label status;
   private Toolbar tools;
+  private Config config;
+  private CcsServer server;
+  private CcsThread ccsThread;
+
+  private ConnectionPanel connectionPanel;
+  private CcsImagePanel2D imagePanel;
+
+  private class CcsConfigRequest extends CcsThread.request {
+    public CcsConfigRequest() {
+      super("lvConfig", 0);
+    }
+
+    public void handleReply(byte[] configData) {
+      try {
+        DataInputStream is = new DataInputStream(new ByteArrayInputStream(configData));
+        setConfig(new Config(is));
+      } catch(IOException e) {
+        e.printStackTrace();
+      }
+    }
+  }
 
   public MainPanel(String server, String port, String isTimeoutSet_, String timeoutPeriod_) {
+    setLayout(new GridBagLayout());
+
     tools = null;
     status = new Label();
+
     String connMachine=server;
     int connPort = Integer.parseInt(port);
     boolean isTimeoutSet = Boolean.parseBoolean(isTimeoutSet_);
@@ -38,46 +65,55 @@ public class MainPanel extends Panel {
       try { toolsImg=new URL("http://charm.cs.uiuc.edu/2001/demo/astro1/toolbar.jpg"); }
       catch (Exception E) { }
     }
-    System.out.println("The toolbar created\n");
     tools = new Toolbar(toolsImg, 32, 32, 5, status, toolDesc);
 
-    source = new CcsImagePanel(this, status, tools, connMachine, connPort, isTimeoutSet, timeoutPeriod);
-  }
+    connectionPanel = new ConnectionPanel(this, server, port);
 
-  public void createGrid() {
-    GridBagLayout gbl = new GridBagLayout();
-    setLayout(gbl);
     GridBagConstraints gbc = new GridBagConstraints();
     gbc.anchor=GridBagConstraints.NORTHEAST;
 
-    // TODO: Move this to a separate 3D view
-    // display toolbar only if it is 3d
-    if(source.is3d()) {
-      gbc.fill = GridBagConstraints.VERTICAL;
-      gbc.gridx = gbc.gridy = 0;
-      gbc.weightx = 0.01; gbc.weighty = 1.0;
-      gbc.gridwidth = 1;
-      gbc.gridheight = 2;
-      add(tools,gbc);
-    }
-
-    gbc.fill = GridBagConstraints.BOTH;
+    gbc.fill = GridBagConstraints.HORIZONTAL;
     gbc.gridwidth = 1; gbc.gridheight = 1;
-    gbc.gridx = 1;
+    gbc.gridx = 0;
     gbc.gridy = 0;
-    gbc.weightx = 1.0; gbc.weighty = 1.0;
-    add(source,gbc);
+    gbc.weightx = 1.0; gbc.weighty = 0.01;
+    add(connectionPanel, gbc);
 
     gbc.fill = GridBagConstraints.HORIZONTAL;
     gbc.gridwidth = 1; gbc.gridheight = 1;
-    gbc.gridx = 1;
-    gbc.gridy = 1;
+    gbc.gridx = 0;
+    gbc.gridy = 3;
     gbc.weightx = 1.0; gbc.weighty = 0.01;
     add(status, gbc);
     validate();
   }
 
+  public void setCcsServer(CcsServer s) {
+    server = s;
+    ccsThread = new CcsThread(server);
+    ccsThread.addRequest(new CcsConfigRequest());
+  }
+
+  public void setConfig(Config c) {
+    ccsThread.finish();
+    if (imagePanel != null) {
+      remove(imagePanel);
+    }
+    config = c;
+    imagePanel = new CcsImagePanel2D(server, config);
+
+    GridBagConstraints gbc = new GridBagConstraints();
+    gbc.fill = GridBagConstraints.BOTH;
+    gbc.gridwidth = 1; gbc.gridheight = 1;
+    gbc.gridx = 0;
+    gbc.gridy = 1;
+    gbc.weightx = 1.0; gbc.weighty = 1.0;
+    add(imagePanel, gbc);
+
+    validate();
+  }
+  
   public void stop() {
-    source.stop();
+    imagePanel.stop();
   }
 }

@@ -18,6 +18,10 @@ public class CcsThread extends Thread {
   private CcsServer ccs; // The server we send and receive from
   private CcsProgress status; // Place to show status info.
 
+  private static class NullProgress implements CcsProgress {
+    public void setText(String s) {}
+  }
+
   private void ioError(Exception e, String what) {
     isBad = true;
     keepGoing = false;
@@ -71,6 +75,9 @@ public class CcsThread extends Thread {
     connectToServer(hostName, port, isTimeoutSet, timeout);
   }
 
+  public CcsThread(CcsServer server) {
+    this(new NullProgress(), server);
+  }
 
   public CcsThread(CcsProgress status_, CcsServer server) {
     requests = new Stack();
