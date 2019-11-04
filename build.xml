@@ -45,6 +45,9 @@ author = idooley2
   <target name="compilecharmdebug" depends="init" description="compile the source" >
 
     <javac sourcepath="" srcdir="." destdir="classes" debug="true" debuglevel="lines,vars,source" >
+      <classpath>
+        <fileset dir="lib/" includes="**/*.jar" />
+      </classpath>
       <include name="charm/debug/**"/>
       <include name="charm/ccs/**"/>
       <include name="charm/util/**"/>
@@ -71,6 +74,9 @@ author = idooley2
   <!-- Compile the java code. Put class files into "classes" directory -->
   <target name="compileLvzClient" depends="init" description="compile the source" >
     <javac sourcepath="" srcdir="." destdir="classes" debug="true" debuglevel="lines,vars,source" >
+      <classpath>
+        <fileset dir="lib/" includes="**/*.jar" />
+      </classpath>
       <include name="charm/liveViz/**"/>
       <include name="charm/ccs/**"/>
       <include name="charm/util/**"/>
@@ -104,8 +110,9 @@ author = idooley2
 
   <!-- Make the jar file from the files in "build" -->
   <target name="liveViz" depends="compileLvzClient" description="generate the jar file" >
-   
     <jar jarfile="bin/liveViz.jar" basedir="classes">
+      <zipfileset includes="**/*" src="lib/jfreechart.jar"/>
+      <zipfileset includes="**/*" src="lib/jcommon.jar"/>
       <include name="charm/liveViz/**"/>
       <include name="charm/ccs/**"/>
       <include name="charm/util/**"/>
