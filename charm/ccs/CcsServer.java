@@ -41,9 +41,11 @@ public class CcsServer
     * @param address gives the IP address of the running program.
     * @param port gives the TCP port number of the program's server socket.
     */
-   public CcsServer(InetAddress address, int port,byte[] secretKey)
+   public CcsServer(InetAddress address, int port_,byte[] secretKey)
    	throws IOException
    {
+    hostName = address.getHostName();
+    port = port_;
    	connect(address,port,secretKey);
    	isTimeoutSet = false;
    	timeoutPeriod = 0;
@@ -53,10 +55,14 @@ public class CcsServer
     * @param host gives the name of the machine of the running program.
     * @param port gives the TCP port number of the program's server socket.
     */
-   public CcsServer(String host,int port,byte[] secretKey)
+   private String hostName;
+   private int port;
+   public CcsServer(String hostName_,int port_,byte[] secretKey)
    	throws IOException, UnknownHostException
    {
-   	InetAddress ip=InetAddress.getByName(host);
+    hostName = hostName_;
+    port = port_;
+   	InetAddress ip=InetAddress.getByName(hostName_);
    	connect(ip,port,secretKey);
    	isTimeoutSet = false;
    	timeoutPeriod = 0;
@@ -329,6 +335,11 @@ public class CcsServer
    public int getNodeFirst(int node) {return nodeFirst[node];}
    /** Get the total number of processors on the given (0-based) node.*/
    public int getNodeSize(int node) {return nodeSize[node];}
+
+   public String getHostName() { return hostName; }
+   public int getPort() { return port; }
+   public boolean getIsTimeoutSet() { return isTimeoutSet; }
+   public int getTimeoutPeriod() { return timeoutPeriod; }
 
 
     static final public int readInt(byte[] src,int srcStart)

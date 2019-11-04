@@ -11,28 +11,17 @@ import java.io.*;
 import java.net.UnknownHostException;
 import java.net.SocketTimeoutException;
 
-public class CcsThread implements Runnable {
+public class CcsThread extends Thread {
   private boolean isBad; // Records that an error occured
   private Stack requests; // Keeps track of CcsRequests
   private volatile boolean keepGoing; // To signal exit
-  private CcsServer ccs;
-  private boolean isTimeoutSet;
-  private int timeoutPeriod;
-
-  /// Place to receive status information during communication
-
-  private CcsProgress status;//Place to show status info.
-  private Thread myThread;
-
-  //Initialization just stashes info--
-  // real work starts when thread begins running.
-  private String hostName;
-  private int port;
+  private CcsServer ccs; // The server we send and receive from
+  private CcsProgress status; // Place to show status info.
 
   private void ioError(Exception e, String what) {
     isBad = true;
     keepGoing = false;
-    status.setText(what+" ("+hostName+":"+port+")");
+    status.setText(what + " (" + ccs.getHostName() + ":" + ccs.getPort() + ")");
     System.out.println("ERROR> "+what);
     System.out.println("Traceback: "+e);
     e.printStackTrace();
@@ -70,33 +59,46 @@ public class CcsThread implements Runnable {
     }
   }
 
-
-  public CcsThread(CcsProgress status_, String hostName_, int port_) {
-    requests = new Stack();
-    status = status_;
-    hostName = hostName_;
-    port = port_;
-    isBad = false;
-    keepGoing = true;
-    isTimeoutSet = false;
-    timeoutPeriod = 0;
-    // Start our run method
-    myThread = new Thread(this);
-    myThread.start();
+  public CcsThread(CcsProgress status_, String hostName, int port) {
+    this(status_, hostName, port, false, 0);
   }
 
-  public CcsThread(CcsProgress status_, String hostName_, int port_, boolean isTimeoutSet_, int timeoutPeriod_) {
+  public CcsThread(CcsProgress status_, String hostName, int port, boolean isTimeoutSet, int timeout) {
     requests = new Stack();
     status = status_;
-    hostName = hostName_;
-    port = port_;
     isBad = false;
     keepGoing = true;
-    isTimeoutSet = isTimeoutSet_;
-    timeoutPeriod = timeoutPeriod_;
-    // Start our run method
-    myThread = new Thread(this);
-    myThread.start();
+    connectToServer(hostName, port, isTimeoutSet, timeout);
+  }
+
+
+  public CcsThread(CcsProgress status_, CcsServer server) {
+    requests = new Stack();
+    status = status_;
+    isBad = false;
+    keepGoing = true;
+    connectToServer(server);
+  }
+
+  public void connectToServer(String hostName, int port, boolean isTimeoutSet, int timeout) {
+    CcsServer tmp;
+    System.out.println("Connecting to " + hostName + ":" + port + "...\n");
+    try {
+      tmp = new CcsServer(hostName, port, isTimeoutSet, timeout);
+    } catch (UnknownHostException e) {
+      System.out.println("ERROR> Bad host name");
+      return;
+    } catch (IOException e) {
+      System.out.println("ERROR> Could not connect");
+      return;
+    }
+    System.out.println("Connected!\n");
+    connectToServer(tmp);
+  }
+
+  public void connectToServer(CcsServer s) {
+    ccs = s;
+    start();
   }
 
   public void addRequest(request req) { addRequest(req, false); }
@@ -114,19 +116,6 @@ public class CcsThread implements Runnable {
   public boolean isInvalid() { return isBad; }
 
   public void run() {
-    if (ccs == null) {
-      System.out.println("Connecting to " + hostName + ":" + port + "...\n");
-      status.setText("Connecting to " + hostName + ":" + port + "...");
-      try {
-        ccs = new CcsServer(hostName, port, isTimeoutSet, timeoutPeriod);
-      }
-      catch (UnknownHostException e) { ioError(e, "Bad host name"); }
-      catch (IOException e) { ioError(e, "Could not connect"); }
-    }
-
-    if (!keepGoing) return;
-
-    status.setText("Connected to " + hostName + " (" + ccs.getNumPes() + " processors)");
     while (keepGoing) {
       while (requests.empty() && keepGoing) {
         // Wait for another request
@@ -150,7 +139,7 @@ public class CcsThread implements Runnable {
       try {
         reply = ccs.recvResponse();
       } catch(SocketTimeoutException e1) {
-        if (isTimeoutSet) {
+        if (ccs.getIsTimeoutSet()) {
           System.out.println("timeout!");
           requests.push(curReq);
           continue;
