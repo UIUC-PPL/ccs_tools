@@ -11,7 +11,7 @@ import java.awt.*;
 import java.awt.event.*;
 import java.util.*;
 
-class Controller3d implements MouseListener, MouseMotionListener
+/*class Controller3d implements MouseListener, MouseMotionListener
 {
 	CcsImagePanel master;
 	Toolbar tools;
@@ -225,7 +225,7 @@ class Controller3d implements MouseListener, MouseMotionListener
 	{}
 	public void mouseExited(MouseEvent evt)
 	{}
-}
+}*/
 
 
 
