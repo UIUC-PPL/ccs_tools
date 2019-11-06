@@ -17,6 +17,7 @@ class CcsBalancePanel extends Panel {
   private int fps;
   private Timer timer;
   private LiveBalancePanel balancePanel;
+  boolean running;
 
   private class BalanceRequestTask extends TimerTask {
     private class CcsBalanceRequest extends CcsThread.request {
@@ -42,12 +43,13 @@ class CcsBalancePanel extends Panel {
     setLayout(new BorderLayout());
     ccsThread = new CcsThread(s);
 
+    running = true;
     fps = 1;
     balancePanel = new LiveBalancePanel();
     timer = new Timer();
-    timer.schedule(new BalanceRequestTask(), 1000 / fps);
+    scheduleNext();
 
-    TextField fpsField = new TextField("1");
+    TextField fpsField = new TextField("1", 3);
     fpsField.addTextListener(new TextListener() {
       public void textValueChanged(TextEvent e) {
         fps = Integer.parseInt(fpsField.getText());
@@ -55,15 +57,50 @@ class CcsBalancePanel extends Panel {
     });
 
     add(balancePanel, BorderLayout.CENTER);
-    add(fpsField, BorderLayout.PAGE_END);
+
+    Button pauseButton = new Button("Pause");
+    pauseButton.addActionListener(new ActionListener() {
+      public void actionPerformed(ActionEvent e) {
+        pause();
+      }
+    });
+
+    Button resumeButton = new Button("Resume");
+    resumeButton.addActionListener(new ActionListener() {
+      public void actionPerformed(ActionEvent e) {
+        resume();
+      }
+    });
+
+    Panel controlPanel = new Panel();
+    controlPanel.add(fpsField);
+    controlPanel.add(pauseButton);
+    controlPanel.add(resumeButton);
+    add(controlPanel, BorderLayout.PAGE_END);
   }
 
   public void setBalanceData(int[] data) {
     balancePanel.setData(data);
-    timer.schedule(new BalanceRequestTask(), 1000 / fps);
+    scheduleNext();
+  }
+
+  public void scheduleNext() {
+    if (running) {
+      timer.schedule(new BalanceRequestTask(), 1000 / fps);
+    }
+  }
+
+  public void pause() { running = false; }
+
+  public void resume() {
+    if (running == false) {
+      running = true;
+      scheduleNext();
+    }
   }
 
   public void stop() {
+    running = false;
     ccsThread.finish();
   }
 }
