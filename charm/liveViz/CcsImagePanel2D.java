@@ -15,11 +15,8 @@ import java.net.UnknownHostException;
 import charm.ccs.*;
 import charm.util.*;
 
-class CcsImagePanel2D extends Panel {
+class CcsImagePanel2D extends CcsPanel {
   //// Private Member Variables ////////////
-  private final CcsThread ccsThread;
-  private int fps;
-  private Timer timer;
   private MemImagePanel imagePanel;
   private Config config;
 
@@ -47,40 +44,22 @@ class CcsImagePanel2D extends Panel {
     }
   }
 
-  private class ImageRequestTask extends TimerTask {
-    public void run() {
-      ccsThread.addRequest(new CcsImageRequest(), true);
-    }
-  }
-
   //// Public Member Functions ////////////
   public CcsImagePanel2D(CcsServer s, Config c) {
-    setLayout(new BorderLayout());
-    ccsThread = new CcsThread(s);
+    super(s);
     config = c;
-
-    fps = 30;
     imagePanel = new MemImagePanel();
-    timer = new Timer();
-    timer.schedule(new ImageRequestTask(), 1000 / fps);
-
-    TextField fpsField = new TextField("30");
-    fpsField.addTextListener(new TextListener() {
-      public void textValueChanged(TextEvent e) {
-        fps = Integer.parseInt(fpsField.getText());
-      }
-    });
-
     add(imagePanel, BorderLayout.CENTER);
-    add(fpsField, BorderLayout.PAGE_END);
+    setFPSCap(30);
+    start();
+  }
+
+  public void makeRequest() {
+    sendRequest(new CcsImageRequest());
   }
 
   public void setImageData(byte[] data, int w, int h, boolean isColor) {
     imagePanel.setImageData(data, w, h, isColor);
-    timer.schedule(new ImageRequestTask(), 1000 / fps);
-  }
-
-  public void stop() {
-    ccsThread.finish();
+    scheduleNextRequest();
   }
 }
