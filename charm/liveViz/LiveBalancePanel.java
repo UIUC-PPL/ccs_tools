@@ -86,21 +86,17 @@ class LiveBalancePanel extends Panel {
     }
     Collections.sort(pes, new PENumComparator());
 
-    try {
-      SwingUtilities.invokeAndWait(new Runnable() {
-        public void run() {
-          dataset.setNotify(false);
-          dataset.clear();
-          for (PELoad pe : pes) {
-            for (int i = 0; i < pe.numChares; i++) {
-              dataset.addValue(pe.chareLoads[i], "PE" + pe.peNum + ":Chare" + i, "PE" + pe.peNum);
-            }
+    SwingUtilities.invokeLater(new Runnable() {
+      public void run() {
+        dataset.setNotify(false);
+        dataset.clear();
+        for (PELoad pe : pes) {
+          for (int i = 0; i < pe.numChares; i++) {
+            dataset.addValue(pe.chareLoads[i], "PE" + pe.peNum + ":Chare" + i, "PE" + pe.peNum);
           }
-          dataset.setNotify(true);
         }
-      });
-    }
-    catch (InterruptedException e) {}
-    catch (InvocationTargetException e) {}
+        dataset.setNotify(true);
+      }
+    });
   }
 }
