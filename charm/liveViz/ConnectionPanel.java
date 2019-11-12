@@ -45,7 +45,7 @@ class ConnectionPanel extends Panel {
   }
 
   private void init(MainPanel p) {
-    setLayout(new GridLayout(1,5));
+    setLayout(new GridLayout(0,5));
 
     serverField = new TextField(20);
     portField = new TextField(4);

@@ -107,6 +107,7 @@ public class MainPanel extends Panel {
 
     JSplitPane split = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT,
                            imagePanel, balancePanel);
+    split.setResizeWeight(0.5);
 
     GridBagConstraints gbc = new GridBagConstraints();
     gbc.fill = GridBagConstraints.BOTH;

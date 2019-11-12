@@ -20,8 +20,8 @@ public class MainApplet extends Applet
 			System.exit(1);
 		}
 
-		int     width     = 300;
-		int     height    = 200;
+		int     width     = 400;
+		int     height    = 300;
 		boolean maximized = false;
 
 		boolean wFlag = false;

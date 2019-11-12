@@ -47,6 +47,7 @@ class CcsImagePanel2D extends CcsPanel {
   //// Public Member Functions ////////////
   public CcsImagePanel2D(CcsServer s, Config c) {
     super(s);
+    setMinimumSize(new Dimension(200,200));
     config = c;
     imagePanel = new MemImagePanel();
     add(imagePanel, BorderLayout.CENTER);

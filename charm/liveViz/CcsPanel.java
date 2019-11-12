@@ -15,11 +15,26 @@ abstract class CcsPanel extends Panel {
   //// Private Member Variables ////////////
   private final CcsThread ccsThread;
   private boolean running;
-  private TextField fpsField;
+  private TextField fpsCapField;
   private int fpsCap;
   private Timer timer;
 
   private Panel controlPanel;
+  private Label fpsLabel;
+  private int fpsCounter;
+
+  private void updateFPS() {
+    fpsLabel.setText("FPS: " + fpsCounter);
+    fpsCounter = 0;
+    timer.schedule(new TimerTask() {
+      public void run() { updateFPS(); }
+    },
+    1000);
+  }
+
+  private void tick() {
+    fpsCounter++;
+  }
 
   //// Public Member Functions ////////////
   public CcsPanel(CcsServer s) {
@@ -30,12 +45,16 @@ abstract class CcsPanel extends Panel {
     fpsCap = 1;
     timer = new Timer();
 
-    Label fpsLabel = new Label("FPS Cap:");
-    fpsField = new TextField(""+fpsCap, 4);
+    fpsLabel = new Label("FPS: 000");
+    Panel fpsCapPanel = new Panel();
+    Label fpsCapLabel = new Label("FPS Cap:");
+    fpsCapField = new TextField(""+fpsCap, 4);
+    fpsCapPanel.add(fpsCapLabel);
+    fpsCapPanel.add(fpsCapField);
     Button updateButton = new Button("Update");
     updateButton.addActionListener(new ActionListener() {
       public void actionPerformed(ActionEvent e) {
-        setFPSCap(Integer.parseInt(fpsField.getText()));
+        setFPSCap(Integer.parseInt(fpsCapField.getText()));
       }
     });
 
@@ -54,17 +73,21 @@ abstract class CcsPanel extends Panel {
     });
 
     controlPanel = new Panel();
+    controlPanel.setLayout(new GridLayout(0,5));
     controlPanel.add(fpsLabel);
-    controlPanel.add(fpsField);
+    controlPanel.add(fpsCapPanel);
     controlPanel.add(updateButton);
     controlPanel.add(pauseButton);
     controlPanel.add(resumeButton);
 
     add(controlPanel, BorderLayout.PAGE_END);
+
+    updateFPS();
   }
 
   public void scheduleNextRequest() {
     if (running) {
+      tick();
       timer.schedule(new TimerTask() {
         public void run() { makeRequest(); }
       },
@@ -79,7 +102,7 @@ abstract class CcsPanel extends Panel {
   }
 
   public void setFPSCap(int f) {
-    fpsField.setText(""+f);
+    fpsCapField.setText(""+f);
     fpsCap = f;
   }
 

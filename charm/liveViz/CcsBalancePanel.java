@@ -31,6 +31,7 @@ class CcsBalancePanel extends CcsPanel {
   //// Public Member Functions ////////////
   public CcsBalancePanel(CcsServer s) {
     super(s);
+    setMinimumSize(new Dimension(200,200));
     balancePanel = new LiveBalancePanel();
     add(balancePanel, BorderLayout.CENTER);
     setFPSCap(5);
