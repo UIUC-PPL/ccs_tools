@@ -85,6 +85,22 @@ abstract class CcsPanel extends Panel {
     updateFPS();
   }
 
+  public void addToControlPanel(Component c) {
+    controlPanel.add(c);
+  }
+
+  public void setControlPanelVisibility(boolean v) {
+    controlPanel.setVisible(v);
+  }
+
+  public void hideControlPanel() {
+    setControlPanelVisibility(false);
+  }
+
+  public void showControlPanel() {
+    setControlPanelVisibility(true);
+  }
+
   public void scheduleNextRequest() {
     if (running) {
       tick();
