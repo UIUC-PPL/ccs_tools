@@ -35,9 +35,12 @@ class ConnectionPanel extends Panel {
         }
         System.out.println("Connected!\n");
         server = tmp;
-        serverField.disable();
-        portField.disable();
-        connectButton.disable();
+        // We eventually would like to disable connection interface when
+        // the server is up and running. So we need a listener or something
+        // to alert us when the conneciton is closed.
+        //serverField.disable();
+        //portField.disable();
+        //connectButton.disable();
         owner.setCcsServer(server);
       }
     });

@@ -23,6 +23,7 @@ public class MainPanel extends Panel {
   private CcsThread ccsThread;
 
   private ConnectionPanel connectionPanel;
+  private JSplitPane splitPane;
   private CcsImagePanel2D imagePanel;
   private CcsBalancePanel balancePanel;
 
@@ -91,6 +92,12 @@ public class MainPanel extends Panel {
   }
 
   public void setCcsServer(CcsServer s) {
+    stop();
+    if (splitPane != null) {
+      splitPane.remove(imagePanel);
+      splitPane.remove(balancePanel);
+      remove(splitPane);
+    }
     server = s;
     ccsThread = new CcsThread(server);
     ccsThread.addRequest(new CcsConfigRequest());
@@ -104,10 +111,9 @@ public class MainPanel extends Panel {
     config = c;
     imagePanel = new CcsImagePanel2D(server, config);
     balancePanel = new CcsBalancePanel(server);
-
-    JSplitPane split = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT,
-                           imagePanel, balancePanel);
-    split.setResizeWeight(0.5);
+    splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT,
+                               imagePanel, balancePanel);
+    splitPane.setResizeWeight(0.5);
 
     GridBagConstraints gbc = new GridBagConstraints();
     gbc.fill = GridBagConstraints.BOTH;
@@ -115,13 +121,15 @@ public class MainPanel extends Panel {
     gbc.gridx = 0;
     gbc.gridy = 1;
     gbc.weightx = 1.0; gbc.weighty = 1.0;
-    add(split, gbc);
+    add(splitPane, gbc);
 
     validate();
   }
   
   public void stop() {
-    imagePanel.stop();
-    balancePanel.stop();
+    if (imagePanel != null) imagePanel.stop();
+    if (balancePanel != null) balancePanel.stop();
+    if (ccsThread != null) ccsThread.stop();
+    if (server != null) server.close();
   }
 }
