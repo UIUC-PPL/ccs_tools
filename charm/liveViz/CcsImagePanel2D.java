@@ -19,6 +19,7 @@ class CcsImagePanel2D extends CcsPanel {
   //// Private Member Variables ////////////
   private MemImagePanel imagePanel;
   private Config config;
+  private CcsThread interactionThread;
 
   public class CcsImageRequest extends CcsThread.request {
     int width, height;
@@ -44,6 +45,23 @@ class CcsImagePanel2D extends CcsPanel {
     }
   }
 
+  public class CcsImageInteraction extends CcsThread.request {
+    public CcsImageInteraction(int x, int y) {
+      super("lvImageInteraction", null);
+      ByteArrayOutputStream bs = new ByteArrayOutputStream();
+      DataOutputStream os = new DataOutputStream(bs);
+      try {
+        os.writeInt(x);
+        os.writeInt(y);
+      } catch(IOException e) {
+        e.printStackTrace();
+      }
+      setData(bs.toByteArray());
+    }
+    public void handleReply(byte[] data) {
+    }
+  }
+
   //// Public Member Functions ////////////
   public CcsImagePanel2D(CcsServer s, Config c) {
     super(s);
@@ -51,6 +69,14 @@ class CcsImagePanel2D extends CcsPanel {
     config = c;
     imagePanel = new MemImagePanel();
     add(imagePanel, BorderLayout.CENTER);
+
+    interactionThread = new CcsThread(s);
+    imagePanel.addMouseListener(new MouseAdapter() {
+      public void mouseClicked(MouseEvent e) {
+        interactionThread.addRequest(new CcsImageInteraction(e.getX(), e.getY()));
+      }
+    });
+
     setFPSCap(30);
     start();
   }
