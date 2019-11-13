@@ -41,7 +41,7 @@ class LiveBalancePanel extends Panel {
 
   private class PELoadComparator implements Comparator<PELoad> {
     public int compare(PELoad pe1, PELoad pe2) {
-      return pe1.totalLoad - pe2.totalLoad;
+      return pe2.totalLoad - pe1.totalLoad; // Want heaviest at the top
     }
   }
 
