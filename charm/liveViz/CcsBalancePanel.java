@@ -15,15 +15,19 @@ import charm.util.*;
 class CcsBalancePanel extends CcsPanel {
   //// Private Member Variables ////////////
   private LiveBalancePanel balancePanel;
-  private CcsThread interactiveThread;
+  private CcsThread interactionThread;
 
   private class CcsBalanceRequest extends CcsThread.request {
     public CcsBalanceRequest() { super("lvBalanceData", 0); }
     public void handleReply(byte[] loadData) {
       IntBuffer ib = ByteBuffer.wrap(loadData).order(ByteOrder.LITTLE_ENDIAN).asIntBuffer();
-      int[] data = new int[ib.capacity()];
-      ib.get(data);
-      setBalanceData(data);
+      if (ib.capacity() > 0) {
+        int[] data = new int[ib.capacity()];
+        ib.get(data);
+        setBalanceData(data);
+      } else {
+        scheduleNextRequest();
+      }
     }
   }
 
@@ -94,11 +98,12 @@ class CcsBalancePanel extends CcsPanel {
       }
     });
 
-    interactiveThread = new CcsThread(s);
+    interactionThread = new CcsThread(s);
+    interactionThread.setName("BalanceInteractionRequestThread");
     Button balanceButton = new Button("Balance");
     balanceButton.addActionListener(new ActionListener() {
       public void actionPerformed(ActionEvent e) {
-        interactiveThread.addRequest(new CcsDoBalanceRequest());
+        interactionThread.addRequest(new CcsDoBalanceRequest());
       }
     });
 
@@ -110,6 +115,7 @@ class CcsBalancePanel extends CcsPanel {
     addToControlPanel(balanceButton);
 
     add(balancePanel, BorderLayout.CENTER);
+    setName("BalanceDataRequestThread");
     setFPSCap(5);
     start();
   }
@@ -121,5 +127,10 @@ class CcsBalancePanel extends CcsPanel {
   public void setBalanceData(int[] data) {
     balancePanel.setData(data);
     scheduleNextRequest();
+  }
+
+  public void stop() {
+    interactionThread.finish();
+    super.stop();
   }
 }

@@ -85,6 +85,10 @@ abstract class CcsPanel extends Panel {
     updateFPS();
   }
 
+  public void setName(String name) {
+    ccsThread.setName(name);
+  }
+
   public void addToControlPanel(Component c) {
     controlPanel.add(c);
   }
