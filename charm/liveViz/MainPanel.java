@@ -119,7 +119,7 @@ public class MainPanel extends Panel {
     perfPane.setResizeWeight(0.90);
 
     splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, imagePanel, perfPane);
-    splitPane.setResizeWeight(0.5);
+    splitPane.setResizeWeight(0.6);
 
     GridBagConstraints gbc = new GridBagConstraints();
     gbc.fill = GridBagConstraints.BOTH;
