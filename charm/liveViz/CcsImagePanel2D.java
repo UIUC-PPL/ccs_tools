@@ -41,7 +41,11 @@ class CcsImagePanel2D extends CcsPanel {
     }
 
     public void handleReply(byte[] data) {
-      setImageData(data, width, height, config.isColor);
+      if (data.length > 0) {
+        setImageData(data, width, height, config.isColor);
+      } else {
+        scheduleNextRequest();
+      }
     }
   }
 
@@ -71,12 +75,14 @@ class CcsImagePanel2D extends CcsPanel {
     add(imagePanel, BorderLayout.CENTER);
 
     interactionThread = new CcsThread(s);
+    interactionThread.setName("ImageInteractionRequestThread");
     imagePanel.addMouseListener(new MouseAdapter() {
       public void mouseClicked(MouseEvent e) {
         interactionThread.addRequest(new CcsImageInteraction(e.getX(), e.getY()));
       }
     });
 
+    setName("ImageDataRequestThread");
     setFPSCap(30);
     start();
   }
@@ -88,5 +94,10 @@ class CcsImagePanel2D extends CcsPanel {
   public void setImageData(byte[] data, int w, int h, boolean isColor) {
     imagePanel.setImageData(data, w, h, isColor);
     scheduleNextRequest();
+  }
+
+  public void stop() {
+    interactionThread.finish();
+    super.stop();
   }
 }
