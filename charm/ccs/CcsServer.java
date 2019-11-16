@@ -272,34 +272,42 @@ public class CcsServer
     */
    private boolean isTimeoutSet;
    private int timeoutPeriod;
-   public byte[] recvResponse(Request r) throws IOException,SocketTimeoutException
-   {
-	debug("  Waiting for response");
-	DataInputStream i = null;
-	if (isTimeoutSet) {
-		r.sock.setSoTimeout(timeoutPeriod);
-		i=new DataInputStream(Channels.newInputStream(Channels.newChannel(r.sock.getInputStream())));
-	}
-	else {
-		i=new DataInputStream(Channels.newInputStream(r.sock.getChannel()));
-	}
-	if (isAuth) {
-	    byte[] hash=new byte[SHA_len];
-	    i.readFully(hash);
-	    if (!SHA_checkHash(key,r.salt,null,hash)) 
-		abort("Server's key does not match ours (during response)!");
-	}
-   	int replyLen=i.readInt(); 
-	debug("  Response will be "+replyLen+" bytes");	
-   	byte[] reply=new byte[replyLen];
-        i.readFully(reply);  //All data may not come in the same packet.
-   	//if (replyLen!=i.read(reply,0,replyLen))
-   	//	throw new IOException("CCS Reply socket closed early!");
-	debug("  Got entire response");
-   	r.sock.close();
-	r.sock=null;
-   	return reply;
-   }
+
+  public byte[] recvResponse(Request r) throws IOException, SocketTimeoutException {
+    DataInputStream i = null;
+    if (isTimeoutSet) {
+      r.sock.setSoTimeout(timeoutPeriod);
+      i = new DataInputStream(Channels.newInputStream(Channels.newChannel(r.sock.getInputStream())));
+    } else {
+      i = new DataInputStream(Channels.newInputStream(r.sock.getChannel()));
+    }
+
+    if (isAuth) {
+      byte[] hash = new byte[SHA_len];
+      i.readFully(hash);
+      if (!SHA_checkHash(key,r.salt,null,hash)) {
+        abort("Server's key does not match ours (during response)!");
+      }
+    }
+
+    int replyLen = i.readInt();
+    byte[] reply;
+    if (replyLen < 0) {
+      System.err.println("ERROR> Received negative length reply");
+      reply = new byte[0];
+    } else {
+      reply = new byte[replyLen];
+      try {
+        i.readFully(reply); // All data may not come in the same packet.
+      } catch(EOFException e) {
+        System.out.println("Error> Got EOF excetion during read");
+        reply = new byte[0];
+      }
+    }
+    r.sock.close();
+    r.sock=null;
+    return reply;
+  }
    
    /** Determine if a response is pending on the given socket
      */
