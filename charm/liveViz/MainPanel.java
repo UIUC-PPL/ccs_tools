@@ -24,8 +24,10 @@ public class MainPanel extends Panel {
 
   private ConnectionPanel connectionPanel;
   private JSplitPane splitPane;
+  private JSplitPane perfPane;
   private CcsImagePanel2D imagePanel;
   private CcsBalancePanel balancePanel;
+  private CcsPerformancePanel perfPanel;
 
   private class CcsConfigRequest extends CcsThread.request {
     public CcsConfigRequest() {
@@ -94,25 +96,29 @@ public class MainPanel extends Panel {
   public void setCcsServer(CcsServer s) {
     stop();
     if (splitPane != null) {
+      perfPane.remove(balancePanel);
+      perfPane.remove(perfPanel);
       splitPane.remove(imagePanel);
-      splitPane.remove(balancePanel);
+      splitPane.remove(perfPane);
       remove(splitPane);
     }
     server = s;
     ccsThread = new CcsThread(server);
+    ccsThread.setName("ImageConfigRequestThread");
     ccsThread.addRequest(new CcsConfigRequest());
   }
 
   public void setConfig(Config c) {
     ccsThread.finish();
-    if (imagePanel != null) {
-      remove(imagePanel);
-    }
     config = c;
     imagePanel = new CcsImagePanel2D(server, config);
     balancePanel = new CcsBalancePanel(server);
-    splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT,
-                               imagePanel, balancePanel);
+    perfPanel = new CcsPerformancePanel(server);
+
+    perfPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, balancePanel, perfPanel);
+    perfPane.setResizeWeight(0.90);
+
+    splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, imagePanel, perfPane);
     splitPane.setResizeWeight(0.5);
 
     GridBagConstraints gbc = new GridBagConstraints();
@@ -129,7 +135,8 @@ public class MainPanel extends Panel {
   public void stop() {
     if (imagePanel != null) imagePanel.stop();
     if (balancePanel != null) balancePanel.stop();
-    if (ccsThread != null) ccsThread.stop();
+    if (perfPanel != null) perfPanel.stop();
+    if (ccsThread != null) ccsThread.finish();
     if (server != null) server.close();
   }
 }
