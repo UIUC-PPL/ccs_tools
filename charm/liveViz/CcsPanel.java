@@ -101,6 +101,7 @@ abstract class CcsPanel extends Panel {
 
   public void setControlPanelVisibility(boolean v) {
     controlPanel.setVisible(v);
+    validate();
   }
 
   public void hideControlPanel() {

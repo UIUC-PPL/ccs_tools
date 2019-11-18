@@ -129,6 +129,7 @@ public class MainPanel extends Panel {
     imagePanel.hideControlPanel();
     balancePanel.hideControlPanel();
     perfPanel.hideControlPanel();
+    validate();
   }
 
   public void showControls() {
@@ -137,6 +138,7 @@ public class MainPanel extends Panel {
     imagePanel.showControlPanel();
     balancePanel.showControlPanel();
     perfPanel.showControlPanel();
+    validate();
   }
 
   public void setCcsServer(CcsServer s) {
