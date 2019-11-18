@@ -28,6 +28,7 @@ public class MainPanel extends Panel {
   private CcsImagePanel2D imagePanel;
   private CcsBalancePanel balancePanel;
   private CcsPerformancePanel perfPanel;
+  private boolean controlsVisible;
 
   private class CcsConfigRequest extends CcsThread.request {
     public CcsConfigRequest() {
@@ -49,6 +50,8 @@ public class MainPanel extends Panel {
 
     tools = null;
     status = new Label();
+
+    controlsVisible = true;
 
     String connMachine=server;
     int connPort = Integer.parseInt(port);
@@ -110,6 +113,30 @@ public class MainPanel extends Panel {
     add(status, gbc);
 
     validate();
+  }
+
+  public void toggleControlVisibility() {
+    if (controlsVisible) {
+      hideControls();
+    } else {
+      showControls();
+    }
+  }
+
+  public void hideControls() {
+    controlsVisible = false;
+    connectionPanel.setVisible(false);
+    imagePanel.hideControlPanel();
+    balancePanel.hideControlPanel();
+    perfPanel.hideControlPanel();
+  }
+
+  public void showControls() {
+    controlsVisible = true;
+    connectionPanel.setVisible(true);
+    imagePanel.showControlPanel();
+    balancePanel.showControlPanel();
+    perfPanel.showControlPanel();
   }
 
   public void setCcsServer(CcsServer s) {

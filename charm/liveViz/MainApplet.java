@@ -69,7 +69,29 @@ public class MainApplet extends Applet
 			{ System.exit(0); }
 		  });
 		}
+
+    MenuBar menuBar = new MenuBar();
+    Menu menu = new Menu("Options");
+    MenuItem showControls = new MenuItem("Show Controls");
+    MenuItem hideControls = new MenuItem("Hide Controls");
+    menu.add(showControls);
+    menu.add(hideControls);
+    menuBar.add(menu);
+
+    showControls.addActionListener(new ActionListener() {
+      public void actionPerformed(ActionEvent e) {
+        p.showControls();
+      }
+    });
+
+    hideControls.addActionListener(new ActionListener() {
+      public void actionPerformed(ActionEvent e) {
+        p.hideControls();
+      }
+    });
+
 		top.setTitle("Parallel Data Visualization");
+    top.setMenuBar(menuBar);
 		top.add(p);
 		top.pack();
 		top.setSize(width,height);
