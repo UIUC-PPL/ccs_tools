@@ -72,6 +72,17 @@ public class MainPanel extends Panel {
     }
     tools = new Toolbar(toolsImg, 32, 32, 5, status, toolDesc);
 
+    imagePanel = new CcsImagePanel2D();
+    balancePanel = new CcsBalancePanel();
+    perfPanel = new CcsPerformancePanel();
+
+    perfPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, balancePanel, perfPanel);
+    perfPane.setResizeWeight(0.90);
+
+    splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, imagePanel, perfPane);
+    splitPane.setResizeWeight(0.6);
+    splitPane.setVisible(false);
+
     connectionPanel = new ConnectionPanel(this, server, port);
 
     GridBagConstraints gbc = new GridBagConstraints();
@@ -84,44 +95,6 @@ public class MainPanel extends Panel {
     gbc.weightx = 1.0; gbc.weighty = 0.01;
     add(connectionPanel, gbc);
 
-    gbc.fill = GridBagConstraints.HORIZONTAL;
-    gbc.gridwidth = 1; gbc.gridheight = 1;
-    gbc.gridx = 0;
-    gbc.gridy = 3;
-    gbc.weightx = 1.0; gbc.weighty = 0.01;
-    add(status, gbc);
-    validate();
-  }
-
-  public void setCcsServer(CcsServer s) {
-    stop();
-    if (splitPane != null) {
-      perfPane.remove(balancePanel);
-      perfPane.remove(perfPanel);
-      splitPane.remove(imagePanel);
-      splitPane.remove(perfPane);
-      remove(splitPane);
-    }
-    server = s;
-    ccsThread = new CcsThread(server);
-    ccsThread.setName("ImageConfigRequestThread");
-    ccsThread.addRequest(new CcsConfigRequest());
-  }
-
-  public void setConfig(Config c) {
-    ccsThread.finish();
-    config = c;
-    imagePanel = new CcsImagePanel2D(server, config);
-    balancePanel = new CcsBalancePanel(server);
-    perfPanel = new CcsPerformancePanel(server);
-
-    perfPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, balancePanel, perfPanel);
-    perfPane.setResizeWeight(0.90);
-
-    splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, imagePanel, perfPane);
-    splitPane.setResizeWeight(0.6);
-
-    GridBagConstraints gbc = new GridBagConstraints();
     gbc.fill = GridBagConstraints.BOTH;
     gbc.gridwidth = 1; gbc.gridheight = 1;
     gbc.gridx = 0;
@@ -129,13 +102,36 @@ public class MainPanel extends Panel {
     gbc.weightx = 1.0; gbc.weighty = 1.0;
     add(splitPane, gbc);
 
+    gbc.fill = GridBagConstraints.HORIZONTAL;
+    gbc.gridwidth = 1; gbc.gridheight = 1;
+    gbc.gridx = 0;
+    gbc.gridy = 2;
+    gbc.weightx = 1.0; gbc.weighty = 0.01;
+    add(status, gbc);
+
+    validate();
+  }
+
+  public void setCcsServer(CcsServer s) {
+    stop();
+    server = s;
+    ccsThread = new CcsThread(server);
+    ccsThread.setName("CcsRequestThread");
+    ccsThread.addRequest(new CcsConfigRequest());
+
+    balancePanel.setThread(ccsThread);
+    perfPanel.setThread(ccsThread);
+  }
+
+  public void setConfig(Config c) {
+    config = c;
+    imagePanel.setConfig(config);
+    imagePanel.setThread(ccsThread);
+    splitPane.setVisible(true);
     validate();
   }
   
   public void stop() {
-    if (imagePanel != null) imagePanel.stop();
-    if (balancePanel != null) balancePanel.stop();
-    if (perfPanel != null) perfPanel.stop();
     if (ccsThread != null) ccsThread.finish();
     if (server != null) server.close();
   }

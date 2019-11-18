@@ -31,15 +31,12 @@ class CcsPerformancePanel extends CcsPanel {
   }
 
   //// Public Member Functions ////////////
-  public CcsPerformancePanel(CcsServer s) {
-    super(s);
+  public CcsPerformancePanel() {
     setMinimumSize(new Dimension(200,200));
     performancePanel = new PerformancePanel();
 
     add(performancePanel, BorderLayout.CENTER);
-    setName("PerformanceDataRequestThread");
     setFPSCap(5);
-    start();
   }
 
   public void makeRequest() {

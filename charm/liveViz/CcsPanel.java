@@ -13,11 +13,12 @@ import charm.util.*;
 
 abstract class CcsPanel extends Panel {
   //// Private Member Variables ////////////
-  private final CcsThread ccsThread;
+  private CcsThread ccsThread;
   private boolean running;
   private TextField fpsCapField;
   private int fpsCap;
-  private Timer timer;
+  private Timer ccsTimer;
+  private Timer fpsTimer;
 
   private Panel controlPanel;
   private Label fpsLabel;
@@ -26,7 +27,7 @@ abstract class CcsPanel extends Panel {
   private void updateFPS() {
     fpsLabel.setText("FPS: " + fpsCounter);
     fpsCounter = 0;
-    timer.schedule(new TimerTask() {
+    fpsTimer.schedule(new TimerTask() {
       public void run() { updateFPS(); }
     },
     1000);
@@ -37,13 +38,12 @@ abstract class CcsPanel extends Panel {
   }
 
   //// Public Member Functions ////////////
-  public CcsPanel(CcsServer s) {
+  public CcsPanel() {
     setLayout(new BorderLayout());
-    ccsThread = new CcsThread(s);
 
     running = false;
     fpsCap = 1;
-    timer = new Timer();
+    fpsTimer = new Timer();
 
     fpsLabel = new Label("FPS: 000");
     Panel fpsCapPanel = new Panel();
@@ -85,8 +85,14 @@ abstract class CcsPanel extends Panel {
     updateFPS();
   }
 
-  public void setName(String name) {
-    ccsThread.setName(name);
+  public void setThread(CcsThread t) {
+    stop();
+    ccsThread = t;
+    if (ccsTimer != null) {
+      ccsTimer.cancel();
+    }
+    ccsTimer = new Timer();
+    start();
   }
 
   public void addToControlPanel(Component c) {
@@ -108,7 +114,7 @@ abstract class CcsPanel extends Panel {
   public void scheduleNextRequest() {
     if (running) {
       tick();
-      timer.schedule(new TimerTask() {
+      ccsTimer.schedule(new TimerTask() {
         public void run() { makeRequest(); }
       },
       1000 / fpsCap);
@@ -118,7 +124,9 @@ abstract class CcsPanel extends Panel {
   public abstract void makeRequest();
 
   public void sendRequest(CcsThread.request r) {
-    ccsThread.addRequest(r, true);
+    synchronized (ccsThread) {
+      ccsThread.addRequest(r, false);
+    }
   }
 
   public void setFPSCap(int f) {
@@ -139,6 +147,5 @@ abstract class CcsPanel extends Panel {
 
   public void stop() {
     running = false;
-    ccsThread.finish();
   }
 }

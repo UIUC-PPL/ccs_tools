@@ -19,7 +19,6 @@ class CcsImagePanel2D extends CcsPanel {
   //// Private Member Variables ////////////
   private MemImagePanel imagePanel;
   private Config config;
-  private CcsThread interactionThread;
 
   public class CcsImageRequest extends CcsThread.request {
     int width, height;
@@ -67,24 +66,25 @@ class CcsImagePanel2D extends CcsPanel {
   }
 
   //// Public Member Functions ////////////
-  public CcsImagePanel2D(CcsServer s, Config c) {
-    super(s);
+  public CcsImagePanel2D() {
     setMinimumSize(new Dimension(200,200));
-    config = c;
     imagePanel = new MemImagePanel();
     add(imagePanel, BorderLayout.CENTER);
 
-    interactionThread = new CcsThread(s);
-    interactionThread.setName("ImageInteractionRequestThread");
+    //interactionThread = new CcsThread(s);
+    //interactionThread.setName("ImageInteractionRequestThread");
     imagePanel.addMouseListener(new MouseAdapter() {
       public void mouseClicked(MouseEvent e) {
-        interactionThread.addRequest(new CcsImageInteraction(e.getX(), e.getY()));
+        sendRequest(new CcsImageInteraction(e.getX(), e.getY()));
       }
     });
 
     setName("ImageDataRequestThread");
     setFPSCap(30);
-    start();
+  }
+
+  public void setConfig(Config c) {
+    config = c;
   }
 
   public void makeRequest() {
@@ -94,10 +94,5 @@ class CcsImagePanel2D extends CcsPanel {
   public void setImageData(byte[] data, int w, int h, boolean isColor) {
     imagePanel.setImageData(data, w, h, isColor);
     scheduleNextRequest();
-  }
-
-  public void stop() {
-    interactionThread.finish();
-    super.stop();
   }
 }
