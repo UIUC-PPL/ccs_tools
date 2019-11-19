@@ -141,6 +141,39 @@ public class MainPanel extends Panel {
     validate();
   }
 
+  public void showImage() {
+    imagePanel.setVisible(true);
+    imagePanel.resume();
+    validate();
+  }
+  public void hideImage() {
+    imagePanel.setVisible(false);
+    imagePanel.pause();
+    validate();
+  }
+
+  public void showBalance() {
+    balancePanel.setVisible(true);
+    balancePanel.resume();
+    validate();
+  }
+  public void hideBalance() {
+    balancePanel.setVisible(false);
+    balancePanel.pause();
+    validate();
+  }
+
+  public void showPerf() {
+    perfPanel.setVisible(true);
+    perfPanel.resume();
+    validate();
+  }
+  public void hidePerf() {
+    perfPanel.setVisible(false);
+    perfPanel.pause();
+    validate();
+  }
+
   public void setCcsServer(CcsServer s) {
     stop();
     server = s;

@@ -74,8 +74,20 @@ public class MainApplet extends Applet
     Menu menu = new Menu("Options");
     MenuItem showControls = new MenuItem("Show Controls");
     MenuItem hideControls = new MenuItem("Hide Controls");
+    MenuItem showImage = new MenuItem("Show Image View");
+    MenuItem hideImage = new MenuItem("Hide Image View");
+    MenuItem showBalance = new MenuItem("Show Balance View");
+    MenuItem hideBalance = new MenuItem("Hide Balance View");
+    MenuItem showPerf = new MenuItem("Show Performance View");
+    MenuItem hidePerf = new MenuItem("Hide Performance View");
     menu.add(showControls);
     menu.add(hideControls);
+    menu.add(showImage);
+    menu.add(hideImage);
+    menu.add(showBalance);
+    menu.add(hideBalance);
+    menu.add(showPerf);
+    menu.add(hidePerf);
     menuBar.add(menu);
 
     showControls.addActionListener(new ActionListener() {
@@ -83,10 +95,42 @@ public class MainApplet extends Applet
         p.showControls();
       }
     });
-
     hideControls.addActionListener(new ActionListener() {
       public void actionPerformed(ActionEvent e) {
         p.hideControls();
+      }
+    });
+
+    showImage.addActionListener(new ActionListener() {
+      public void actionPerformed(ActionEvent e) {
+        p.showImage();
+      }
+    });
+    hideImage.addActionListener(new ActionListener() {
+      public void actionPerformed(ActionEvent e) {
+        p.hideImage();
+      }
+    });
+
+    showBalance.addActionListener(new ActionListener() {
+      public void actionPerformed(ActionEvent e) {
+        p.showBalance();
+      }
+    });
+    hideBalance.addActionListener(new ActionListener() {
+      public void actionPerformed(ActionEvent e) {
+        p.hideBalance();
+      }
+    });
+
+    showPerf.addActionListener(new ActionListener() {
+      public void actionPerformed(ActionEvent e) {
+        p.showPerf();
+      }
+    });
+    hidePerf.addActionListener(new ActionListener() {
+      public void actionPerformed(ActionEvent e) {
+        p.hidePerf();
       }
     });
 
