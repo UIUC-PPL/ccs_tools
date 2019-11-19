@@ -52,6 +52,17 @@ class CcsBalancePanel extends CcsPanel {
     Checkbox showIdle = new Checkbox("Show Idle");
     Checkbox sortByLoad = new Checkbox("Sort By Load");
 
+    Panel bpdPanel = new Panel();
+    Label bpdLabel = new Label("Bits/Dim:");
+    TextField bpdField = new TextField(""+4, 2);
+    bpdPanel.add(bpdLabel);
+    bpdPanel.add(bpdField);
+    bpdField.addTextListener(new TextListener() {
+      public void textValueChanged(TextEvent e) {
+        balancePanel.setBitsPerDim(Integer.parseInt(bpdField.getText()));
+      }
+    });
+
     showChares.addItemListener(new ItemListener() {
       public void itemStateChanged(ItemEvent e) {
         boolean on = ((Checkbox)e.getSource()).getState();
@@ -104,10 +115,11 @@ class CcsBalancePanel extends CcsPanel {
     });
 
     addToControlPanel(rotateButton);
+    addToControlPanel(bpdPanel);
     addToControlPanel(showChares);
     addToControlPanel(showBG);
     addToControlPanel(showIdle);
-    addToControlPanel(sortByLoad);
+    //addToControlPanel(sortByLoad);
     addToControlPanel(balanceButton);
 
     add(balancePanel, BorderLayout.CENTER);

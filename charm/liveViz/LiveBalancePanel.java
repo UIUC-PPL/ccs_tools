@@ -19,6 +19,8 @@ class LiveBalancePanel extends Panel {
   private ChartPanel chartPanel;
   private DefaultCategoryDataset dataset;
   private Comparator<PELoad> comparator;
+  private Paint[] defaultColors;
+  private int bitsPerDim;
 
   private boolean showChareLoads, showBGLoad, showIdleTime;
 
@@ -33,6 +35,7 @@ class LiveBalancePanel extends Panel {
   private class PELoad {
     public int peNum;
     public int numChares;
+    public int[] chareIDs;
     public int[] chareLoads;
     public int bg;
     public int totalLoad;
@@ -66,6 +69,8 @@ class LiveBalancePanel extends Panel {
       );
     comparator = new PENumComparator();
 
+    defaultColors = ChartColor.createDefaultPaintArray();
+
     Color transparent = new Color(0,0,0,0);
     chart.setBackgroundPaint(transparent);
 
@@ -78,6 +83,8 @@ class LiveBalancePanel extends Panel {
     renderer.setShadowVisible(false);
 
     showChareLoads = showBGLoad = showIdleTime = false;
+
+    bitsPerDim = 4;
 
     chartPanel = new ChartPanel(chart);
     chartPanel.setMinimumSize(new java.awt.Dimension(200, 800));
@@ -97,10 +104,12 @@ class LiveBalancePanel extends Panel {
       pe.idle = data[index++];
       pe.numChares = data[index++];
       totalChares += pe.numChares;
+      pe.chareIDs = new int[pe.numChares];
       pe.chareLoads = new int[pe.numChares];
-      for (int i = 0; i < pe.numChares; i++, index++) {
-        pe.chareLoads[i] = data[index];
-        pe.totalLoad += data[index];
+      for (int i = 0; i < pe.numChares; i++) {
+        pe.chareIDs[i] = data[index++];
+        pe.chareLoads[i] = data[index++];
+        pe.totalLoad += pe.chareLoads[i];
       }
       pes.add(pe);
     }
@@ -110,6 +119,8 @@ class LiveBalancePanel extends Panel {
       public void run() {
         dataset.setNotify(false);
         dataset.clear();
+        CategoryPlot plot = chart.getCategoryPlot();
+        BarRenderer renderer = (BarRenderer) plot.getRenderer();
         for (PELoad pe : pes) {
           if (showBGLoad) {
             dataset.addValue(pe.bg, "BG", "PE" + pe.peNum);
@@ -117,7 +128,10 @@ class LiveBalancePanel extends Panel {
           int objLoad = 0;
           for (int i = 0; i < pe.numChares; i++) {
             if (showChareLoads) {
-              dataset.addValue(pe.chareLoads[i], "PE" + pe.peNum + ":Chare" + i, "PE" + pe.peNum);
+              int mask = ~((~0) << bitsPerDim);
+              String key = "(" + (pe.chareIDs[i] & mask) + "," + (pe.chareIDs[i] >> bitsPerDim) + ")";
+              dataset.addValue(pe.chareLoads[i], key, "PE" + pe.peNum);
+              renderer.setSeriesPaint(dataset.getRowIndex(key), defaultColors[(pe.chareIDs[i] % defaultColors.length)]);
             }
             objLoad += pe.chareLoads[i];
           }
@@ -129,14 +143,16 @@ class LiveBalancePanel extends Panel {
           }
         }
 
-        CategoryPlot plot = chart.getCategoryPlot();
-        BarRenderer renderer = (BarRenderer) plot.getRenderer();
         if (showBGLoad) {
           renderer.setSeriesPaint(0, Color.BLACK);
         }
         dataset.setNotify(true);
       }
     });
+  }
+
+  public void setBitsPerDim(int bpd) {
+    bitsPerDim = bpd;
   }
 
   public void rotate() {
