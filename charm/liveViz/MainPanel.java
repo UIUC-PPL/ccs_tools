@@ -113,6 +113,8 @@ public class MainPanel extends Panel {
     add(status, gbc);
 
     validate();
+
+    hidePerf();
   }
 
   public void toggleControlVisibility() {

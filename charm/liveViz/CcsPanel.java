@@ -86,13 +86,17 @@ abstract class CcsPanel extends Panel {
   }
 
   public void setThread(CcsThread t) {
+    boolean wasRunning = running;
+    boolean hadThread = (ccsThread != null);
     stop();
     ccsThread = t;
     if (ccsTimer != null) {
       ccsTimer.cancel();
     }
     ccsTimer = new Timer();
-    start();
+    if (wasRunning || !hadThread) {
+      start();
+    }
   }
 
   public void addToControlPanel(Component c) {
