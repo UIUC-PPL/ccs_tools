@@ -114,6 +114,9 @@ class CcsBalancePanel extends CcsPanel {
       }
     });
 
+    showChares.setState(true);
+    balancePanel.showChares();
+
     addToControlPanel(rotateButton);
     addToControlPanel(bpdPanel);
     addToControlPanel(showChares);
