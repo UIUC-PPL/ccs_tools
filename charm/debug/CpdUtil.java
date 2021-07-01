@@ -227,6 +227,7 @@ public class CpdUtil {
     	return ! (ccsHandlerName.equalsIgnoreCase("debug/converse/freeze") ||
 				ccsHandlerName.equalsIgnoreCase("debug/converse/quit") ||
 				ccsHandlerName.equalsIgnoreCase("debug/charm/continue") ||
+				ccsHandlerName.equalsIgnoreCase("debug/charm/deliverall") ||
 				ccsHandlerName.equalsIgnoreCase("debug/charm/next"));
     }
     
