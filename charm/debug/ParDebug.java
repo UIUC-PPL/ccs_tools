@@ -954,7 +954,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
     
     public void deliverSingle() {
 		// deliver a single message
-		server.bcastCcsRequest("debug/charm/next", "", ((PeSet)peList.getSelectedValue()).frozenIterator().toIDs());
+		server.bcastCcsRequest("debug/charm/next", "", ((PeSet)peList.getSelectedValue()).toIDsArray());
 		messageDelivered();
     }
     
@@ -1129,8 +1129,8 @@ DEPRECATED!! The correct implementation is in CpdList.java
     		startProgram(true);
     	} else if (e.getActionCommand().equals("freeze")) {
     		// stop program
-    		server.bcastCcsRequest("debug/converse/freeze", "", ((PeSet)peList.getSelectedValue()).runningIterator().toIDs());
-    		Iterator iter = ((PeSet)peList.getSelectedValue()).runningIterator();
+    		server.bcastCcsRequest("debug/converse/freeze", "", ((PeSet)peList.getSelectedValue()).toIDsArray());
+    		Iterator iter = ((PeSet)peList.getSelectedValue()).iterator();
     		while (iter.hasNext()) {
     			((Processor)iter.next()).setFreezing();
     		}
@@ -1454,8 +1454,8 @@ DEPRECATED!! The correct implementation is in CpdList.java
     } // end of actionPerformed
 
     public void command_continue() {
-		server.bcastCcsRequest("debug/charm/continue", "", ((PeSet)peList.getSelectedValue()).frozenIterator().toIDs());
-		Iterator iter = ((PeSet)peList.getSelectedValue()).frozenIterator();
+		server.bcastCcsRequest("debug/charm/continue", "", ((PeSet)peList.getSelectedValue()).toIDsArray());
+		Iterator iter = ((PeSet)peList.getSelectedValue()).iterator();
 		while (iter.hasNext()) {
 			((Processor)iter.next()).setRunning();
 		}
@@ -1528,6 +1528,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
 		menuActionContinue.setEnabled(true);
 		freezeButton.setEnabled(true);
 		menuActionFreeze.setEnabled(true);
+/*
     	if (set.isAllFrozen()) {
     		freezeButton.setEnabled(false);
     		menuActionFreeze.setEnabled(false);
@@ -1537,6 +1538,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
     		continueButton.setEnabled(false);
     		menuActionContinue.setEnabled(false);
     	}
+*/
     }
     
     private class PeSetListener implements ListSelectionListener {
