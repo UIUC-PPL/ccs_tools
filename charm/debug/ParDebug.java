@@ -794,7 +794,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
        quitButton.addActionListener(this);
        quitButton.setPreferredSize(new Dimension(100,80));
         
-       startGdbButton = new JButton("Start GDB");
+       startGdbButton = new JButton("GDB");
        startGdbButton.setVerticalTextPosition(AbstractButton.BOTTOM);
        startGdbButton.setHorizontalTextPosition(AbstractButton.CENTER);
        startGdbButton.setActionCommand("startgdb");
@@ -837,7 +837,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
        peList.addMouseListener(popupListener);
        //peActualPanel.setLayout(new BoxLayout(peActualPanel, BoxLayout.Y_AXIS));
        JScrollPane pesScrollPane = new JScrollPane(peList);
-       pesScrollPane.setBorder(BorderFactory.createTitledBorder("Pes"));
+       pesScrollPane.setBorder(BorderFactory.createTitledBorder("PEs"));
        pePanel.add(pesScrollPane);
 
        outputAndPePanel.add(programOutputScrollPane);
