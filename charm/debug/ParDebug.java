@@ -126,6 +126,7 @@ public class ParDebug extends JPanel
     private JButton quitButton;
     private JButton freezeButton;
     private JButton startGdbButton;
+    private JButton flushButton;
     
     private DefaultListModel peListModel;
     private JList peList;
@@ -426,6 +427,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
     		enableButtons();
     		peList.repaint();
     		//stepButton.setEnabled(true);
+    		//flushButton.setEnabled(true);
     		//continueButton.setEnabled(true);
     		//freezeButton.setEnabled(false);
     		CpdListInfo list = cpdLists[listsbox.getSelectedIndex()];
@@ -447,6 +449,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
     		enableButtons();
     		peList.repaint();
     		//stepButton.setEnabled(true);
+    		//flushButton.setEnabled(true);
     		//continueButton.setEnabled(true);
     		//freezeButton.setEnabled(false);
     		CpdListInfo list = cpdLists[listsbox.getSelectedIndex()];
@@ -764,6 +767,15 @@ DEPRECATED!! The correct implementation is in CpdList.java
        stepButton.setToolTipText("Deliver a single message.");
        stepButton.addActionListener(this);
        stepButton.setPreferredSize(new Dimension(100,80));
+
+       flushButton = new JButton("Flush");
+       flushButton.setVerticalTextPosition(AbstractButton.BOTTOM);
+       flushButton.setHorizontalTextPosition(AbstractButton.CENTER);
+       flushButton.setActionCommand("deliverall");
+       flushButton.setEnabled(false);
+       flushButton.setToolTipText("Deliver all pending messages.");
+       flushButton.addActionListener(this);
+       flushButton.setPreferredSize(new Dimension(100,80));
      
        continueButton = new JButton("Continue");
        continueButton.setVerticalTextPosition(AbstractButton.BOTTOM);
@@ -794,7 +806,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
        quitButton.addActionListener(this);
        quitButton.setPreferredSize(new Dimension(100,80));
         
-       startGdbButton = new JButton("Start GDB");
+       startGdbButton = new JButton("GDB");
        startGdbButton.setVerticalTextPosition(AbstractButton.BOTTOM);
        startGdbButton.setHorizontalTextPosition(AbstractButton.CENTER);
        startGdbButton.setActionCommand("startgdb");
@@ -806,6 +818,8 @@ DEPRECATED!! The correct implementation is in CpdList.java
        buttonPanel.add(startButton);
        buttonPanel.add(Box.createHorizontalGlue());
        buttonPanel.add(stepButton);
+       buttonPanel.add(Box.createHorizontalGlue());
+       buttonPanel.add(flushButton);
        buttonPanel.add(Box.createHorizontalGlue());
        buttonPanel.add(continueButton);
        buttonPanel.add(Box.createHorizontalGlue());
@@ -837,7 +851,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
        peList.addMouseListener(popupListener);
        //peActualPanel.setLayout(new BoxLayout(peActualPanel, BoxLayout.Y_AXIS));
        JScrollPane pesScrollPane = new JScrollPane(peList);
-       pesScrollPane.setBorder(BorderFactory.createTitledBorder("Pes"));
+       pesScrollPane.setBorder(BorderFactory.createTitledBorder("PEs"));
        pePanel.add(pesScrollPane);
 
        outputAndPePanel.add(programOutputScrollPane);
@@ -944,18 +958,29 @@ DEPRECATED!! The correct implementation is in CpdList.java
         addNotifyListener(new NotifyGUI());
     }
 
-    public void messageDelivered() {
+    public void refreshMessageQueue() {
 		CpdListInfo list = cpdLists[listsbox.getSelectedIndex()];
 		if (list.list == messageQueue) {
 			int forPE=Integer.parseInt((String)pesbox.getSelectedItem());
 			populateNewList(listsbox.getSelectedIndex(),forPE, listModel);
-		}    		setStatusMessage("Single message delivered");
+		}
+    }
+
+    public void messageDelivered() {
+		refreshMessageQueue();
+		setStatusMessage("Single message delivered");
     }
     
     public void deliverSingle() {
 		// deliver a single message
-		server.bcastCcsRequest("debug/charm/next", "", ((PeSet)peList.getSelectedValue()).frozenIterator().toIDs());
+		server.bcastCcsRequest("debug/charm/next", "", ((PeSet)peList.getSelectedValue()).toIDsArray());
 		messageDelivered();
+    }
+    
+    public void deliverAll() {
+		server.bcastCcsRequest("debug/charm/deliverall", "", ((PeSet)peList.getSelectedValue()).toIDsArray());
+		refreshMessageQueue();
+		setStatusMessage("All messages delivered");
     }
     
     public void deliverConditional(int idx) {
@@ -1129,8 +1154,8 @@ DEPRECATED!! The correct implementation is in CpdList.java
     		startProgram(true);
     	} else if (e.getActionCommand().equals("freeze")) {
     		// stop program
-    		server.bcastCcsRequest("debug/converse/freeze", "", ((PeSet)peList.getSelectedValue()).runningIterator().toIDs());
-    		Iterator iter = ((PeSet)peList.getSelectedValue()).runningIterator();
+    		server.bcastCcsRequest("debug/converse/freeze", "", ((PeSet)peList.getSelectedValue()).toIDsArray());
+    		Iterator iter = ((PeSet)peList.getSelectedValue()).iterator();
     		while (iter.hasNext()) {
     			((Processor)iter.next()).setFreezing();
     		}
@@ -1145,6 +1170,10 @@ DEPRECATED!! The correct implementation is in CpdList.java
     	}
     	else if (e.getActionCommand().equals("step")) {
     		deliverSingle();
+    	}
+    	else if (e.getActionCommand().equals("deliverall")) {
+    		deliverAll();
+			peList.repaint();
     	}
     	else if (e.getActionCommand().equals("disconnect")) {
     		servthread.terminate();
@@ -1454,8 +1483,8 @@ DEPRECATED!! The correct implementation is in CpdList.java
     } // end of actionPerformed
 
     public void command_continue() {
-		server.bcastCcsRequest("debug/charm/continue", "", ((PeSet)peList.getSelectedValue()).frozenIterator().toIDs());
-		Iterator iter = ((PeSet)peList.getSelectedValue()).frozenIterator();
+		server.bcastCcsRequest("debug/charm/continue", "", ((PeSet)peList.getSelectedValue()).toIDsArray());
+		Iterator iter = ((PeSet)peList.getSelectedValue()).iterator();
 		while (iter.hasNext()) {
 			((Processor)iter.next()).setRunning();
 		}
@@ -1481,6 +1510,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
 			chkbox.ep.addBP(((PeSet)peList.getSelectedValue()).getList());
 			byte []reply = server.bcastCcsRequest("debug/charm/bp/set", entryPointName,((PeSet)peList.getSelectedValue()).toIDsArray());
 			//stepButton.setEnabled(true);
+			//flushButton.setEnabled(true);
 			//continueButton.setEnabled(true);
 			//freezeButton.setEnabled(false);
 			if (reply[0] != 0) setStatusMessage ("Break Point set at entry point " +entryPointName);
@@ -1491,6 +1521,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
 			chkbox.ep.removeBP(((PeSet)peList.getSelectedValue()).getList());
 			byte []reply = server.bcastCcsRequest("debug/charm/bp/remove", entryPointName,((PeSet)peList.getSelectedValue()).toIDsArray());
 			//stepButton.setEnabled(true);
+			//flushButton.setEnabled(true);
 			//continueButton.setEnabled(true);   
 			//freezeButton.setEnabled(true);
 			if (reply[0] != 0) setStatusMessage ("Break Point removed at entry point " +entryPointName+" on selected Pes");
@@ -1524,19 +1555,23 @@ DEPRECATED!! The correct implementation is in CpdList.java
     private void enableButtons() {
     	PeSet set = (PeSet)peList.getSelectedValue();
 		stepButton.setEnabled(true);
+		flushButton.setEnabled(true);
 		continueButton.setEnabled(true);
 		menuActionContinue.setEnabled(true);
 		freezeButton.setEnabled(true);
 		menuActionFreeze.setEnabled(true);
+/*
     	if (set.isAllFrozen()) {
     		freezeButton.setEnabled(false);
     		menuActionFreeze.setEnabled(false);
     	}
     	if (set.isAllRunning() || set.isSomeDead()) {
     		stepButton.setEnabled(false);
+    		flushButton.setEnabled(false);
     		continueButton.setEnabled(false);
     		menuActionContinue.setEnabled(false);
     	}
+*/
     }
     
     private class PeSetListener implements ListSelectionListener {
@@ -1789,6 +1824,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
     		menuActionStart.setEnabled(false);
     		menuActionAttach.setEnabled(false);
 			stepButton.setEnabled(true);
+    		flushButton.setEnabled(true);
     		continueButton.setEnabled(true);
     		menuActionContinue.setEnabled(true);
     		quitButton.setEnabled(false);
@@ -1915,6 +1951,7 @@ DEPRECATED!! The correct implementation is in CpdList.java
     	}
     	startButton.setEnabled(true);
 		stepButton.setEnabled(false);
+    	flushButton.setEnabled(false);
     	continueButton.setEnabled(false); 
     	quitButton.setEnabled(false);
     	freezeButton.setEnabled(false);
