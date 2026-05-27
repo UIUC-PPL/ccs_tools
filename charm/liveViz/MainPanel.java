@@ -5,7 +5,6 @@
 package charm.liveViz;
 
 import charm.util.Toolbar;
-import java.applet.Applet;
 import java.net.URL;
 import java.awt.*;
 import java.awt.event.*;
