@@ -3,12 +3,10 @@
 */
 package charm.liveViz;
 
-import java.applet.Applet;
-import java.net.URL;
 import java.awt.*;
 import java.awt.event.*;
 
-public class MainApplet extends Applet
+public class MainApplet
 {
 // This little stub main allows the applet to also be run
 // as a java application.
@@ -77,25 +75,4 @@ public class MainApplet extends Applet
 		return top;
 	}
 
-// Properties of the applet proper:
-// show/hide window when requested.
-	private MainPanel panel;
-	private Frame frame;
-
-	public void start() {
-		panel=new MainPanel(getParameter("ccs_server_name"),
-			getParameter("ccs_server_port"),getParameter("ccs_timeoutset"),getParameter("ccs_timeoutperiod"));
-		frame=createWindow(panel,false, 300, 200, false);
-		frame.addWindowListener(new WindowAdapter() {
-			public void windowClosing(WindowEvent e)
-			{ e.getWindow().dispose(); }
-		});
-	}
-
-	public void stop() {
-		panel.stop();
-		frame.dispose();
-		panel=null;
-		frame=null;
-	}
 }
